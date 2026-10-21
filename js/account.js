@@ -28,6 +28,9 @@
     var l = localStorage.getItem('mb-layout') || prefs.layout || 'flat';
     document.querySelectorAll('#pref-tab .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === t); });
     document.querySelectorAll('#pref-layout .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === l); });
+    var au = prefs.autoBackup || 'off';
+    document.querySelectorAll('#pref-auto .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === au); });
+    if (prefs.lastBackup) $('last-backup').textContent = 'Last backup: ' + new Date(prefs.lastBackup).toLocaleString();
   }
 
   function save(data) {
@@ -54,6 +57,7 @@
       prefs = d.exists ? d.data() : {};
       if (prefs.tab) localStorage.setItem('pl-tab-pref', prefs.tab);
       if (prefs.layout && !localStorage.getItem('mb-layout')) localStorage.setItem('mb-layout', prefs.layout);
+      AppBackup.auto(user.uid, prefs, save);
       cacheAvatar(); paint(); marks();
     }).catch(function () {});
   });
@@ -96,6 +100,33 @@
   $('btn-remove-avatar').addEventListener('click', function () {
     delete prefs.avatar; cacheAvatar(); paint();
     ref.set({ avatar: firebase.firestore.FieldValue.delete() }, { merge: true });
+  });
+
+  $('pref-auto').addEventListener('click', function (e) {
+    var b = e.target.closest('.toggle-btn'); if (!b) return;
+    save({ autoBackup: b.dataset.v }); marks();
+  });
+  $('btn-backup').addEventListener('click', function () {
+    AppBackup.download(user.uid).then(function () {
+      save({ lastBackup: Date.now() }); marks(); AppUtils.showToast('Backup downloaded ✓');
+    }).catch(function () { AppUtils.showToast('Backup failed.'); });
+  });
+  $('btn-restore').addEventListener('click', function () { $('restore-input').click(); });
+  $('restore-input').addEventListener('change', function (e) {
+    var f = e.target.files[0]; this.value = '';
+    if (!f || !confirm('Restore this backup into the current account? Items with the same IDs will be overwritten.')) return;
+    var r = new FileReader();
+    r.onload = function () {
+      var b; try { b = JSON.parse(r.result); } catch (x) { return AppUtils.showToast('Invalid file.'); }
+      AppUtils.showToast('Restoring…', 60000);
+      AppBackup.restore(user.uid, b).then(function () {
+        sessionStorage.removeItem('pl-entries');
+        ['pl-avatar', 'pl-tab-pref', 'mb-layout'].forEach(function (k) { localStorage.removeItem(k); });
+        AppUtils.showToast('Restored ✓');
+        setTimeout(function () { window.location.href = '/home.html'; }, 800);
+      }).catch(function () { AppUtils.showToast('Restore failed. Wrong file?'); });
+    };
+    r.readAsText(f);
   });
 
   var lm = $('logout-modal');

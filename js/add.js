@@ -28,6 +28,24 @@ AppAuth.requireAuth(function(user) {
   initPage();
 });
 
+function rewatchGate(r, seasonNum) {
+  var ex = state.existingEntries.filter(function (e) {
+    return r.type === 'series'
+      ? e.type === 'series' && e.tmdbId === r.tmdbId && e.season === seasonNum
+      : e.type === 'movie' && e.tmdbId === r.tmdbId;
+  })[0];
+  if (!ex) return false;
+  AppFlow.rewatch(r.title).then(function (v) {
+    if (v === 'new') return showStep3();
+    if (v !== 'yes') return;
+    AppDB.updateEntry(state.uid, ex.id, { rewatchCount: (ex.rewatchCount || 0) + 1 }).then(function () {
+      sessionStorage.setItem('pl-back', '/home.html');
+      window.location.replace('/playlist.html?id=' + ex.playlistId);
+    }).catch(function () { AppUtils.showToast('Failed. Try again.'); });
+  });
+  return true;
+}
+
 function findDuplicate(r, seasonNum) {
   return state.existingEntries.some(function(e) {
     if (r.type === 'game') return e.type === 'game' && e.rawgId === r.rawgId;
@@ -313,6 +331,7 @@ function renderResults(results) {
       state.selectedGameRating = null;
       state.selectedStatus = null;
       state.selectedCategory = null;
+      if (r.type === 'movie' && rewatchGate(r)) return;
       if (r.type === 'series') {
         loadSeasons(r.tmdbId);
       } else {
@@ -348,6 +367,7 @@ function loadSeasons(tmdbId) {
       );
       item.addEventListener('click', function() {
         state.selectedSeason = s;
+        if (rewatchGate(state.selectedResult, s.seasonNumber)) return;
         showStep3();
       });
       list.appendChild(item);
@@ -493,7 +513,8 @@ document.getElementById('btn-add').addEventListener('click', function() {
       return AppDB.addEntry(state.uid, entry).then(function() { return pid; });
     })
       .then(function(pid) {
-        window.location.href = '/playlist.html?id=' + pid;
+        sessionStorage.setItem('pl-back', state.type === 'game' ? '/home.html?tab=games' : '/home.html');
+        window.location.replace('/playlist.html?id=' + pid);
       })
       .catch(function(err) {
         console.error(err);

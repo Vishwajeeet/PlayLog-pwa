@@ -2,6 +2,7 @@
 var ALL_ENTRIES = [];
 var ALL_PLAYLISTS = [];
 var ACTIVE_YEAR = 'all';
+sessionStorage.removeItem('pl-back');
 var _tp = new URLSearchParams(window.location.search).get('tab');
 var _dp = localStorage.getItem('pl-tab-pref') || 'media';
 if (_dp === 'last') _dp = localStorage.getItem('pl-last-tab') || 'media';
@@ -56,7 +57,7 @@ AppAuth.requireAuth(function(user) {
 
     entries = entries.filter(function(e) {
       var isGame = e.type === 'game';
-      return ACTIVE_TAB === 'games' ? isGame : !isGame;
+      return (ACTIVE_TAB === 'games' ? isGame : !isGame) && e.completionStatus !== 'wishlist';
     });
 
     var totalEntries =
@@ -244,6 +245,12 @@ function renderHome() {
       var im = document.createElement('img');
       im.loading = 'lazy'; im.alt = ''; im.src = u;
       a.appendChild(im);
+    }
+    if (e.completionStatus === 'wishlist') {
+      var wb = document.createElement('em');
+      wb.className = 'recent-badge';
+      wb.textContent = 'Wishlist';
+      a.appendChild(wb);
     }
     var s = document.createElement('span');
     s.textContent = e.title;

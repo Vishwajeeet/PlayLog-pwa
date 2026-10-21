@@ -12,6 +12,11 @@ if (!playlistId) {
 AppAuth.requireAuth(function (user) {
 
   var uid = user.uid;
+  var bk = sessionStorage.getItem('pl-back');
+  if (bk) {
+    history.pushState({}, '');
+    window.addEventListener('popstate', function () { sessionStorage.removeItem('pl-back'); location.replace(bk); });
+  }
 
   var currentName = '';
 
@@ -223,6 +228,7 @@ AppAuth.requireAuth(function (user) {
       seasonBadge = '<span class="badge badge-tl" style="background:' + (statusColors[st] || '#6366f1') + ';color:#000">' + (statusLabels[st] || '') + '</span>';
     }
 
+    if (entry.rewatchCount) seasonBadge += '<span class="badge" style="top:' + (entry.type === 'series' ? 34 : 8) + 'px;left:8px">🔁 Rewatched ' + entry.rewatchCount + '×</span>';
     var ratingBadge = '';
     if (entry.type === 'game') {
       ratingBadge = entry.gameRating
@@ -917,6 +923,16 @@ AppAuth.requireAuth(function (user) {
   }
 
   function moveEntryToPlaylist(entryId, newPlaylistId, playlistName) {
+    var en = allEntries.filter(function (e) { return e.id === entryId; })[0];
+    if (en && AppFlow.needs(en, playlistName)) {
+      AppFlow.move(uid, en, newPlaylistId, playlistName).then(function (ok) {
+        if (!ok) return;
+        document.getElementById('move-to-modal').classList.remove('open');
+        loadPlaylist();
+        AppUtils.showToast('Moved to ' + playlistName + ' ✓');
+      }).catch(function () { AppUtils.showToast('Failed to move entry.'); });
+      return;
+    }
 
     AppDB.moveEntry(
       uid,
@@ -1408,7 +1424,7 @@ AppAuth.requireAuth(function (user) {
   ).addEventListener('click', function () {
 
     if (document.referrer && document.referrer.indexOf(window.location.origin) === 0) {
-      window.history.back();
+      var b = sessionStorage.getItem('pl-back'); if (b) { sessionStorage.removeItem('pl-back'); window.location.replace(b); } else window.history.back();
     } else {
       window.location.href = '/home.html';
     }

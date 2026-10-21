@@ -34,6 +34,7 @@ AppAuth.requireAuth(function (user) {
       if (e.runtime) rows.push(['Runtime', AppUtils.formatHours(e.runtime)]);
       if (e.season) rows.push(['Season', e.seasonName || ('S' + e.season)]);
     }
+    if (e.rewatchCount) rows.push(['Rewatched', e.rewatchCount + ' time' + (e.rewatchCount > 1 ? 's' : '')]);
     if (e.releaseYear) rows.push(['Release Year', e.releaseYear]);
     if (e.genres && e.genres.length) rows.push(['Genres', e.genres.join(', ')]);
     if (e.review) rows.push(['Review', e.review]);
@@ -212,7 +213,8 @@ AppAuth.requireAuth(function (user) {
       list.querySelectorAll('button[data-pid]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var pid = btn.dataset.pid;
-          AppDB.moveEntry(uid, entry.id, pid).then(function () {
+          AppFlow.move(uid, entry, pid, btn.textContent).then(function (ok) {
+            if (!ok) return;
             document.getElementById('move-modal').classList.remove('open');
             AppUtils.showToast('Moved ✓');
             window.location.href = '/playlist.html?id=' + pid;

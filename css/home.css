@@ -53,6 +53,7 @@ div.mini-poster{opacity:0}
 @media(min-width:700px){#playlists-grid{grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}.playlist-card{min-height:190px;padding:20px}.playlist-card-name{font-size:18px}.mini-poster{width:62px;height:92px;margin-left:-28px}}
 @media(min-width:1000px){.app-container{max-width:1200px}.stat-strip{grid-template-columns:repeat(4,1fr)}.stat-box:nth-child(n+3){border-top:none}.stat-box:nth-child(3){border-left:1px solid rgba(255,255,255,.07)}.stat-number{font-size:30px}.recent-item{flex-basis:158px}.page-title{font-size:28px}}
 .recent-row{padding:18px 12px 24px;margin:-14px -12px 0}
+.recent-badge{position:absolute;top:6px;right:6px;z-index:2;padding:3px 7px;border-radius:6px;font:700 10px Inter,sans-serif;background:rgba(99,102,241,.92);color:#fff}
 .recent-item:hover{transform:translateY(-4px) scale(1.03)}
 
 .page-header{background:none!important;border:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}

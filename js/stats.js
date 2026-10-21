@@ -176,7 +176,7 @@ AppAuth.requireAuth(function (user) {
           currentMonth === 0
           || entry.monthWatched === currentMonth;
 
-        return typeMatch && yearMatch && monthMatch;
+        return typeMatch && yearMatch && monthMatch && entry.completionStatus !== 'wishlist';
 
       }
     );
