@@ -18,9 +18,16 @@ window.AppBackup = {
       return s.docs.map(function (d) { return { id: d.id, data: AppBackup._ser(d.data()) }; });
     });
   },
+  _clean: function (e) {
+    ['season', 'rawgId', 'tmdbId', 'runtime', 'monthWatched', 'yearWatched', 'rating', 'gameRating', 'playtime', 'rewatchCount', 'releaseYear'].forEach(function (k) {
+      if (e[k] != null && typeof e[k] !== 'number') e[k] = Number(e[k]) || null;
+    });
+    if (e.poster != null) e.poster = String(e.poster).replace(/["'<>\s\\]/g, '') || null;
+    return e;
+  },
   build: function (uid) {
-    return Promise.all([AppBackup._col(uid, 'playlists'), AppBackup._col(uid, 'entries'), AppBackup._col(uid, 'settings')]).then(function (r) {
-      return { app: 'playlog', version: 1, createdAt: new Date().toISOString(), playlists: r[0], entries: r[1], settings: r[2] };
+    return Promise.all([AppBackup._col(uid, 'playlists'), AppBackup._col(uid, 'entries'), AppBackup._col(uid, 'settings'), AppBackup._col(uid, 'covers')]).then(function (r) {
+      return { app: 'playlog', version: 1, createdAt: new Date().toISOString(), playlists: r[0], entries: r[1], settings: r[2], covers: r[3] };
     });
   },
   download: function (uid) {
@@ -44,9 +51,11 @@ window.AppBackup = {
   restore: function (uid, b) {
     if (!b || b.app !== 'playlog') return Promise.reject(new Error('bad file'));
     var ops = [];
-    ['playlists', 'entries', 'settings'].forEach(function (c) {
+    ['playlists', 'entries', 'settings', 'covers'].forEach(function (c) {
       (b[c] || []).forEach(function (d) {
-        ops.push([db.collection('users').doc(uid).collection(c).doc(d.id), AppBackup._de(d.data)]);
+        var dd = AppBackup._de(d.data);
+        if (c === 'entries') AppBackup._clean(dd);
+        ops.push([db.collection('users').doc(uid).collection(c).doc(d.id), dd]);
       });
     });
     var p = Promise.resolve();

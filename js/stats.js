@@ -289,7 +289,7 @@ AppAuth.requireAuth(function (user) {
       segs += '<circle class="dn-seg" data-i="' + i + '" cx="100" cy="100" r="70" fill="none" stroke="' + pal[i] +
         '" stroke-width="28" stroke-dasharray="' + Math.max(len - 3, 1) + ' ' + C + '" stroke-dashoffset="' + (-off) + '"/>';
       off += len;
-      leg += '<span class="dn-leg" data-i="' + i + '"><i style="background:' + pal[i] + '"></i>' + g + '</span>';
+      leg += '<span class="dn-leg" data-i="' + i + '"><i style="background:' + pal[i] + '"></i>' + AppUtils.esc(g) + '</span>';
     });
     return '<p class="section-title">Top Genres</p><div class="viz-card dn-wrap ' + cls + '">' +
       '<div class="dn-box"><svg viewBox="0 0 200 200" class="dn-svg"><g transform="rotate(-90 100 100)">' + segs + '</g></svg>' +
@@ -306,7 +306,7 @@ AppAuth.requireAuth(function (user) {
       var d = donutData[i];
       box.classList.add('dn-active');
       box.querySelectorAll('[data-i]').forEach(function (n) { n.classList.toggle('on', n.dataset.i == i); });
-      info.innerHTML = '<b>' + d.g + '</b><span>' + d.n + ' ' + d.unit + ' · ' + d.pct + '%</span><span>Avg ' + d.avg + '</span><span>' + d.time + '</span>';
+      info.innerHTML = '<b>' + AppUtils.esc(d.g) + '</b><span>' + d.n + ' ' + d.unit + ' · ' + d.pct + '%</span><span>Avg ' + d.avg + '</span><span>' + d.time + '</span>';
     }
     function hide() {
       box.classList.remove('dn-active');
@@ -346,7 +346,7 @@ AppAuth.requireAuth(function (user) {
     if (longest && v(longest)) chips.push((isG ? 'Longest session: ' : 'Longest watch: ') + longest.title);
     var topM = Object.keys(mc).sort(function (a, b) { return mc[b] - mc[a]; })[0];
     if (topM) chips.push('Most active month: ' + mon[topM - 1]);
-    html += '<div class="viz-chips">' + chips.map(function (c) { return '<span>' + c + '</span>'; }).join('') + '</div>';
+    html += '<div class="viz-chips">' + chips.map(function (c) { return '<span>' + AppUtils.esc(c) + '</span>'; }).join('') + '</div>';
 
     // Heatmap (ignores year/month filter, tab only)
     var hm = {}, ys = {}, max = 1;
@@ -865,7 +865,7 @@ AppAuth.requireAuth(function (user) {
         '<div class="poster-overlay">' +
 
         '<div class="poster-title">' +
-        entry.title +
+        AppUtils.esc(entry.title) +
         '</div>' +
 
         '<div class="poster-sub">' +
@@ -1008,7 +1008,7 @@ AppAuth.requireAuth(function (user) {
         '<div class="leaderboard-row' + (i === 0 ? ' leaderboard-row-top' : '') + '">' +
         '<div class="leaderboard-rank">' + rankLabel + '</div>' +
         '<div class="leaderboard-info">' +
-        '<div class="leaderboard-title">' + g.title + '</div>' +
+        '<div class="leaderboard-title">' + AppUtils.esc(g.title) + '</div>' +
         '<div class="leaderboard-bar-track"><div class="leaderboard-bar-fill" style="width:' + pct + '%"></div></div>' +
         '</div>' +
         '<div class="leaderboard-hours">' + g.playtime + 'h</div>' +

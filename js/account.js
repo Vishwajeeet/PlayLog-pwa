@@ -28,6 +28,9 @@
     var l = localStorage.getItem('mb-layout') || prefs.layout || 'flat';
     document.querySelectorAll('#pref-tab .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === t); });
     document.querySelectorAll('#pref-layout .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === l); });
+    var th = localStorage.getItem('pl-theme') || 'dark', ac = localStorage.getItem('pl-accent') || '#c9a84c';
+    document.querySelectorAll('#pref-theme .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === th); });
+    document.querySelectorAll('#pref-accent button').forEach(function (b) { b.classList.toggle('active', b.dataset.c === ac); });
     var au = prefs.autoBackup || 'off';
     document.querySelectorAll('#pref-auto .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === au); });
     if (prefs.lastBackup) $('last-backup').textContent = 'Last backup: ' + new Date(prefs.lastBackup).toLocaleString();
@@ -57,6 +60,9 @@
       prefs = d.exists ? d.data() : {};
       if (prefs.tab) localStorage.setItem('pl-tab-pref', prefs.tab);
       if (prefs.layout && !localStorage.getItem('mb-layout')) localStorage.setItem('mb-layout', prefs.layout);
+      if (prefs.theme) localStorage.setItem('pl-theme', prefs.theme);
+      if (prefs.accent) localStorage.setItem('pl-accent', prefs.accent);
+      AppTheme.apply();
       AppBackup.auto(user.uid, prefs, save);
       cacheAvatar(); paint(); marks();
     }).catch(function () {});
@@ -111,6 +117,17 @@
       save({ lastBackup: Date.now() }); marks(); AppUtils.showToast('Backup downloaded ✓');
     }).catch(function () { AppUtils.showToast('Backup failed.'); });
   });
+  $('pref-theme').addEventListener('click', function (e) {
+    var b = e.target.closest('.toggle-btn'); if (!b) return;
+    localStorage.setItem('pl-theme', b.dataset.v); AppTheme.apply(); save({ theme: b.dataset.v }); marks();
+  });
+  $('pref-accent').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    localStorage.setItem('pl-accent', b.dataset.c); AppTheme.apply(); save({ accent: b.dataset.c }); marks();
+  });
+  $('btn-refresh').addEventListener('click', function () {
+    localStorage.removeItem('pl-entries'); AppUtils.showToast('Data will reload from the cloud ✓');
+  });
   $('btn-restore').addEventListener('click', function () { $('restore-input').click(); });
   $('restore-input').addEventListener('change', function (e) {
     var f = e.target.files[0]; this.value = '';
@@ -120,7 +137,7 @@
       var b; try { b = JSON.parse(r.result); } catch (x) { return AppUtils.showToast('Invalid file.'); }
       AppUtils.showToast('Restoring…', 60000);
       AppBackup.restore(user.uid, b).then(function () {
-        sessionStorage.removeItem('pl-entries');
+        localStorage.removeItem('pl-entries');
         ['pl-avatar', 'pl-tab-pref', 'mb-layout'].forEach(function (k) { localStorage.removeItem(k); });
         AppUtils.showToast('Restored ✓');
         setTimeout(function () { window.location.href = '/home.html'; }, 800);

@@ -12,6 +12,7 @@ if (!playlistId) {
 AppAuth.requireAuth(function (user) {
 
   var uid = user.uid;
+  AppFlow.showUndo(uid, function () { loadPlaylist(); });
   var bk = sessionStorage.getItem('pl-back');
   if (bk) {
     history.pushState({}, '');
@@ -159,7 +160,35 @@ AppAuth.requireAuth(function (user) {
 
   }
 
+  var plQuery = '', plSort = 'new';
+
+  function plRefresh() {
+    var l = getFilteredEntries();
+    renderEntries(l);
+    if (plQuery) document.getElementById('entry-count').textContent = l.length + ' of ' + allEntries.length;
+    else updateEntryCount();
+  }
+
+  document.getElementById('pl-search').addEventListener('input', function () {
+    plQuery = this.value.trim().toLowerCase(); plRefresh();
+  });
+  document.getElementById('pl-sort').addEventListener('change', function () {
+    plSort = this.value; plRefresh();
+  });
+
   function getFilteredEntries() {
+    var list = baseFiltered().slice();
+    if (plQuery) list = list.filter(function (e) { return (e.title || '').toLowerCase().indexOf(plQuery) > -1; });
+    var rate = function (e) { return (e.type === 'game' ? e.gameRating : e.rating) || 0; };
+    var len = function (e) { return e.type === 'game' ? (e.playtime || 0) * 60 : (e.runtime || 0); };
+    if (plSort === 'old') list.reverse();
+    else if (plSort === 'title') list.sort(function (a, b) { return (a.title || '').localeCompare(b.title || ''); });
+    else if (plSort === 'rating') list.sort(function (a, b) { return rate(b) - rate(a); });
+    else if (plSort === 'length') list.sort(function (a, b) { return len(b) - len(a); });
+    return list;
+  }
+
+  function baseFiltered() {
 
     if (currentFilter === 'all') {
       return allEntries;
@@ -215,7 +244,7 @@ AppAuth.requireAuth(function (user) {
 
     var posterUrl = AppUtils.getPosterUrl(entry.poster);
     var posterHTML = posterUrl
-      ? '<img class="poster-img" loading="lazy" src="' + posterUrl + '" alt="' + entry.title + '" onerror="this.style.display=\'none\'">'
+      ? '<img class="poster-img" loading="lazy" src="' + posterUrl + '" alt="' + AppUtils.esc(entry.title) + '" onerror="this.style.display=\'none\'">'
       : '<div class="poster-placeholder">' + (entry.type === 'game' ? '' : '🎬') + '</div>';
 
     var seasonBadge = '';
@@ -247,7 +276,7 @@ AppAuth.requireAuth(function (user) {
       ratingBadge +
       '<div class="poster-gradient"></div>' +
       '<button class="btn-menu-entry" data-entry-id="' + entry.id + '">⋮</button>' +
-      '<p class="poster-title">' + entry.title + '</p>' +
+      '<p class="poster-title">' + AppUtils.esc(entry.title) + '</p>' +
       '</div>'
     );
 
@@ -327,7 +356,7 @@ AppAuth.requireAuth(function (user) {
         );
 
       var year =
-        entry.yearWatched || '';
+        Number(entry.yearWatched) || '';
 
       var key =
         month + ' ' + year;
@@ -756,6 +785,10 @@ AppAuth.requireAuth(function (user) {
 
   function deleteCurrentEntry() {
 
+    var delSnap = currentDeleteEntry ? Object.assign({}, currentDeleteEntry) : null;
+    var delId = currentDeleteEntry ? currentDeleteEntry.id : null;
+    if (delSnap) delete delSnap.id;
+
     if (!currentDeleteEntry) return;
 
     AppDB.deleteEntry(
@@ -790,6 +823,11 @@ AppAuth.requireAuth(function (user) {
 
         AppUtils.showToast(
           'Entry deleted'
+        );
+
+        if (delSnap) { AppFlow.undo(uid, delId, delSnap); AppFlow.showUndo(uid, function () { loadPlaylist(); }); }
+
+        void (0
         );
 
       })
@@ -866,7 +904,9 @@ AppAuth.requireAuth(function (user) {
       return;
     }
 
-    filtered.forEach(function (playlist) {
+    filtered.forEach(function (pl0) {
+
+      var playlist = Object.assign({}, pl0, { name: AppUtils.esc(pl0.name) });
 
       var entryCount = 0;
 

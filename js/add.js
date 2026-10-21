@@ -365,9 +365,9 @@ function renderResults(results) {
     var typeLabel = r.type === 'movie' ? 'Movie' : r.type === 'series' ? 'Series' : 'Game';
     var isDup = r.type !== 'series' && findDuplicate(r);
     item.innerHTML = (
-      '<img class="result-thumb" src="' + (posterUrl || '') + '" alt="' + r.title + '" onerror="this.style.background=\'#2a2a2a\'">' +
+      '<img class="result-thumb" src="' + (posterUrl || '') + '" alt="' + AppUtils.esc(r.title) + '" onerror="this.style.background=\'#2a2a2a\'">' +
       '<div class="result-info">' +
-        '<p class="result-title">' + r.title + '</p>' +
+        '<p class="result-title">' + AppUtils.esc(r.title) + '</p>' +
         '<p class="result-meta">' + (r.releaseYear || '—') + ' · ' + typeLabel +
           (isDup ? ' · <span style="color:var(--accent)">✓ Already added</span>' : '') + '</p>' +
       '</div>'
@@ -407,9 +407,9 @@ function loadSeasons(tmdbId) {
       var posterUrl = AppUtils.getPosterUrl(s.poster, 154);
       var isDup = findDuplicate(state.selectedResult, s.seasonNumber);
       item.innerHTML = (
-        '<img class="result-thumb" src="' + (posterUrl || '') + '" alt="' + s.seasonName + '" onerror="this.style.background=\'#2a2a2a\'">' +
+        '<img class="result-thumb" src="' + (posterUrl || '') + '" alt="' + AppUtils.esc(s.seasonName) + '" onerror="this.style.background=\'#2a2a2a\'">' +
         '<div class="result-info">' +
-          '<p class="result-title">' + s.seasonName + '</p>' +
+          '<p class="result-title">' + AppUtils.esc(s.seasonName) + '</p>' +
           '<p class="result-meta">' + s.episodeCount + ' episodes' + (s.airYear ? ' · ' + s.airYear : '') +
             (isDup ? ' · <span style="color:var(--accent)">✓ Already added</span>' : '') + '</p>' +
         '</div>'

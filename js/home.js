@@ -2,6 +2,7 @@
 var ALL_ENTRIES = [];
 var ALL_PLAYLISTS = [];
 var ACTIVE_YEAR = 'all';
+var COVERS = {};
 sessionStorage.removeItem('pl-back');
 var _tp = new URLSearchParams(window.location.search).get('tab');
 var _dp = localStorage.getItem('pl-tab-pref') || 'media';
@@ -33,6 +34,11 @@ AppAuth.requireAuth(function(user) {
         ALL_PLAYLISTS = playlists;
 
         ALL_ENTRIES = entries;
+        playlists.forEach(function (p) { if (p.coverImage) COVERS[p.id] = p.coverImage; });
+        AppDB.getCovers(uid).then(function (m) {
+          var n = 0; Object.keys(m).forEach(function (k) { COVERS[k] = m[k]; n++; });
+          if (n) applyYearFilter();
+        }).catch(function () {});
 
         document.querySelector('.type-pill[data-tab="' + ACTIVE_TAB + '"]').classList.add('active');
 
@@ -378,6 +384,7 @@ function applyYearFilter() {
 
       var artSrc = last3[0] && last3[0].poster ? AppUtils.ambientUrl(last3[0].poster) : '';
       if (artSrc) card.style.setProperty('--art', 'url("' + artSrc + '")');
+      if (!playlist.coverImage && COVERS[playlist.id]) playlist.coverImage = COVERS[playlist.id];
       if (playlist.coverImage) {
         card.dataset.hasCover = '1';
         card.style.backgroundImage = 'url(' + playlist.coverImage + ')';
@@ -386,7 +393,7 @@ function applyYearFilter() {
       card.innerHTML = (
 
         '<p class="playlist-card-name">' +
-        playlist.name +
+        AppUtils.esc(playlist.name) +
         '</p>' +
 
         '<p class="playlist-card-count">' +
@@ -428,6 +435,27 @@ function applyYearFilter() {
     if (!mp.length) { openCreate(true); return; }
     window.location.href = '/add.html?type=media';
   });
+
+  // Swipe left/right to switch Movies <-> Games
+  (function () {
+    var sx = 0, sy = 0, skip = false;
+    document.addEventListener('touchstart', function (e) {
+      var t = e.touches[0]; sx = t.clientX; sy = t.clientY;
+      skip = e.touches.length > 1 || !!(e.target.closest && e.target.closest('.recent-row,#year-filters,.modal-overlay,input,textarea,select'));
+    }, { passive: true });
+    document.addEventListener('touchend', function (e) {
+      if (skip || document.querySelector('.modal-overlay.open') || Date.now() - (window.__plMoved || 0) < 700) return;
+      var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      var want = dx < 0 ? 'games' : 'media';
+      if (want === ACTIVE_TAB) return;
+      document.querySelector('.type-pill[data-tab="' + want + '"]').click();
+      ['.stat-strip', '#playlists-grid', '#recent-wrap'].forEach(function (s) {
+        var n = document.querySelector(s); if (!n) return;
+        n.classList.remove('sw-l', 'sw-r'); void n.offsetWidth; n.classList.add(dx < 0 ? 'sw-l' : 'sw-r');
+      });
+    }, { passive: true });
+  })();
 
   document.getElementById('type-pills').addEventListener('click', function(e) {
     var btn = e.target.closest('.type-pill');
@@ -485,6 +513,7 @@ function applyYearFilter() {
       if (!d) return;
       var c = d.c; d = null;
       moved = true;
+      window.__plMoved = Date.now();
       setTimeout(function () { moved = false; }, 400);
       c.classList.remove('pl-drag');
       c.style.transform = '';
@@ -709,13 +738,14 @@ function applyYearFilter() {
       var img = new Image();
       img.onload = function () {
         var canvas = document.createElement('canvas');
-        var maxW = 600;
+        var maxW = 400;
         var scale = Math.min(1, maxW / img.width);
         canvas.width = img.width * scale;
         canvas.height = img.height * scale;
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        var dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        var dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         AppDB.updatePlaylistCover(uid, activePlaylist.id, dataUrl).then(function () {
+          COVERS[activePlaylist.id] = dataUrl;
           optionsModal.classList.remove('open');
           AppUtils.showToast('Cover updated ✓');
           return AppDB.getPlaylists(uid);

@@ -1,9 +1,32 @@
 // Firestore database operations for playlists and entries
 setTimeout(function () {
   var A = window.AppDB, all = A.getAllEntries;
+  A.getCovers = function (uid) {
+    return db.collection('users').doc(uid).collection('covers').get().then(function (s) {
+      var m = {}; s.docs.forEach(function (d) { m[d.id] = d.data().data; }); return m;
+    });
+  };
+  A.updatePlaylistCover = function (uid, id, data) {
+    var u = db.collection('users').doc(uid);
+    return u.collection('covers').doc(id).set({ data: data }).then(function () {
+      return u.collection('playlists').doc(id).update({ updatedAt: firebase.firestore.FieldValue.serverTimestamp(), coverImage: firebase.firestore.FieldValue.delete() });
+    });
+  };
+  var dp0 = A.deletePlaylist;
+  A.deletePlaylist = function (uid, id) {
+    db.collection('users').doc(uid).collection('covers').doc(id).delete().catch(function () {});
+    return dp0.call(A, uid, id);
+  };
   var gp = A.getPlaylists;
   A.getPlaylists = function (uid) {
     return gp.call(A, uid).then(function (l) {
+      l.forEach(function (p) {
+        if (!p.coverImage) return;
+        var u = db.collection('users').doc(uid);
+        u.collection('covers').doc(p.id).set({ data: p.coverImage }).then(function () {
+          return u.collection('playlists').doc(p.id).update({ coverImage: firebase.firestore.FieldValue.delete() });
+        }).catch(function () {});
+      });
       return l.map(function (p, i) { return [p, i]; }).sort(function (a, b) {
         var x = a[0].order != null ? a[0].order : 1e6 + a[1], y = b[0].order != null ? b[0].order : 1e6 + b[1];
         return x - y;
@@ -22,11 +45,11 @@ setTimeout(function () {
   };
   A.getAllEntries = function (uid) {
     try {
-      var c = JSON.parse(sessionStorage.getItem('pl-entries') || 'null');
-      if (c && c.uid === uid && Date.now() - c.t < 60000) return Promise.resolve(rw(c.data));
+      var c = JSON.parse(localStorage.getItem('pl-entries') || 'null');
+      if (c && c.uid === uid && Date.now() - c.t < 300000) return Promise.resolve(rw(c.data));
     } catch (e) {}
     return all.call(A, uid).then(function (d) {
-      try { sessionStorage.setItem('pl-entries', JSON.stringify({ uid: uid, t: Date.now(), data: d })); } catch (e) {}
+      try { localStorage.setItem('pl-entries', JSON.stringify({ uid: uid, t: Date.now(), data: d })); } catch (e) {}
       return rw(d);
     });
   };
@@ -34,7 +57,7 @@ setTimeout(function () {
     var f = A[k];
     A[k] = function () {
       return f.apply(A, arguments).then(function (r) {
-        try { sessionStorage.removeItem('pl-entries'); } catch (e) {}
+        try { localStorage.removeItem('pl-entries'); } catch (e) {}
         return r;
       });
     };

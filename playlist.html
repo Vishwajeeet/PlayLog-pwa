@@ -50,6 +50,17 @@
         Tap title to rename
       </p>
 
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input id="pl-search" class="input-field" placeholder="Search this playlist..." style="flex:1;min-width:0;padding:10px 14px;font-size:14px">
+        <select id="pl-sort" class="input-field" style="width:auto;padding:10px 12px;font-size:14px">
+          <option value="new">Newest</option>
+          <option value="old">Oldest</option>
+          <option value="title">A–Z</option>
+          <option value="rating">Top rated</option>
+          <option value="length">Longest</option>
+        </select>
+      </div>
+
       <div id="filter-row-wrap" style="display:none;gap:8px;align-items:center;margin-bottom:16px">
         <div class="toggle-pair" id="type-filter"
           style="grid-template-columns: 1fr 1fr 1fr 1fr;flex:1;margin-bottom:0">
@@ -316,6 +327,7 @@
   <script src="/js/utils.js"></script>
   <script src="/js/firestore.js"></script>
   <script src="/js/flow.js"></script>
+  <script src="/js/backup.js"></script>
   <script src="/js/tmdb.js"></script>
   <script src="/js/rawg.js"></script>
 

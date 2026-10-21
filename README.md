@@ -21,6 +21,16 @@ A personal movie, web series, and **game** tracking Progressive Web App (PWA). B
 - Filter, sort, and view stats by year and month — years shown are generated dynamically from your own data
 - Install directly from Chrome as a native-like app (PWA)
 - Fully synced across all your devices via Firebase
+- Backup & Restore (download everything as a JSON file, restore into any account) with optional weekly or monthly auto-backup
+- Rewatch counter for movies and series (rewatches add to watch time)
+- Wishlist games are excluded from stats and ask for full details when moved to Completed, Playing or Dropped
+- Drag-to-reorder playlists (hold, then drag)
+- Search and sort inside a playlist
+- Edit rating, date, hours, rewatches and review from the entry page
+- Undo for deleted entries
+- Dark and light themes plus accent colour (Settings)
+- Mobile bottom tab bar with swipe between Movies and Games
+- One-time "What's New" card for each release
 
 ---
 
@@ -114,7 +124,8 @@ No frameworks. No npm. No build step. Pure static files.
 ├── playlist.html        # Individual playlist grid/flat view
 ├── add.html             # Add entry flow (search → season/status → rate)
 ├── stats.html            # Stats + Wrapped card, Movies/Games tab
-├── entry.html            # Single entry detail page
+├── entry.html            # Single entry detail page + edit
+├── account.html          # Settings, theme, backup/restore
 ├── manifest.json         # PWA manifest
 ├── sw.js                 # Service Worker (network-first)
 ├── css/
@@ -131,7 +142,12 @@ No frameworks. No npm. No build step. Pure static files.
 │   ├── playlist.js
 │   ├── add.js
 │   ├── stats.js
-│   └── entry.js
+│   ├── entry.js
+│   ├── account.js         # Settings page logic
+│   ├── flow.js            # Rewatch prompt, wishlist-move form, undo delete
+│   ├── backup.js          # Backup / restore / auto-backup
+│   └── whatsnew.js        # One-time release popups (edit RELEASES array)
+├── css/theme.css          # Light theme, accent colour, bottom tab bar
 └── assets/
     └── icons/
 ```
@@ -268,6 +284,15 @@ addedAt: timestamp
 ```
 
 ---
+
+## Extra Data
+
+- `users/{uid}/covers/{playlistId}`: `{ data: base64 }`. Playlist covers live in their own collection so playlist lists stay small. Old inline covers migrate automatically.
+- `users/{uid}/settings/prefs`: tab, layout, avatar, theme, accent, autoBackup, lastBackup, lastSeenRelease.
+- Entry extras: `rewatchCount`. Playlist extra: `order`.
+- Entries are cached in `localStorage` for 5 minutes and cleared on every write. Use Settings → Refresh data after editing on another device.
+- All user text is HTML-escaped on render (`AppUtils.esc`), and restore sanitizes numeric and poster fields.
+- Security rules: keep only the owner-only rule above. Never use test mode.
 
 ## Why Firebase Free Tier Works Forever
 

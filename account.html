@@ -53,6 +53,29 @@
         </div>
       </div>
 
+      <p class="section-title">Appearance</p>
+      <div class="set-group">
+        <div class="set-row">
+          <div class="set-text"><b>Theme</b><span>Dark, light, or match your device</span></div>
+          <div class="toggle-pair" id="pref-theme" style="grid-template-columns:1fr 1fr 1fr">
+            <button class="toggle-btn" data-v="dark">Dark</button>
+            <button class="toggle-btn" data-v="light">Light</button>
+            <button class="toggle-btn" data-v="system">Auto</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div class="set-text"><b>Accent colour</b><span>Buttons, highlights and numbers</span></div>
+          <div class="swatches" id="pref-accent">
+            <button data-c="#c9a84c" style="--c:#c9a84c" aria-label="Gold"></button>
+            <button data-c="#4f8cff" style="--c:#4f8cff" aria-label="Blue"></button>
+            <button data-c="#34c58a" style="--c:#34c58a" aria-label="Green"></button>
+            <button data-c="#ef5a6f" style="--c:#ef5a6f" aria-label="Red"></button>
+            <button data-c="#e879b9" style="--c:#e879b9" aria-label="Pink"></button>
+            <button data-c="#f08a3c" style="--c:#f08a3c" aria-label="Orange"></button>
+          </div>
+        </div>
+      </div>
+
       <p class="section-title">Backup &amp; Restore</p>
       <div class="set-group">
         <div class="set-row">
@@ -68,6 +91,9 @@
         </button>
         <button class="set-row" id="btn-restore">
           <div class="set-text"><b>Restore from backup</b><span>Load a backup file into this account</span></div><span>↑</span>
+        </button>
+        <button class="set-row" id="btn-refresh">
+          <div class="set-text"><b>Refresh data</b><span>Reload from the cloud if you edited on another device</span></div><span>⟳</span>
         </button>
         <input type="file" id="restore-input" accept=".json,application/json" hidden>
       </div>

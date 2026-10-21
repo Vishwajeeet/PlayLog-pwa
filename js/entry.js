@@ -40,14 +40,14 @@ AppAuth.requireAuth(function (user) {
     if (e.review) rows.push(['Review', e.review]);
 
     var rowsHTML = rows.map(function (r) {
-      return '<div class="detail-row"><span class="detail-label">' + r[0] + '</span><span class="detail-value">' + r[1] + '</span></div>';
+      return '<div class="detail-row"><span class="detail-label">' + r[0] + '</span><span class="detail-value">' + AppUtils.esc(r[1]) + '</span></div>';
     }).join('');
 
     document.getElementById('entry-content').innerHTML = (
       '<div class="detail-hero">' +
-        (posterUrl ? '<img class="detail-poster" src="' + posterUrl + '" alt="' + e.title + '">' : '<div class="poster-placeholder" style="height:340px;border-radius:16px">' + (isGame ? '' : '🎬') + '</div>') +
+        (posterUrl ? '<img class="detail-poster" src="' + posterUrl + '" alt="' + AppUtils.esc(e.title) + '">' : '<div class="poster-placeholder" style="height:340px;border-radius:16px">' + (isGame ? '' : '🎬') + '</div>') +
       '</div>' +
-      '<h2 style="margin:16px 0 4px">' + e.title + '</h2>' +
+      '<h2 style="margin:16px 0 4px">' + AppUtils.esc(e.title) + '</h2>' +
       '<p class="text-sm text-muted" style="margin-bottom:20px">' + (isGame ? ' Game' : e.type === 'series' ? '📺 Series' : '🎬 Movie') + '</p>' +
       '<div class="detail-card">' + rowsHTML + '</div>' +
       '<button class="btn btn-ghost" id="btn-share" style="margin-top:20px">' +
@@ -57,6 +57,7 @@ AppAuth.requireAuth(function (user) {
           '<line x1="12" y1="2" x2="12" y2="15"></line>' +
         '</svg> Share Entry' +
       '</button>' +
+      '<button class="btn btn-ghost" id="btn-edit" style="margin-top:10px">✏️ Edit Details</button>' +
       '<button class="btn btn-ghost" id="btn-move" style="margin-top:10px">↔ Move to Playlist</button>' +
       '<button class="btn btn-danger" id="btn-delete" style="margin-top:10px">Delete Entry</button>'
     );
@@ -64,6 +65,8 @@ AppAuth.requireAuth(function (user) {
     document.getElementById('btn-share').addEventListener('click', function () {
       generateShareCard(e);
     });
+
+    document.getElementById('btn-edit').addEventListener('click', function () { openEdit(e); });
 
     document.getElementById('btn-move').addEventListener('click', function () {
       openMoveModal(e);
@@ -73,7 +76,9 @@ AppAuth.requireAuth(function (user) {
       document.getElementById('delete-modal').classList.add('open');
     });
     document.getElementById('btn-confirm-delete').addEventListener('click', function () {
+      var snap = Object.assign({}, e); delete snap.id;
       AppDB.deleteEntry(uid, entryId).then(function () {
+        AppFlow.undo(uid, entryId, snap);
         window.location.href = '/playlist.html?id=' + e.playlistId;
       }).catch(function () {
         AppUtils.showToast('Failed to delete.');
@@ -210,6 +215,58 @@ AppAuth.requireAuth(function (user) {
     }
   }
 
+  function openEdit(en) {
+    var G = en.type === 'game', st = en.completionStatus, wl = G && st === 'wishlist', pl = G && st === 'playing';
+    var now = new Date(), rating = (G ? en.gameRating : en.rating) || null, esc = AppUtils.esc;
+    var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var mo = M.map(function (m, i) { return '<option value="' + (i + 1) + '"' + (en.monthWatched === i + 1 ? ' selected' : '') + '>' + m + '</option>'; }).join('');
+    var yr = '';
+    for (var y = now.getFullYear(); y >= Math.min(2015, en.yearWatched || 2015); y--) yr += '<option' + (en.yearWatched === y ? ' selected' : '') + '>' + y + '</option>';
+    var ov = document.createElement('div');
+    ov.className = 'modal-overlay open';
+    ov.innerHTML = '<div class="modal-box" style="max-height:90vh;overflow-y:auto"><p class="modal-title">Edit Details</p><p class="modal-entry-title">' + esc(en.title) + '</p>' +
+      (wl ? '' : '<label class="label">' + (G ? 'Played' : 'Watched') + '</label><div style="display:flex;gap:8px;margin-bottom:16px"><select id="ed-m" class="input-field">' + mo + '</select><select id="ed-y" class="input-field">' + yr + '</select></div>') +
+      (wl || pl ? '' : '<label class="label">Rating</label><div class="' + (G ? 'number-rating-row' : 'emoji-row') + '" id="ed-r" style="margin-bottom:16px"></div>') +
+      (G && !wl ? '<label class="label">Hours played</label><input type="number" id="ed-h" class="input-field" min="0" max="9999" value="' + (Number(en.playtime) || '') + '" style="margin-bottom:16px">' : '') +
+      (!G ? '<label class="label">Times rewatched</label><input type="number" id="ed-w" class="input-field" min="0" max="99" value="' + (Number(en.rewatchCount) || 0) + '" style="margin-bottom:16px">' : '') +
+      (st === 'dropped' ? '<label class="label">Reason for dropping</label><textarea id="ed-d" class="input-field" rows="2" style="resize:none;margin-bottom:16px">' + esc(en.dropReason) + '</textarea>' : '') +
+      '<label class="label">Review</label><textarea id="ed-v" class="input-field" rows="3" style="resize:none">' + esc(en.review) + '</textarea>' +
+      '<div class="modal-actions"><button class="btn btn-ghost" id="ed-x">Cancel</button><button class="btn btn-primary" id="ed-ok">Save</button></div></div>';
+    var q = function (s) { return ov.querySelector(s); }, row = q('#ed-r');
+    if (row) for (var i = 1; i <= (G ? 10 : 5); i++) (function (n) {
+      var b = document.createElement('button');
+      b.className = G ? 'num-rating-btn' : 'emoji-btn';
+      b.textContent = G ? n : AppUtils.ratingToEmoji(n);
+      if (n === rating) b.classList.add('selected');
+      b.onclick = function () {
+        row.querySelectorAll('.selected').forEach(function (x) { x.classList.remove('selected'); });
+        b.classList.add('selected'); rating = n;
+      };
+      row.appendChild(b);
+    })(i);
+    q('#ed-x').onclick = function () { ov.remove(); };
+    ov.addEventListener('click', function (e2) { if (e2.target === ov) ov.remove(); });
+    q('#ed-ok').onclick = function () {
+      var d = { review: q('#ed-v').value.trim() || null };
+      if (!wl) {
+        var m = +q('#ed-m').value, yv = +q('#ed-y').value;
+        if (yv === now.getFullYear() && m > now.getMonth() + 1) return AppUtils.showToast('Pick a past or current month.');
+        d.monthWatched = m; d.yearWatched = yv;
+      }
+      if (row) {
+        if (!G && !rating) return AppUtils.showToast('Pick a rating.');
+        if (rating) d[G ? 'gameRating' : 'rating'] = rating;
+      }
+      if (q('#ed-h')) d.playtime = parseInt(q('#ed-h').value) || null;
+      if (q('#ed-w')) d.rewatchCount = Math.max(0, parseInt(q('#ed-w').value) || 0);
+      if (q('#ed-d')) d.dropReason = q('#ed-d').value.trim() || null;
+      this.disabled = true;
+      AppDB.updateEntry(uid, entryId, d).then(function () { location.reload(); })
+        .catch(function () { AppUtils.showToast('Failed to save.'); });
+    };
+    document.body.appendChild(ov);
+  }
+
   function openMoveModal(entry) {
     AppDB.getPlaylists(uid).then(function (playlists) {
       var relevant = playlists.filter(function (p) {
@@ -218,7 +275,7 @@ AppAuth.requireAuth(function (user) {
       });
       var list = document.getElementById('move-playlist-list');
       list.innerHTML = relevant.map(function (p) {
-        return '<button class="btn btn-ghost" data-pid="' + p.id + '" style="width:100%;margin-bottom:8px;text-align:left">' + p.name + '</button>';
+        return '<button class="btn btn-ghost" data-pid="' + p.id + '" style="width:100%;margin-bottom:8px;text-align:left">' + AppUtils.esc(p.name) + '</button>';
       }).join('') || '<p class="text-sm text-muted">No other playlists yet.</p>';
 
       list.querySelectorAll('button[data-pid]').forEach(function (btn) {

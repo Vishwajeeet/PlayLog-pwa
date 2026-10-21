@@ -6,7 +6,28 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+window.AppTheme = {
+  apply: function () {
+    var r = document.documentElement, t = localStorage.getItem('pl-theme') || 'dark', a = localStorage.getItem('pl-accent');
+    if (t === 'system') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    r.dataset.theme = t;
+    if (a && /^#[0-9a-f]{6}$/i.test(a)) {
+      r.style.setProperty('--accent', a);
+      r.style.setProperty('--accent-dim', 'color-mix(in srgb,' + a + ' 15%,transparent)');
+    } else { r.style.removeProperty('--accent'); r.style.removeProperty('--accent-dim'); }
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = t === 'light' ? '#f4f2ec' : '#0d0d0d';
+  }
+};
+AppTheme.apply();
+(function () { var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = '/css/theme.css'; document.head.appendChild(l); })();
+
 window.AppUtils = {
+
+  esc: function (s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  },
 
   roundRectPath: function(ctx, x, y, w, h, r) {
     ctx.beginPath();

@@ -1,8 +1,8 @@
-var CACHE = 'playlog-v12';
+var CACHE = 'playlog-v13';
 
 var SHELL = [
   '/index.html', '/home.html', '/playlist.html', '/add.html', '/stats.html', '/entry.html', '/account.html',
-  '/css/main.css', '/css/home.css', '/css/whatsnew.css',
+  '/css/main.css', '/css/home.css', '/css/whatsnew.css', '/css/theme.css',
   '/js/config.js', '/js/firebase-init.js', '/js/auth.js', '/js/utils.js', '/js/firestore.js',
   '/js/tmdb.js', '/js/rawg.js', '/js/flow.js', '/js/backup.js', '/js/whatsnew.js', '/js/home.js', '/js/account.js', '/js/playlist.js', '/js/add.js', '/js/stats.js', '/js/entry.js'
 ];

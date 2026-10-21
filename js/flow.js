@@ -1,10 +1,34 @@
 window.AppFlow = {
+  undo: function (uid, id, data) {
+    try { sessionStorage.setItem('pl-undo', JSON.stringify({ uid: uid, id: id, data: AppBackup._ser(data) })); } catch (e) {}
+  },
+
+  showUndo: function (uid, onDone) {
+    var u = null;
+    try { u = JSON.parse(sessionStorage.getItem('pl-undo') || 'null'); } catch (e) {}
+    sessionStorage.removeItem('pl-undo');
+    if (!u || u.uid !== uid) return;
+    var tt = document.getElementById('toast'); if (tt) tt.classList.remove('show');
+    var bar = document.createElement('div');
+    bar.className = 'undo-bar';
+    bar.innerHTML = '<span>Entry deleted</span><button type="button">Undo</button>';
+    document.body.appendChild(bar);
+    var timer = setTimeout(function () { bar.remove(); }, 7000), btn = bar.querySelector('button');
+    btn.onclick = function () {
+      clearTimeout(timer); btn.disabled = true; btn.textContent = '…';
+      db.collection('users').doc(uid).collection('entries').doc(u.id).set(AppBackup._de(u.data)).then(function () {
+        localStorage.removeItem('pl-entries'); bar.remove();
+        AppUtils.showToast('Restored ✓');
+        if (onDone) onDone();
+      }).catch(function () { btn.disabled = false; btn.textContent = 'Undo'; AppUtils.showToast('Undo failed.'); });
+    };
+  },
   rewatch: function (title) {
     return new Promise(function (res) {
       var ov = document.createElement('div');
       ov.className = 'modal-overlay open';
       ov.innerHTML = '<div class="modal-box"><p class="modal-title">Already in your collection</p>' +
-        '<p style="color:var(--text-muted);margin-bottom:20px">Is this a rewatch of ' + title + '?</p>' +
+        '<p style="color:var(--text-muted);margin-bottom:20px">Is this a rewatch of ' + AppUtils.esc(title) + '?</p>' +
         '<button class="btn btn-primary" data-v="yes" style="margin-bottom:8px">Yes, count a rewatch</button>' +
         '<button class="btn btn-ghost" data-v="new" style="margin-bottom:8px">No, add as new entry</button>' +
         '<button class="btn btn-ghost" data-v="">Cancel</button></div>';
@@ -43,12 +67,12 @@ window.AppFlow = {
       ov.className = 'modal-overlay open';
       ov.innerHTML = '<div class="modal-box" style="max-height:90vh;overflow-y:auto">' +
         '<p class="modal-title">' + ({ completed: 'Mark as Completed', playing: 'Start Playing', dropped: 'Mark as Dropped' })[status] + '</p>' +
-        '<p class="modal-entry-title">' + entry.title + '</p>' +
+        '<p class="modal-entry-title">' + AppUtils.esc(entry.title) + '</p>' +
         (play ? '' : '<label class="label">Rating (1–10)' + (done ? ' *' : '') + '</label><div class="number-rating-row" id="aw-rate" style="margin-bottom:16px"></div>') +
         '<label class="label">' + (play ? 'Started' : 'When did you play it?') + '</label>' +
         '<div style="display:flex;gap:8px;margin-bottom:16px"><select id="aw-m" class="input-field">' + mo + '</select><select id="aw-y" class="input-field">' + yr + '</select></div>' +
         '<label class="label">Hours played (optional)</label>' +
-        '<input type="number" id="aw-h" class="input-field" min="0" max="9999" value="' + (entry.playtime || '') + '" style="margin-bottom:16px">' +
+        '<input type="number" id="aw-h" class="input-field" min="0" max="9999" value="' + (Number(entry.playtime) || '') + '" style="margin-bottom:16px">' +
         (drop ? '<label class="label">Reason for dropping (optional)</label><textarea id="aw-r" class="input-field" rows="2" style="resize:none;margin-bottom:16px"></textarea>' : '') +
         (play ? '' : '<label class="label">Review (optional)</label><textarea id="aw-v" class="input-field" rows="3" style="resize:none"></textarea>') +
         '<div class="modal-actions"><button class="btn btn-ghost" id="aw-x">Cancel</button>' +
