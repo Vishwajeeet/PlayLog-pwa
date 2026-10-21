@@ -471,6 +471,34 @@ function applyYearFilter() {
     applyYearFilter();
   });
 
+  (function () {
+    var bar = document.getElementById('type-pills');
+    var lastY = window.scrollY;
+    var threshold = 8;
+    window.addEventListener('scroll', function () {
+      if (window.innerWidth > 700) {
+        bar.classList.remove('is-hidden');
+        lastY = window.scrollY;
+        return;
+      }
+      if (document.querySelector('.modal-overlay.open')) {
+        lastY = window.scrollY;
+        return;
+      }
+      var y = window.scrollY;
+      if (y < 80) {
+        bar.classList.remove('is-hidden');
+        lastY = y;
+      } else if (y < lastY - threshold) {
+        bar.classList.remove('is-hidden');
+        lastY = y;
+      } else if (y > lastY + threshold && y > 120) {
+        bar.classList.add('is-hidden');
+        lastY = y;
+      }
+    }, { passive: true });
+  })();
+
   var goAddAfter = false;
 
   function openCreate(go) {

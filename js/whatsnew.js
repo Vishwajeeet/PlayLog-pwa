@@ -2,16 +2,17 @@
   // To announce a feature later: push a new object with a NEW id. Only the latest one is ever shown.
   var RELEASES = [
     {
-      id: 'backup-drag-v2',
+      id: 'appearance-backup-drag-v3',
       icon: '✨',
       title: 'What\u2019s New',
-      sub: 'Two upgrades for your Playlog.',
-      why: 'Keep your data safe and your playlists the way you like.',
+      sub: 'Make Playlog yours, and keep it safe.',
+      why: 'Choose your look, protect your library, and organize playlists your way.',
       steps: [
-        ['🛡️', 'Backup & Restore', 'Settings → Backup & Restore. Move everything to any account.'],
-        ['↕️', 'Drag Playlists', 'Hold a playlist, then drag it to a new position.']
+        ['🎨', 'Personalize the look', 'Settings → Appearance. Pick a dark, light, or device-matched theme and choose an accent colour.'],
+        ['🛡️', 'Backup & Restore', 'Settings → Backup & Restore. Download your library or restore it from a backup file.'],
+        ['↕️', 'Reorder playlists', 'On Home, hold a playlist and drag it to where you want it.']
       ],
-      tip: 'Turn on weekly auto-backup so you never lose your data.',
+      tip: 'Set up weekly auto-backups in Settings to keep a recent copy of your data.',
       cta: { label: 'Turn on weekly auto-backup', prefs: { autoBackup: 'weekly' }, done: '✓ Auto-backup is on' },
       go: { label: 'Open Settings', href: '/account.html' }
     }
