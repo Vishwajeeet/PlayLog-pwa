@@ -2,17 +2,16 @@
   // To announce a feature later: push a new object with a NEW id. Only the latest one is ever shown.
   var RELEASES = [
     {
-      id: 'backup-restore-v1',
-      icon: '🛡️',
-      title: 'Backup & Restore',
-      sub: 'Your entire Playlog, safe in one file.',
-      why: 'Everything you log lives under your Google account. If you ever lose access to it, your playlists, ratings, reviews and stats go with it. A backup lets you bring all of it into any account in seconds.',
+      id: 'backup-drag-v2',
+      icon: '✨',
+      title: 'What\u2019s New',
+      sub: 'Two upgrades for your Playlog.',
+      why: 'Keep your data safe and your playlists the way you like.',
       steps: [
-        ['📍', 'Where to find it', 'Profile photo (top right) → Settings → Backup & Restore'],
-        ['⬇️', 'Backup now', 'One file with every entry, playlist and setting'],
-        ['♻️', 'Restore anywhere', 'Sign in to any account, pick the file, and it all comes back']
+        ['🛡️', 'Backup & Restore', 'Settings → Backup & Restore. Move everything to any account.'],
+        ['↕️', 'Drag Playlists', 'Hold a playlist, then drag it to a new position.']
       ],
-      tip: 'We recommend turning on weekly auto-backup. Playlog downloads a fresh file whenever you open the app and a week has passed. Keep the files somewhere safe, like Drive or email.',
+      tip: 'Turn on weekly auto-backup so you never lose your data.',
       cta: { label: 'Turn on weekly auto-backup', prefs: { autoBackup: 'weekly' }, done: '✓ Auto-backup is on' },
       go: { label: 'Open Settings', href: '/account.html' }
     }

@@ -292,6 +292,11 @@ function applyYearFilter() {
 }
 
   function renderPlaylists(playlists, entries) {
+    renderPlaylists0(playlists, entries);
+    addNewTile();
+  }
+
+  function renderPlaylists0(playlists, entries) {
 
     var grid =
       document.getElementById(
@@ -305,7 +310,7 @@ function applyYearFilter() {
       return ACTIVE_TAB === 'games' ? t === 'game' : t !== 'game';
     });
 
-    if (playlists.length === 0) {
+    if (playlists.length === 0 && ACTIVE_TAB === 'games') {
 
       document.getElementById(
         'empty-playlists'
@@ -398,6 +403,8 @@ function applyYearFilter() {
 
       );
 
+      card.dataset.pid = playlist.id;
+      card.setAttribute('draggable', 'false');
       card.querySelector('.btn-playlist-menu').addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -411,12 +418,15 @@ function applyYearFilter() {
   }
 
   function updateFabVisibility() {
-    document.getElementById('fab-create').style.display = ACTIVE_TAB === 'games' ? 'none' : 'flex';
-    document.getElementById('fab-add-game').style.display = ACTIVE_TAB === 'games' ? 'flex' : 'none';
+    document.getElementById('fab-create').style.display = 'none';
+    document.getElementById('fab-add-game').style.display = 'flex';
   }
 
   document.getElementById('fab-add-game').addEventListener('click', function() {
-    window.location.href = '/add.html?type=game';
+    if (ACTIVE_TAB === 'games') { window.location.href = '/add.html?type=game'; return; }
+    var mp = ALL_PLAYLISTS.filter(function (p) { return (p.type || 'media') !== 'game'; });
+    if (!mp.length) { openCreate(true); return; }
+    window.location.href = '/add.html?type=media';
   });
 
   document.getElementById('type-pills').addEventListener('click', function(e) {
@@ -432,6 +442,103 @@ function applyYearFilter() {
     updateFabVisibility();
     applyYearFilter();
   });
+
+  var goAddAfter = false;
+
+  function openCreate(go) {
+    goAddAfter = !!go;
+    var m = document.getElementById('create-modal');
+    m.dataset.type = 'media';
+    m.classList.add('open');
+  }
+
+  function addNewTile() {
+    if (ACTIVE_TAB === 'games') return;
+    var t = document.createElement('button');
+    t.type = 'button';
+    t.className = 'playlist-card new-tile';
+    t.innerHTML = '<span>+</span>New Playlist';
+    t.addEventListener('click', function () { openCreate(false); });
+    grid.appendChild(t);
+  }
+
+  // Hold a playlist, then drag it to a new position
+  (function () {
+    var T, d = null, sx = 0, sy = 0, moved = false;
+    function cardOf(t) { return t && t.closest ? t.closest('.playlist-card[data-pid]') : null; }
+
+    function place() {
+      var el = document.elementFromPoint(d.px, d.py), t = cardOf(el);
+      if (t && t !== d.c) {
+        var kids = Array.prototype.slice.call(grid.children);
+        if (kids.indexOf(d.c) < kids.indexOf(t)) grid.insertBefore(d.c, t.nextSibling);
+        else grid.insertBefore(d.c, t);
+      }
+      var r = d.c.getBoundingClientRect();
+      d.tx = d.px - d.gx - (r.left - d.tx);
+      d.ty = d.py - d.gy - (r.top - d.ty);
+      d.c.style.transform = 'translate(' + d.tx + 'px,' + d.ty + 'px) scale(1.04)';
+    }
+
+    function end() {
+      clearTimeout(T);
+      if (!d) return;
+      var c = d.c; d = null;
+      moved = true;
+      setTimeout(function () { moved = false; }, 400);
+      c.classList.remove('pl-drag');
+      c.style.transform = '';
+      c.style.pointerEvents = '';
+      var ids = Array.prototype.map.call(grid.querySelectorAll('.playlist-card[data-pid]'), function (n) { return n.dataset.pid; });
+      ids.forEach(function (id, i) {
+        var p = ALL_PLAYLISTS.filter(function (x) { return x.id === id; })[0];
+        if (p) p.order = i;
+      });
+      ALL_PLAYLISTS.sort(function (a, b) {
+        return (a.order != null ? a.order : 1e6) - (b.order != null ? b.order : 1e6);
+      });
+      AppDB.reorderPlaylists(uid, ids).catch(function () { AppUtils.showToast('Failed to save order.'); });
+    }
+
+    grid.addEventListener('contextmenu', function (e) { if (cardOf(e.target)) e.preventDefault(); });
+    grid.addEventListener('click', function (e) {
+      if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; }
+    }, true);
+    grid.addEventListener('touchmove', function (e) { if (d) e.preventDefault(); }, { passive: false });
+
+    grid.addEventListener('pointerdown', function (e) {
+      var c = cardOf(e.target);
+      if (!c || e.target.closest('.btn-playlist-menu') || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      sx = e.clientX; sy = e.clientY;
+      var pid = e.pointerId;
+      clearTimeout(T);
+      T = setTimeout(function () {
+        var r = c.getBoundingClientRect();
+        d = { c: c, gx: sx - r.left, gy: sy - r.top, tx: 0, ty: 0, px: sx, py: sy };
+        try { grid.setPointerCapture(pid); } catch (x) {}
+        c.classList.add('pl-drag');
+        c.style.pointerEvents = 'none';
+        c.style.transform = 'scale(1.04)';
+        if (navigator.vibrate) navigator.vibrate(15);
+        place();
+      }, 380);
+    });
+
+    grid.addEventListener('pointermove', function (e) {
+      if (!d) {
+        if (Math.hypot(e.clientX - sx, e.clientY - sy) > 8) clearTimeout(T);
+        return;
+      }
+      e.preventDefault();
+      d.px = e.clientX; d.py = e.clientY;
+      if (e.clientY < 90) window.scrollBy(0, -14);
+      else if (e.clientY > window.innerHeight - 90) window.scrollBy(0, 14);
+      place();
+    });
+
+    grid.addEventListener('pointerup', end);
+    grid.addEventListener('pointercancel', end);
+  })();
 
   var createModal =
     document.getElementById(
@@ -490,7 +597,12 @@ function applyYearFilter() {
       createBtn.textContent =
         'Creating...';
 
-      AppDB.createPlaylist(uid, name, createModal.dataset.type || 'media')
+      AppDB.createPlaylist(uid, name, createModal.dataset.type || 'media').then(function (r) {
+        if (goAddAfter) {
+          window.location.href = '/add.html?type=media&playlistId=' + r.id;
+          return new Promise(function () {});
+        }
+      })
 
         .then(function() {
 

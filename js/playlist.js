@@ -1195,6 +1195,17 @@ AppAuth.requireAuth(function (user) {
       // Title (wraps to 2 lines max)
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 62px Inter, sans-serif';
+      if (entry.review) {
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.7)';
+        ctx.shadowBlur = 10;
+        ctx.font = 'italic 500 30px Inter, sans-serif';
+        ctx.fillStyle = '#e8e8e8';
+        wrapText('\u201C' + entry.review + '\u201D', 70, 590, 940, 42, 3);
+        ctx.restore();
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 62px Inter, sans-serif';
       wrapText(entry.title, 70, 760, 940, 68, 2);
 
       // Type badge

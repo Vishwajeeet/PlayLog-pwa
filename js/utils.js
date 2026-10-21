@@ -1,4 +1,11 @@
 // Utility functions for DOM manipulation, formatting, and helpers
+if ('serviceWorker' in navigator) {
+  var _hadCtl = !!navigator.serviceWorker.controller, _rl = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (_hadCtl && !_rl) { _rl = true; location.reload(); }
+  });
+}
+
 window.AppUtils = {
 
   roundRectPath: function(ctx, x, y, w, h, r) {

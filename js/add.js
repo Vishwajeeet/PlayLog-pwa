@@ -89,6 +89,7 @@ function initPage() {
       // to switch between options that don't exist. Hide it entirely.
       var tabsWrap = document.querySelector('.media-type-tabs');
       if (tabsWrap) tabsWrap.style.display = playlistType === 'game' ? 'none' : 'flex';
+      setupPlaylistChip();
     });
 
   buildYearSelect('year-select', 'selectedYear');
@@ -101,6 +102,54 @@ function initPage() {
   setupMediaTabs();
   setupBackButtons();
   setupCompletionButtons();
+}
+
+function setupPlaylistChip() {
+  if (state.type === 'game') return;
+  var chip = document.getElementById('pl-chip'), pls = [];
+  function label() {
+    var p = pls.filter(function (x) { return x.id === state.playlistId; })[0];
+    chip.textContent = (p ? 'Adding to: ' + p.name : 'Choose a playlist') + ' ▾';
+  }
+  function pick(id) {
+    state.playlistId = id;
+    if (id) try { localStorage.setItem('pl-last-playlist', id); } catch (e) {}
+    label(); checkCanAdd();
+  }
+  AppDB.getPlaylists(state.uid).then(function (all) {
+    pls = all.filter(function (p) { return (p.type || 'media') !== 'game'; });
+    if (!pls.some(function (x) { return x.id === state.playlistId; })) {
+      var last = localStorage.getItem('pl-last-playlist');
+      var f = pls.filter(function (x) { return x.id === last; })[0] || pls[0];
+      state.playlistId = f ? f.id : null;
+    }
+    chip.style.display = 'block'; label();
+  });
+  chip.onclick = function () {
+    var ov = document.createElement('div');
+    ov.className = 'modal-overlay open';
+    ov.innerHTML = '<div class="modal-box"><p class="modal-title">Add to playlist</p><div id="pk-list" style="max-height:280px;overflow-y:auto"></div>' +
+      '<div style="display:flex;gap:8px;margin-top:12px"><input id="pk-new" class="input-field" placeholder="New playlist name" maxlength="40">' +
+      '<button class="btn btn-primary" id="pk-mk" style="width:auto;white-space:nowrap">+ Create</button></div></div>';
+    var list = ov.querySelector('#pk-list');
+    pls.forEach(function (p) {
+      var b = document.createElement('button');
+      b.className = 'playlist-list-item';
+      b.textContent = (p.id === state.playlistId ? '✓ ' : '') + p.name;
+      b.onclick = function () { pick(p.id); ov.remove(); };
+      list.appendChild(b);
+    });
+    ov.querySelector('#pk-mk').onclick = function () {
+      var n = ov.querySelector('#pk-new').value.trim();
+      if (!n) return;
+      this.disabled = true;
+      AppDB.createPlaylist(state.uid, n, 'media').then(function (r) {
+        pls.push({ id: r.id, name: n }); pick(r.id); ov.remove();
+      }).catch(function () { AppUtils.showToast('Failed. Try again.'); });
+    };
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+  };
 }
 
 function setupMediaTabs() {
@@ -260,7 +309,7 @@ function checkCanAdd() {
   if (state.type === 'game') {
     canAdd = !!state.selectedStatus && (state.selectedStatus === 'wishlist' || state.selectedStatus === 'playing' || !!state.gameMonth);
   } else {
-    canAdd = !!(state.selectedMonth && state.selectedRating);
+    canAdd = !!(state.selectedMonth && state.selectedRating && state.playlistId);
   }
   document.getElementById('btn-add').disabled = !canAdd;
 }
@@ -430,7 +479,8 @@ function showStep3() {
 
 function setupBackButtons() {
   document.getElementById('btn-back-s1').addEventListener('click', function() {
-    window.location.href = state.playlistId ? '/playlist.html?id=' + state.playlistId : '/home.html?tab=games';
+    var pp = new URLSearchParams(window.location.search).get('playlistId');
+    window.location.href = pp ? '/playlist.html?id=' + pp : (state.type === 'game' ? '/home.html?tab=games' : '/home.html');
   });
   document.getElementById('btn-back-s2').addEventListener('click', function() { showStep(1); });
   document.getElementById('btn-back-s3').addEventListener('click', function() {
@@ -510,6 +560,7 @@ document.getElementById('btn-add').addEventListener('click', function() {
 
     playlistPromise.then(function(pid) {
       entry.playlistId = pid;
+      if (!isGame) try { localStorage.setItem('pl-last-playlist', pid); } catch (e) {}
       return AppDB.addEntry(state.uid, entry).then(function() { return pid; });
     })
       .then(function(pid) {

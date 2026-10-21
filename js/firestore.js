@@ -1,14 +1,33 @@
 // Firestore database operations for playlists and entries
 setTimeout(function () {
   var A = window.AppDB, all = A.getAllEntries;
+  var gp = A.getPlaylists;
+  A.getPlaylists = function (uid) {
+    return gp.call(A, uid).then(function (l) {
+      return l.map(function (p, i) { return [p, i]; }).sort(function (a, b) {
+        var x = a[0].order != null ? a[0].order : 1e6 + a[1], y = b[0].order != null ? b[0].order : 1e6 + b[1];
+        return x - y;
+      }).map(function (z) { return z[0]; });
+    });
+  };
+  A.reorderPlaylists = function (uid, ids) {
+    var b = db.batch();
+    ids.forEach(function (id, i) { b.update(db.collection('users').doc(uid).collection('playlists').doc(id), { order: i }); });
+    return b.commit();
+  };
+  var rw = function (l) {
+    return l.map(function (e) {
+      return e.rewatchCount && e.runtime ? Object.assign({}, e, { runtime: e.runtime * (1 + e.rewatchCount) }) : e;
+    });
+  };
   A.getAllEntries = function (uid) {
     try {
       var c = JSON.parse(sessionStorage.getItem('pl-entries') || 'null');
-      if (c && c.uid === uid && Date.now() - c.t < 60000) return Promise.resolve(c.data);
+      if (c && c.uid === uid && Date.now() - c.t < 60000) return Promise.resolve(rw(c.data));
     } catch (e) {}
     return all.call(A, uid).then(function (d) {
       try { sessionStorage.setItem('pl-entries', JSON.stringify({ uid: uid, t: Date.now(), data: d })); } catch (e) {}
-      return d;
+      return rw(d);
     });
   };
   ['addEntry', 'deleteEntry', 'updateEntry', 'moveEntry', 'deletePlaylist'].forEach(function (k) {

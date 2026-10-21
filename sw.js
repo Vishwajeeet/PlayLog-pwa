@@ -1,4 +1,4 @@
-var CACHE = 'playlog-v11';
+var CACHE = 'playlog-v12';
 
 var SHELL = [
   '/index.html', '/home.html', '/playlist.html', '/add.html', '/stats.html', '/entry.html', '/account.html',
@@ -26,7 +26,7 @@ self.addEventListener('fetch', function (e) {
   url.search = '';
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then(function (cached) {
-      var net = fetch(req).then(function (res) {
+      var net = fetch(req, { cache: 'no-cache' }).then(function (res) {
         if (res && res.ok && !res.redirected) {
           var copy = res.clone();
           caches.open(CACHE).then(function (c) { c.put(url.href, copy); });
@@ -35,7 +35,7 @@ self.addEventListener('fetch', function (e) {
       }).catch(function () {
         return cached || caches.match('/home.html');
       });
-      return cached || net;
+      return net;
     })
   );
 });
