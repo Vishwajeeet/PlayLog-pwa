@@ -31,6 +31,8 @@
     var th = localStorage.getItem('pl-theme') || 'dark', ac = localStorage.getItem('pl-accent') || '#c9a84c';
     document.querySelectorAll('#pref-theme .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === th); });
     document.querySelectorAll('#pref-accent button').forEach(function (b) { b.classList.toggle('active', b.dataset.c === ac); });
+    var bk = localStorage.getItem('pl-books') === '1';
+    document.querySelectorAll('#pref-books .toggle-btn').forEach(function (b) { b.classList.toggle('active', (b.dataset.v === 'on') === bk); });
     var au = prefs.autoBackup || 'off';
     document.querySelectorAll('#pref-auto .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === au); });
     if (prefs.lastBackup) $('last-backup').textContent = 'Last backup: ' + new Date(prefs.lastBackup).toLocaleString();
@@ -63,6 +65,8 @@
       if (prefs.theme) localStorage.setItem('pl-theme', prefs.theme);
       if (prefs.accent) localStorage.setItem('pl-accent', prefs.accent);
       AppTheme.apply();
+      if (prefs.books) localStorage.setItem('pl-books', '1'); else localStorage.removeItem('pl-books');
+      AppUtils.booksPill();
       AppBackup.auto(user.uid, prefs, save);
       cacheAvatar(); paint(); marks();
     }).catch(function () {});
@@ -116,6 +120,12 @@
     AppBackup.download(user.uid).then(function () {
       save({ lastBackup: Date.now() }); marks(); AppUtils.showToast('Backup downloaded ✓');
     }).catch(function () { AppUtils.showToast('Backup failed.'); });
+  });
+  $('pref-books').addEventListener('click', function (e) {
+    var b = e.target.closest('.toggle-btn'); if (!b) return;
+    var on = b.dataset.v === 'on';
+    if (on) localStorage.setItem('pl-books', '1'); else localStorage.removeItem('pl-books');
+    save({ books: on }); marks();
   });
   $('pref-theme').addEventListener('click', function (e) {
     var b = e.target.closest('.toggle-btn'); if (!b) return;

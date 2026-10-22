@@ -19,7 +19,7 @@ window.AppBackup = {
     });
   },
   _clean: function (e) {
-    ['season', 'rawgId', 'tmdbId', 'runtime', 'monthWatched', 'yearWatched', 'rating', 'gameRating', 'playtime', 'rewatchCount', 'releaseYear'].forEach(function (k) {
+    ['season', 'rawgId', 'tmdbId', 'runtime', 'monthWatched', 'yearWatched', 'rating', 'gameRating', 'playtime', 'rewatchCount', 'reReadCount', 'releaseYear', 'pages', 'bookRating', 'finishMonth', 'finishYear'].forEach(function (k) {
       if (e[k] != null && typeof e[k] !== 'number') e[k] = Number(e[k]) || null;
     });
     if (e.poster != null) e.poster = String(e.poster).replace(/["'<>\s\\]/g, '') || null;

@@ -18,6 +18,17 @@
     }
   ];
 
+  RELEASES.push({
+    id: 'books-v3', icon: '📚', title: 'Books tab',
+    sub: 'Track what you read.',
+    why: 'An optional third tab with shelves, stats and trending reads.',
+    steps: [
+      ['⚙️', 'Turn it on', 'Settings → Features → Books tab'],
+      ['📥', 'Import a list', 'Add many books at once from a .txt file']
+    ],
+    tip: 'It is off by default, so nothing changes unless you turn it on.',
+    go: { label: 'Open Settings', href: '/account.html' }
+  });
   var latest = RELEASES[RELEASES.length - 1];
   var done = false;
 

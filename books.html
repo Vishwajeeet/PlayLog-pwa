@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>Books — Playlog</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600&display=swap">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/books.css">
+</head>
+<body class="home-page">
+  <div class="app-container">
+    <main class="page">
+      <header class="page-header">
+        <button class="back-btn" id="btn-back">←</button>
+        <h1 class="page-title">Books</h1>
+        <div style="width:40px"></div>
+      </header>
+
+      <div class="type-pills has-3" id="type-pills">
+        <button class="type-pill" data-tab="media" type="button">🎬 Movies</button>
+        <button class="type-pill" data-tab="games" type="button">🎮 Games</button>
+        <button class="type-pill active" data-tab="books" type="button">Books</button>
+      </div>
+
+      <section id="bk-hero" class="bk-hero"></section>
+
+      <div class="bk-head bk-library-head">
+        <h3 class="bk-serif">Library</h3>
+        <div class="toggle-pair bk-view" id="bk-view" aria-label="Library view">
+          <button class="toggle-btn" type="button" data-view="grid" aria-label="Grid view" title="Grid view">▦</button>
+          <button class="toggle-btn" type="button" data-view="list" aria-label="List view" title="List view">☰</button>
+        </div>
+      </div>
+      <div class="toggle-pair" id="bk-shelf" style="grid-template-columns:1fr 1fr 1fr"></div>
+      <div class="bk-bar bk-library-bar">
+        <label class="bk-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+          <input id="bk-q" class="input-field" placeholder="Search books or authors…" aria-label="Search books or authors">
+        </label>
+        <div class="bk-controls">
+          <select id="bk-sort" class="input-field">
+            <option value="recent">Recently added</option>
+            <option value="title">A–Z</option>
+            <option value="rating">Top rated</option>
+            <option value="pages">Longest</option>
+            <option value="finished">Recently finished</option>
+          </select>
+        </div>
+      </div>
+      <div id="bk-grid" class="bk-grid"></div>
+
+      <div class="bk-head"><h3 class="bk-serif">Your stats</h3></div>
+      <div class="bk-bar">
+        <select id="bk-py" class="input-field"></select>
+        <select id="bk-pm" class="input-field" style="display:none">
+          <option value="0">Full year</option><option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+          <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option><option value="7">Jul</option>
+          <option value="8">Aug</option><option value="9">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+        </select>
+      </div>
+      <div id="bk-stats" class="bk-viz"></div>
+
+      <div class="bk-head"><h3 class="bk-serif">Want to Read insights</h3></div>
+      <div id="bk-want-stats" class="bk-viz"></div>
+
+      <div class="bk-head"><h3 class="bk-serif">Books Wrapped</h3></div>
+      <p class="text-sm text-muted bk-wrap-copy">A shareable recap of your reading.</p>
+      <div class="bk-wrap-controls">
+        <select id="bk-wrap-year" class="input-field" aria-label="Wrapped period"></select>
+        <button class="btn btn-primary" id="bk-wrap-generate" type="button">✨ Generate Wrapped</button>
+      </div>
+      <div id="bk-wrap-canvas" class="bk-wrap-canvas"></div>
+      <button class="btn btn-ghost bk-wrap-download" id="bk-wrap-download" type="button" style="display:none">⬇ Download Card</button>
+    </main>
+  </div>
+
+  <button class="fab" id="fab-add"><span>+</span> Add Book</button>
+  <input type="file" id="bk-file" accept=".txt,text/plain" hidden>
+  <div id="toast" class="toast"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/firebase-init.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/firestore.js"></script>
+  <script src="/js/openlibrary.js"></script>
+  <script src="/js/books.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+    window.addEventListener('pageshow', function (e) { if (e.persisted) window.location.reload(); });
+  </script>
+</body>
+</html>

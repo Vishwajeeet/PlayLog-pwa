@@ -24,6 +24,15 @@ AppTheme.apply();
 
 window.AppUtils = {
 
+  booksPill: function () {
+    var box = document.getElementById('type-pills'); if (!box) return;
+    var on = localStorage.getItem('pl-books') === '1', p = box.querySelector('[data-tab="books"]');
+    if (on && !p) { p = document.createElement('button'); p.className = 'type-pill'; p.type = 'button'; p.dataset.tab = 'books'; p.textContent = 'Books'; box.appendChild(p); }
+    if (p) p.style.display = on ? '' : 'none';
+    box.classList.toggle('has-3', on);
+    var m = box.querySelector('[data-tab="media"]'); if (m) m.textContent = on ? 'Movies' : 'Movies & Series';
+  },
+
   esc: function (s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');

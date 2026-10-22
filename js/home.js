@@ -3,6 +3,7 @@ var ALL_ENTRIES = [];
 var ALL_PLAYLISTS = [];
 var ACTIVE_YEAR = 'all';
 var COVERS = {};
+setTimeout(function () { AppUtils.booksPill(); }, 0);
 sessionStorage.removeItem('pl-back');
 var _tp = new URLSearchParams(window.location.search).get('tab');
 var _dp = localStorage.getItem('pl-tab-pref') || 'media';
@@ -462,6 +463,7 @@ function applyYearFilter() {
     if (!btn) return;
     document.querySelectorAll('.type-pill').forEach(function(b) { b.classList.remove('active'); });
     btn.classList.add('active');
+    if (btn.dataset.tab === 'books') { window.location.href = '/books.html'; return; }
     ACTIVE_TAB = btn.dataset.tab === 'games' ? 'games' : 'media';
     localStorage.setItem('pl-last-tab', ACTIVE_TAB);
     var url = new URL(window.location.href);

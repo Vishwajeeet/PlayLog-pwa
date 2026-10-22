@@ -1,6 +1,12 @@
 // Firestore database operations for playlists and entries
 setTimeout(function () {
   var A = window.AppDB, all = A.getAllEntries;
+  A.getBooks = function (uid) {
+    return db.collection('users').doc(uid).collection('entries').where('type', '==', 'book').get().then(function (s) {
+      var t = function (x) { return x.addedAt && x.addedAt.toMillis ? x.addedAt.toMillis() : 9e15; };
+      return s.docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); }).sort(function (a, b) { return t(b) - t(a); });
+    });
+  };
   A.getCovers = function (uid) {
     return db.collection('users').doc(uid).collection('covers').get().then(function (s) {
       var m = {}; s.docs.forEach(function (d) { m[d.id] = d.data().data; }); return m;
@@ -39,7 +45,7 @@ setTimeout(function () {
     return b.commit();
   };
   var rw = function (l) {
-    return l.map(function (e) {
+    return l.filter(function (e) { return e.type !== 'book'; }).map(function (e) {
       return e.rewatchCount && e.runtime ? Object.assign({}, e, { runtime: e.runtime * (1 + e.rewatchCount) }) : e;
     });
   };
@@ -49,7 +55,7 @@ setTimeout(function () {
       if (c && c.uid === uid && Date.now() - c.t < 300000) return Promise.resolve(rw(c.data));
     } catch (e) {}
     return all.call(A, uid).then(function (d) {
-      try { localStorage.setItem('pl-entries', JSON.stringify({ uid: uid, t: Date.now(), data: d })); } catch (e) {}
+      try { localStorage.setItem('pl-entries', JSON.stringify({ uid: uid, t: Date.now(), data: d.filter(function (x) { return x.type !== 'book'; }) })); } catch (e) {}
       return rw(d);
     });
   };
