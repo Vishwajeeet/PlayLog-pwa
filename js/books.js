@@ -257,13 +257,25 @@
     if (b.pages) chips.push('<span class="bk-chip">' + Number(b.pages) + ' pages</span>');
     chips.push('<span class="bk-chip">' + (b.fiction === false ? 'Non-fiction' : 'Fiction') + '</span>');
     (b.genres || []).slice(0, 3).forEach(function (g) { chips.push('<span class="bk-chip">' + esc(g) + '</span>'); });
-    var ov = modal('<div class="modal-box bk-sheet"><div class="bk-det"><div class="bk-det-c">' + cov(b) + '</div><div class="bk-det-i"><h2 class="bk-serif">' + esc(b.title) + '</h2><p class="text-sm text-muted" style="margin-bottom:10px">' + esc(b.author) + '</p><div class="bk-chips">' + chips.join('') + '</div></div></div>' +
+    var ov = modal('<div class="modal-box bk-sheet bk-detail-modal"><button class="bk-detail-close" id="bd-x" type="button" aria-label="Close details">&times;</button><div class="bk-det"><div class="bk-det-c">' + cov(b) + '</div><div class="bk-det-i"><h2 class="bk-serif">' + esc(b.title) + '</h2><p class="text-sm text-muted" style="margin-bottom:10px">' + esc(b.author) + '</p><div class="bk-chips">' + chips.join('') + '</div></div></div>' +
       (rows.length ? '<div class="detail-card">' + rows.map(function (r) { return '<div class="detail-row"><span class="detail-label">' + r[0] + '</span><span class="detail-value">' + esc(r[1]) + '</span></div>'; }).join('') + '</div>' : '') +
       (hasReview ? '<div class="bk-quote">' + esc(b.review.trim()) + '</div>' : '<p class="bk-desc" id="bd-d"></p>') +
       (b.bookStatus === 'read' ? '<button class="btn btn-ghost bk-reread" id="bd-reread" type="button">↻ Mark as re-read</button>' : '') +
-      '<div class="modal-actions"><button class="btn btn-ghost" id="bd-x">Close</button><button class="btn btn-primary" id="bd-e">Edit</button></div></div>');
+      '<div class="modal-actions bk-detail-actions"><button class="btn btn-danger" id="bd-del">Delete</button><button class="btn btn-primary" id="bd-e">Edit</button></div></div>');
     ov.querySelector('#bd-x').onclick = function () { ov.remove(); };
     ov.querySelector('#bd-e').onclick = function () { ov.remove(); editor(b); };
+    ov.querySelector('#bd-del').onclick = function () {
+      if (!confirm('Delete this book?')) return;
+      this.disabled = true;
+      AppDB.deleteEntry(uid, b.id).then(function () {
+        ov.remove();
+        AppUtils.showToast('Deleted');
+        load();
+      }).catch(function () {
+        ov.querySelector('#bd-del').disabled = false;
+        AppUtils.showToast('Failed to delete.');
+      });
+    };
     var rereadButton = ov.querySelector('#bd-reread');
     if (rereadButton) rereadButton.onclick = function () {
       var dates = Array.isArray(b.reReadDates) ? b.reReadDates.filter(function (date) { return /^\d{4}-\d{2}-\d{2}$/.test(date); }) : [];
@@ -594,7 +606,7 @@
       '<div id="be-read"><label class="label">Rating</label><div class="number-rating-row" id="be-r" style="margin-bottom:12px"></div>' +
       '<label class="label">Finished</label><input type="date" id="be-d" class="input-field" max="' + ymd() + '" value="' + esc(s.finishDate || ymd()) + '" style="margin-bottom:12px">' +
       '<label class="label">Your review</label><textarea id="be-v" class="input-field" rows="3" maxlength="2000" style="resize:none">' + esc(s.review) + '</textarea></div>' +
-      '<div class="modal-actions">' + (s.id ? '<button class="btn btn-danger" id="be-del">Delete</button>' : '') + '<button class="btn btn-ghost" id="be-x">Cancel</button><button class="btn btn-primary" id="be-ok">Save</button></div></div>');
+      '<div class="modal-actions"><button class="btn btn-ghost" id="be-x">Cancel</button><button class="btn btn-primary" id="be-ok">Save</button></div></div>');
     var q = function (x) { return ov.querySelector(x); };
     function sync() {
       q('#be-read').style.display = s.bookStatus === 'read' ? 'block' : 'none';
@@ -613,10 +625,6 @@
     q('#be-file').onchange = function () { var fl = this.files[0]; if (fl) shrink(fl, function (u) { s.poster = u; sync(); }); };
     q('#be-t').oninput = function () { s.title = this.value; if (!src(s.poster)) q('#be-cov').innerHTML = cov(s); };
     q('#be-x').onclick = function () { ov.remove(); };
-    if (s.id) q('#be-del').onclick = function () {
-      if (!confirm('Delete this book?')) return;
-      AppDB.deleteEntry(uid, s.id).then(function () { ov.remove(); AppUtils.showToast('Deleted'); load(); }).catch(function () { AppUtils.showToast('Failed to delete.'); });
-    };
     q('#be-ok').onclick = function () {
       var title = q('#be-t').value.trim(); if (!title) return AppUtils.showToast('Enter a title.');
       var st = s.bookStatus, sd = q('#be-s').value, fd = q('#be-d').value;
