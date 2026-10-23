@@ -106,7 +106,7 @@
     return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '"><polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>' +
       pts.map(function (p) { var c = p.split(','); return '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="2.6" fill="var(--accent)"/>'; }).join('') + '</svg>';
   }
-  function donut(parts) {
+  function donut(parts, centerLabel) {
     var tot = parts.reduce(function (s, p) { return s + p[1]; }, 0), C = 2 * Math.PI * 70, off = 0, segs = '', leg = '';
     parts.forEach(function (p) {
       if (!p[1]) return;
@@ -115,7 +115,7 @@
       off += len;
       leg += '<span class="dn-leg"><i style="background:' + p[2] + '"></i>' + esc(p[0]) + ' ' + p[1] + ' (' + Math.round(p[1] / tot * 100) + '%)</span>';
     });
-    return '<div class="viz-card dn-wrap"><div class="dn-box"><svg viewBox="0 0 200 200" class="dn-svg"><g transform="rotate(-90 100 100)">' + segs + '</g></svg><div class="dn-info"><b>' + tot + '</b><span>books</span></div></div><div class="dn-legend">' + leg + '</div></div>';
+    return '<div class="viz-card dn-wrap"><div class="dn-box"><svg viewBox="0 0 200 200" class="dn-svg"><g transform="rotate(-90 100 100)">' + segs + '</g></svg><div class="dn-info"><b>' + tot + '</b><span>' + esc(centerLabel || 'books') + '</span></div></div><div class="dn-legend">' + leg + '</div></div>';
   }
   function cols(v, lb, cls) {
     var active = v.map(function (count, i) { return { count: count, label: lb[i] }; }).filter(function (bin) { return bin.count > 0; });
@@ -157,7 +157,7 @@
     if (!l.length) { box.innerHTML = '<p class="bk-empty">No finished books in this period yet.</p>'; return; }
 
     var n = l.length, reReadTotal = all.filter(function (b) { return b._reRead && (Y === 'all' || b.finishYear === +Y) && (!M || b.finishMonth === M); }).length;
-    var pg = 0, rs = 0, rn = 0, ps = 0, pn = 0, fc = 0, gc = {}, byA = {};
+    var pg = 0, rs = 0, rn = 0, ps = 0, pn = 0, gc = {}, byA = {};
     var rc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], pb = [0, 0, 0, 0, 0, 0, 0, 0], TH = [100, 200, 300, 400, 500, 600, 1000];
     l.forEach(function (b) {
       pg += b.pages || 0;
@@ -165,7 +165,6 @@
       if (b.author) (byA[b.author] = byA[b.author] || []).push(b);
       if (b.bookRating >= 1 && b.bookRating <= 10) { rs += b.bookRating; rn++; rc[b.bookRating - 1]++; }
       (b.genres || []).forEach(function (g) { gc[g] = (gc[g] || 0) + 1; });
-      if (b.fiction !== false) fc++;
     });
 
     var now = new Date(), a, z;
@@ -189,14 +188,14 @@
       return { n: k, bs: bs, r: r, avg: r.length ? r.reduce(function (s, v) { return s + v; }, 0) / r.length : 0 };
     }).sort(function (x, y) { return y.bs.length - x.bs.length || y.avg - x.avg; }).slice(0, 5);
 
+    var genreColors = [acc, '#7c8aa5', '#7c3aed', '#22c55e', '#f97316', '#06b6d4', '#ec4899', '#a3a3a3'];
     box.innerHTML =
       '<div class="bk-num"><div class="bk-n"><b>' + n + '</b><span>Books read</span></div><div class="bk-n"><b>' + reReadTotal + '</b><span>Re-reads</span></div><div class="bk-n"><b>' + pg.toLocaleString() + '</b><span>Pages read</span></div>' +
       '<div class="bk-n"><b>' + Object.keys(byA).length + '</b><span>Authors</span></div><div class="bk-n"><b>' + (rn ? (rs / rn).toFixed(1) : '—') + '</b><span>Avg rating</span></div></div>' +
       '<p class="section-title">Reading pace</p><div class="viz-card"><p class="bk-serif bk-big">You read a book every ' + ev + (ev === 1 ? ' day' : ' days') + '</p>' + pr('Books', n) + (pg ? pr('Pages', pg) : '') + '</div>' +
-      '<div class="viz-pair"><div><p class="section-title">Fiction vs non-fiction</p>' + donut([['Fiction', fc, acc], ['Non-fiction', n - fc, '#7c8aa5']]) + '</div>' +
-      (gk.length ? '<div><p class="section-title">Top genres</p><div class="viz-card">' + gk.map(function (g) {
-        return '<div class="viz-row"><span>' + esc(g) + '</span><div><i style="width:' + Math.round(gc[g] / gc[gk[0]] * 100) + '%"></i></div><b>' + gc[g] + '</b></div>';
-      }).join('') + '</div></div>' : '') + '</div>' +
+      (gk.length ? '<p class="section-title">Top genres</p>' + donut(gk.map(function (g, i) {
+        return [g, gc[g], genreColors[i % genreColors.length]];
+      }), 'genre tags') : '') +
       '<div class="viz-pair bk-distribution"><div><p class="section-title">Ratings</p>' + (rn ? '<span class="bk-badge">Average ★ ' + (rs / rn).toFixed(2) + '</span>' + cols(rc, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) : '<p class="viz-empty">No rated books in this period.</p>') + '</div>' +
       '<div><p class="section-title">Page counts</p>' + (pn ? '<span class="bk-badge">Average ' + Math.round(ps / pn) + ' pages</span>' + cols(pb, ['100', '200', '300', '400', '500', '600', '1000', '1000+'], 'bk-pages') : '<p class="viz-empty">No page counts in this period.</p>') + '</div></div>' +
       (as.length ? '<p class="section-title">Most read authors</p><div class="viz-card">' + as.map(function (x) {
@@ -213,12 +212,10 @@
       box.innerHTML = '<p class="bk-empty">Your Want to Read shelf is empty. Add books to start building your reading insights.</p>';
       return;
     }
-    var pages = 0, pageBooks = 0, authors = {}, genres = {}, fiction = 0, knownType = 0, ratingTotal = 0, ratingCount = 0, ratedUsers = 0;
+    var pages = 0, pageBooks = 0, authors = {}, ratingTotal = 0, ratingCount = 0, ratedUsers = 0;
     want.forEach(function (book) {
       if (Number(book.pages) > 0) { pages += Number(book.pages); pageBooks++; }
       if (book.author) authors[book.author] = (authors[book.author] || 0) + 1;
-      (book.genres || []).forEach(function (genre) { genres[genre] = (genres[genre] || 0) + 1; });
-      if (book.fiction !== null && book.fiction !== undefined) { knownType++; if (book.fiction !== false) fiction++; }
       var rating = book.openLibraryRating && Number(book.openLibraryRating.average);
       if (book.openLibraryRatingFetched && rating > 0) {
         ratingTotal += rating;
@@ -226,25 +223,12 @@
         ratedUsers += Number(book.openLibraryRating.count) || 0;
       }
     });
-    var genreNames = Object.keys(genres).sort(function (a, b) { return genres[b] - genres[a]; }).slice(0, 6);
-    var authorNames = Object.keys(authors).sort(function (a, b) { return authors[b] - authors[a]; }).slice(0, 4);
-    var acc = (getComputedStyle(document.documentElement).getPropertyValue('--accent') || '').trim() || '#c9a84c';
     box.innerHTML =
       '<div class="bk-num bk-want-numbers"><div class="bk-n"><b>' + want.length + '</b><span>Books queued</span></div>' +
       '<div class="bk-n"><b>' + (pageBooks ? pages.toLocaleString() + (pageBooks < want.length ? '+' : '') : '—') + '</b><span>Pages listed · ' + pageBooks + ' books</span></div>' +
       '<div class="bk-n"><b>' + Object.keys(authors).length + '</b><span>Authors waiting</span></div>' +
       '<div class="bk-n"><b>' + (ratingCount ? (ratingTotal / ratingCount).toFixed(1) + ' / 5' : '—') + '</b><span>Open Library avg' +
-      (ratedUsers ? ' · ' + ratedUsers.toLocaleString() + ' ratings' : '') + '</span></div></div>' +
-      '<div class="viz-pair bk-want-pair"><div><p class="section-title">Your queue by type</p>' +
-      (knownType ? donut([['Fiction', fiction, acc], ['Non-fiction', knownType - fiction, '#7c8aa5']]) : '<p class="viz-empty">Book types are not available yet.</p>') + '</div>' +
-      '<div><p class="section-title">Genres on your list</p>' +
-      (genreNames.length ? '<div class="viz-card">' + genreNames.map(function (genre) {
-        return '<div class="viz-row"><span>' + esc(genre) + '</span><div><i style="width:' + Math.round(genres[genre] / genres[genreNames[0]] * 100) + '%"></i></div><b>' + genres[genre] + '</b></div>';
-      }).join('') + '</div>' : '<p class="viz-empty">Genre details are not available for these books yet.</p>') + '</div></div>' +
-      (authorNames.length ? '<p class="section-title">Authors with the most books in your queue</p><div class="bk-viz-authors">' +
-        authorNames.map(function (author) {
-          return '<div class="bk-viz-author"><span>' + esc(author) + '</span><div><i style="width:' + Math.round(authors[author] / authors[authorNames[0]] * 100) + '%"></i></div><b>' + authors[author] + '</b></div>';
-        }).join('') + '</div>' : '');
+      (ratedUsers ? ' · ' + ratedUsers.toLocaleString() + ' ratings' : '') + '</span></div></div>';
   }
 
   /* ---------- detail ---------- */
@@ -672,7 +656,7 @@
     var ov = modal('<div class="modal-box bk-sheet"><p class="modal-title">Add a book</p><input id="bs-q" class="input-field" placeholder="Search title or author…">' +
       '<div id="bs-st" class="text-sm text-muted" style="margin:8px 0"></div><div id="bs-res" class="results-list" style="max-height:48vh;overflow-y:auto"></div>' +
       '<div class="modal-actions"><button class="btn btn-ghost" id="bs-man">✍️ Add manually</button><button class="btn btn-ghost" id="bs-x">Close</button></div>' +
-      '<button class="btn btn-ghost" id="bs-import" style="width:100%;margin-top:10px">📥 Import list</button></div>');
+      '<button class="btn btn-ghost" id="bs-import" style="width:100%;margin-top:10px">📥 Upload list</button></div>');
     var tok = 0, t, found = [], input = ov.querySelector('#bs-q'), res = ov.querySelector('#bs-res'), st = ov.querySelector('#bs-st');
     input.addEventListener('input', function () {
       clearTimeout(t);
@@ -711,7 +695,7 @@
         .filter(function (l) { if (!l || seen[l.toLowerCase()]) return false; seen[l.toLowerCase()] = 1; return true; });
       if (!lines.length) return AppUtils.showToast('No book names found.');
       if (lines.length > 60) { lines = lines.slice(0, 60); AppUtils.showToast('Using the first 60 lines.'); }
-      var ov = modal('<div class="modal-box bk-sheet"><p class="modal-title">Import list</p><div id="im-b"><p id="im-p" class="text-sm text-muted">Starting…</p><div class="bk-prog"><i id="im-f"></i></div></div></div>');
+      var ov = modal('<div class="modal-box bk-sheet"><p class="modal-title">Upload list</p><div id="im-b"><p id="im-p" class="text-sm text-muted">Starting…</p><div class="bk-prog"><i id="im-f"></i></div></div></div>');
       var b = ov.querySelector('#im-b'), rows = [];
       for (var i = 0; i < lines.length; i++) {
         if (!document.body.contains(ov)) return;

@@ -256,7 +256,7 @@ AppAuth.requireAuth(function (user) {
       var st = entry.completionStatus || 'wishlist';
       seasonBadge = '<span class="badge badge-tl" style="background:' + (statusColors[st] || '#6366f1') + ';color:#000">' + (statusLabels[st] || '') + '</span>';
     }
-    if (entry.type !== 'game' && entry.completionStatus === 'wishlist') {
+    if (currentName !== 'Watchlist' && entry.type !== 'game' && entry.completionStatus === 'wishlist') {
       seasonBadge += '<span class="badge" style="top:' + (entry.type === 'series' ? 34 : 8) + 'px;left:8px">Watchlist</span>';
     }
 
@@ -459,12 +459,24 @@ AppAuth.requireAuth(function (user) {
     currentEditEntry = entry;
 
     currentDeleteEntry = entry;
+    var isMediaWishlist = currentName === 'Watchlist' &&
+      entry.type !== 'game' && entry.completionStatus === 'wishlist';
+    document.getElementById('btn-edit-entry').style.display = isMediaWishlist ? 'none' : '';
+    document.getElementById('btn-move-entry').style.display = isMediaWishlist ? 'none' : '';
+    document.getElementById('btn-share-entry').style.display = isMediaWishlist ? 'none' : '';
+    document.getElementById('btn-mark-watched-entry').style.display = isMediaWishlist ? '' : 'none';
 
     document.getElementById(
       'entry-options-modal'
     ).classList.add('open');
 
   }
+
+  document.getElementById('btn-mark-watched-entry').addEventListener('click', function () {
+    if (!currentEditEntry) return;
+    document.getElementById('entry-options-modal').classList.remove('open');
+    window.location.href = '/entry.html?id=' + encodeURIComponent(currentEditEntry.id);
+  });
 
   // EDIT ENTRY
 

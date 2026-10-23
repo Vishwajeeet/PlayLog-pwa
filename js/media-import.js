@@ -17,7 +17,7 @@
 
   function updateButton() {
     if (!button || !state) return;
-    button.style.display = state.type === 'game' ? 'none' : 'block';
+    button.style.display = state.type === 'game' ? 'none' : 'inline-flex';
     var actions = document.getElementById('media-actions');
     if (actions) actions.style.display = state.type === 'game' ? 'none' : 'flex';
   }

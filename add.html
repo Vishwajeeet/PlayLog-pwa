@@ -53,14 +53,14 @@
           })();
         </script>
 
-        <div id="media-actions" style="display:none;align-items:center;gap:8px;margin:8px 0 12px">
-          <button id="pl-chip" class="pl-chip" type="button" style="display:none;margin:0"></button>
-          <button id="btn-import-media" class="btn btn-ghost" type="button" style="display:none;width:auto;margin:0;padding:8px 14px;font-size:13px;white-space:nowrap">📥 Import list</button>
-        </div>
-        <input type="file" id="media-import-file" accept=".txt,text/plain" hidden>
-
         <input type="text" id="search-input" class="input-field" placeholder="Search for a title..."
           style="margin-bottom:8px">
+
+        <div id="media-actions" class="media-actions">
+          <button id="pl-chip" class="pl-chip" type="button" style="display:none;margin:0"></button>
+          <button id="btn-import-media" class="btn btn-ghost" type="button" style="display:none">📥 Upload list</button>
+        </div>
+        <input type="file" id="media-import-file" accept=".txt,text/plain" hidden>
 
         <div id="search-status" class="text-sm text-muted" style="margin:8px 0"></div>
         <div id="search-results" class="results-list"></div>
@@ -94,6 +94,7 @@
             <p id="preview-sub" class="text-sm text-muted"></p>
           </div>
         </div>
+        <div id="mark-watched-playlist-wrap" style="display:none;margin:0 0 16px"></div>
 
         <!-- MOVIE/SERIES FIELDS -->
         <div id="movie-series-fields">

@@ -60,6 +60,11 @@ div.mini-poster{opacity:0}
 .new-tile span{font-size:28px;line-height:1;font-weight:400}
 .new-tile:hover{border-color:var(--accent)!important;color:var(--accent);transform:none}
 .pl-chip{display:inline-flex;align-items:center;max-width:100%;margin-bottom:10px;padding:8px 14px;border-radius:999px;font:600 13px Inter,sans-serif;color:var(--accent);background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.4);cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#media-actions{display:none;align-items:center;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+#media-actions .pl-chip,#media-actions #btn-import-media{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:36px;min-height:36px;margin:0;line-height:1.2}
+#media-actions .pl-chip{max-width:min(100%,300px);padding:0 14px}
+#media-actions #btn-import-media{width:auto;padding:0 14px;font-size:13px;white-space:nowrap}
+@media(max-width:420px){#media-actions{gap:6px}#media-actions .pl-chip{max-width:min(100%,230px)}#media-actions #btn-import-media{padding:0 10px}}
 .recent-badge{position:absolute;top:6px;right:6px;z-index:2;padding:3px 7px;border-radius:6px;font:700 10px Inter,sans-serif;background:rgba(99,102,241,.92);color:#fff}
 .recent-item:hover{transform:translateY(-4px) scale(1.03)}
 

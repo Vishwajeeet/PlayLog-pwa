@@ -15,6 +15,7 @@ AppAuth.requireAuth(function (user) {
 
   function render(e) {
     var isGame = e.type === 'game';
+    var isMediaWishlist = !isGame && e.completionStatus === 'wishlist';
     var posterUrl = AppUtils.getPosterUrl(e.poster);
     document.title = e.title + ' — Playlog';
     AppUtils.setAmbient(e.poster);
@@ -46,35 +47,51 @@ AppAuth.requireAuth(function (user) {
     var rowsHTML = rows.map(function (r) {
       return '<div class="detail-row"><span class="detail-label">' + r[0] + '</span><span class="detail-value">' + AppUtils.esc(r[1]) + '</span></div>';
     }).join('');
-
-    document.getElementById('entry-content').innerHTML = (
-      '<div class="detail-hero">' +
-        (posterUrl ? '<img class="detail-poster" src="' + posterUrl + '" alt="' + AppUtils.esc(e.title) + '">' : '<div class="poster-placeholder" style="height:340px;border-radius:16px">' + (isGame ? '' : '🎬') + '</div>') +
-      '</div>' +
-      '<h2 style="margin:16px 0 4px">' + AppUtils.esc(e.title) + '</h2>' +
-      '<p class="text-sm text-muted" style="margin-bottom:20px">' + (isGame ? ' Game' : e.type === 'series' ? '📺 Series' : '🎬 Movie') + '</p>' +
-      '<div class="detail-card">' + rowsHTML + '</div>' +
-      '<button class="btn btn-ghost" id="btn-share" style="margin-top:20px">' +
+    var actionHTML = isMediaWishlist
+      ? '<button class="btn btn-primary" id="btn-mark-watched">✓ Mark as Watched</button>'
+      : '<button class="btn btn-ghost" id="btn-share">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px">' +
           '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"></path>' +
           '<polyline points="16 6 12 2 8 6"></polyline>' +
           '<line x1="12" y1="2" x2="12" y2="15"></line>' +
         '</svg> Share Entry' +
       '</button>' +
-      '<button class="btn btn-ghost" id="btn-edit" style="margin-top:10px">✏️ Edit Details</button>' +
-      '<button class="btn btn-ghost" id="btn-move" style="margin-top:10px">↔ Move to Playlist</button>' +
-      '<button class="btn btn-danger" id="btn-delete" style="margin-top:10px">Delete Entry</button>'
+      '<button class="btn btn-ghost" id="btn-edit">✏️ Edit Details</button>' +
+      '<button class="btn btn-ghost" id="btn-move">↔ Move to Playlist</button>';
+
+    document.getElementById('entry-content').innerHTML = (
+      '<div class="entry-detail-layout">' +
+        '<div class="detail-hero">' +
+          (posterUrl ? '<img class="detail-poster" src="' + posterUrl + '" alt="' + AppUtils.esc(e.title) + '">' : '<div class="entry-poster-placeholder">' + (isGame ? '' : '🎬') + '</div>') +
+        '</div>' +
+        '<div class="entry-detail-info">' +
+          '<div class="entry-heading">' +
+            '<h2 class="entry-title">' + AppUtils.esc(e.title) + '</h2>' +
+            '<p class="entry-type">' + (isGame ? 'Game' : e.type === 'series' ? 'Series' : 'Movie') + (e.releaseYear ? ' <span>·</span> ' + e.releaseYear : '') + '</p>' +
+          '</div>' +
+          '<div class="detail-card">' + rowsHTML + '</div>' +
+          '<div class="entry-actions">' + actionHTML +
+            '<button class="btn btn-danger" id="btn-delete">Delete Entry</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
     );
 
-    document.getElementById('btn-share').addEventListener('click', function () {
-      generateShareCard(e);
-    });
+    if (isMediaWishlist) {
+      document.getElementById('btn-mark-watched').addEventListener('click', function () {
+        window.location.href = '/add.html?type=media&markWatchedEntryId=' + encodeURIComponent(entryId);
+      });
+    } else {
+      document.getElementById('btn-share').addEventListener('click', function () {
+        generateShareCard(e);
+      });
 
-    document.getElementById('btn-edit').addEventListener('click', function () { openEdit(e); });
+      document.getElementById('btn-edit').addEventListener('click', function () { openEdit(e); });
 
-    document.getElementById('btn-move').addEventListener('click', function () {
-      openMoveModal(e);
-    });
+      document.getElementById('btn-move').addEventListener('click', function () {
+        openMoveModal(e);
+      });
+    }
 
     document.getElementById('btn-delete').addEventListener('click', function () {
       document.getElementById('delete-modal').classList.add('open');

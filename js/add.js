@@ -4,6 +4,9 @@ var state = {
   selectedResult: null,
   selectedSeason: null,
   playlistId: null,
+  playlistName: null,
+  markWatchedEntryId: new URLSearchParams(window.location.search).get('markWatchedEntryId'),
+  markWatchedEntry: null,
   uid: null,
   selectedMonth: null,
   selectedYear: null,
@@ -91,6 +94,7 @@ function initPage() {
       if (tabsWrap) tabsWrap.style.display = playlistType === 'game' ? 'none' : 'flex';
       setupPlaylistChip();
       if (window.setupMediaImport) window.setupMediaImport(state);
+      if (state.markWatchedEntryId) loadMarkWatchedEntry();
     });
 
   buildYearSelect('year-select', 'selectedYear');
@@ -110,7 +114,9 @@ function setupPlaylistChip() {
   var chip = document.getElementById('pl-chip'), pls = [];
   function label() {
     var p = pls.filter(function (x) { return x.id === state.playlistId; })[0];
+    state.playlistName = p ? p.name : null;
     chip.textContent = (p ? 'Adding to: ' + p.name : 'Choose a playlist') + ' ▾';
+    updateMediaWishlistFields();
   }
   function pick(id) {
     state.playlistId = id;
@@ -118,13 +124,25 @@ function setupPlaylistChip() {
     label(); checkCanAdd();
   }
   AppDB.getPlaylists(state.uid).then(function (all) {
-    pls = all.filter(function (p) { return (p.type || 'media') !== 'game'; });
+    pls = all.filter(function (p) {
+      return (p.type || 'media') !== 'game' &&
+        (!state.markWatchedEntryId || p.name !== 'Watchlist');
+    });
     if (!pls.some(function (x) { return x.id === state.playlistId; })) {
       var last = localStorage.getItem('pl-last-playlist');
       var f = pls.filter(function (x) { return x.id === last; })[0] || pls[0];
       state.playlistId = f ? f.id : null;
     }
-    chip.style.display = 'block'; label();
+    if (state.markWatchedEntryId) {
+      var picker = document.getElementById('mark-watched-playlist-wrap');
+      picker.appendChild(chip);
+      picker.style.display = 'block';
+      document.getElementById('btn-import-media').style.display = 'none';
+    }
+    chip.style.display = 'inline-flex'; label();
+  }).catch(function (err) {
+    console.error(err);
+    AppUtils.showToast('Could not load playlists. Try again.');
   });
   chip.onclick = function () {
     var ov = document.createElement('div');
@@ -309,10 +327,23 @@ function checkCanAdd() {
   var canAdd = false;
   if (state.type === 'game') {
     canAdd = !!state.selectedStatus && (state.selectedStatus === 'wishlist' || state.selectedStatus === 'playing' || !!state.gameMonth);
+  } else if (state.playlistName === 'Watchlist') {
+    canAdd = !!state.playlistId;
   } else {
     canAdd = !!(state.selectedMonth && state.selectedRating && state.playlistId);
   }
   document.getElementById('btn-add').disabled = !canAdd;
+}
+
+function updateMediaWishlistFields() {
+  var isWatchlist = state.type !== 'game' && state.playlistName === 'Watchlist';
+  var fields = document.getElementById('movie-series-fields');
+  if (fields) fields.style.display = isWatchlist ? 'none' : 'block';
+  var btn = document.getElementById('btn-add');
+  if (btn && btn.textContent !== 'Saving...') {
+    btn.textContent = isWatchlist ? 'Add to Watchlist' : 'Add to Collection';
+  }
+  checkCanAdd();
 }
 
 function setupSearch() {
@@ -432,10 +463,54 @@ function prefetchDetails() {
   var r = state.selectedResult, s = state.selectedSeason;
   state.pre = null;
   if (!r) return;
-  if (r.type === 'game') state.pre = AppRAWG.getGameDetails(r.rawgId).then(function (d) { return [0, d.genres]; });
+  if (state.markWatchedEntry) {
+    state.pre = Promise.resolve([
+      state.markWatchedEntry.runtime || 0,
+      state.markWatchedEntry.genres || []
+    ]);
+  }
+  else if (r.type === 'game') state.pre = AppRAWG.getGameDetails(r.rawgId).then(function (d) { return [0, d.genres]; });
   else if (r.type === 'movie') state.pre = AppTMDB.getMovieDetails(r.tmdbId).then(function (d) { return [d.runtime, d.genres]; });
   else if (s) state.pre = Promise.all([AppTMDB.getSeasonRuntime(r.tmdbId, s.seasonNumber), AppTMDB.getSeriesGenres(r.tmdbId)]).then(function (x) { return [x[0] * (s.episodeCount || 1), x[1]]; });
   if (state.pre) state.pre.catch(function () {});
+}
+
+function loadMarkWatchedEntry() {
+  db.collection('users').doc(state.uid).collection('entries').doc(state.markWatchedEntryId).get()
+    .then(function (doc) {
+      if (!doc.exists) {
+        AppUtils.showToast('Watchlist entry not found.');
+        window.location.replace('/home.html');
+        return;
+      }
+      var entry = Object.assign({ id: doc.id }, doc.data());
+      if (entry.type === 'game' || entry.completionStatus !== 'wishlist') {
+        AppUtils.showToast('This entry is not in the Watchlist.');
+        window.location.replace('/entry.html?id=' + encodeURIComponent(entry.id));
+        return;
+      }
+      state.markWatchedEntry = entry;
+      state.type = entry.type;
+      state.selectedResult = {
+        type: entry.type,
+        tmdbId: entry.tmdbId,
+        title: entry.title,
+        poster: entry.poster,
+        releaseYear: entry.releaseYear,
+        genres: entry.genres || []
+      };
+      state.selectedSeason = entry.type === 'series' ? {
+        seasonNumber: entry.season,
+        seasonName: entry.seasonName,
+        poster: entry.poster,
+        airYear: entry.releaseYear
+      } : null;
+      showStep3();
+    })
+    .catch(function (err) {
+      console.error(err);
+      AppUtils.showToast('Failed to load Watchlist entry.');
+    });
 }
 
 function showStep3() {
@@ -474,6 +549,7 @@ function showStep3() {
   var isGame = r.type === 'game';
   document.getElementById('movie-series-fields').style.display = isGame ? 'none' : 'block';
   document.getElementById('game-fields').style.display = isGame ? 'block' : 'none';
+  updateMediaWishlistFields();
 
   showStep(3);
 }
@@ -485,6 +561,10 @@ function setupBackButtons() {
   });
   document.getElementById('btn-back-s2').addEventListener('click', function() { showStep(1); });
   document.getElementById('btn-back-s3').addEventListener('click', function() {
+    if (state.markWatchedEntryId) {
+      window.location.href = '/entry.html?id=' + encodeURIComponent(state.markWatchedEntryId);
+      return;
+    }
     if (state.type === 'series') showStep(2);
     else showStep(1);
   });
@@ -538,14 +618,15 @@ document.getElementById('btn-add').addEventListener('click', function() {
       entry.season = s ? s.seasonNumber : null;
       entry.seasonName = s ? s.seasonName : null;
       entry.runtime = runtime;
-      entry.monthWatched = state.selectedMonth;
-      entry.yearWatched = state.selectedYear;
-      entry.rating = state.selectedRating;
-      entry.completionStatus = null;
+      var isWatchlist = state.playlistName === 'Watchlist';
+      entry.monthWatched = isWatchlist ? null : state.selectedMonth;
+      entry.yearWatched = isWatchlist ? null : state.selectedYear;
+      entry.rating = isWatchlist ? null : state.selectedRating;
+      entry.completionStatus = isWatchlist ? 'wishlist' : null;
       entry.gameRating = null;
       entry.playtime = null;
       entry.category = null;
-      entry.review = null;
+      entry.review = state.markWatchedEntry ? (state.markWatchedEntry.review || null) : null;
     }
 
     var targetName = isGame ? ({
@@ -562,6 +643,10 @@ document.getElementById('btn-add').addEventListener('click', function() {
     playlistPromise.then(function(pid) {
       entry.playlistId = pid;
       if (!isGame) try { localStorage.setItem('pl-last-playlist', pid); } catch (e) {}
+      if (state.markWatchedEntryId) {
+        delete entry.addedAt;
+        return AppDB.updateEntry(state.uid, state.markWatchedEntryId, entry).then(function() { return pid; });
+      }
       return AppDB.addEntry(state.uid, entry).then(function() { return pid; });
     })
       .then(function(pid) {
@@ -570,8 +655,7 @@ document.getElementById('btn-add').addEventListener('click', function() {
       })
       .catch(function(err) {
         console.error(err);
-        btn.disabled = false;
-        btn.textContent = 'Add to Collection';
+        updateMediaWishlistFields();
         AppUtils.showToast('Failed to save. Try again.');
       });
   }
