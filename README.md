@@ -10,6 +10,7 @@ A personal movie, web series, and **game** tracking Progressive Web App (PWA). B
 
 - Search any movie or web series via TMDB, or any game via RAWG, and add it to your collection
 - For series, pick a specific season with its own poster
+- Import mixed movie and series title lists (up to 100 titles) from a `.txt` file, review TMDB matches, and add watched entries or an unwatched Watchlist
 - Rate movies/series with a 5-emoji scale (😭 🙁 😐 😊 🤩); rate games on a 1–10 scale
 - Track game status — Wishlist, Currently Playing, Completed, Dropped — each with its own auto-created playlist
 - Log hours played per game, editable any time
@@ -141,6 +142,7 @@ No frameworks. No npm. No build step. Pure static files.
 │   ├── home.js
 │   ├── playlist.js
 │   ├── add.js
+│   ├── media-import.js     # Bulk movie and series TXT import
 │   ├── stats.js
 │   ├── entry.js
 │   ├── account.js         # Settings page logic

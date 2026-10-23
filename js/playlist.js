@@ -256,6 +256,9 @@ AppAuth.requireAuth(function (user) {
       var st = entry.completionStatus || 'wishlist';
       seasonBadge = '<span class="badge badge-tl" style="background:' + (statusColors[st] || '#6366f1') + ';color:#000">' + (statusLabels[st] || '') + '</span>';
     }
+    if (entry.type !== 'game' && entry.completionStatus === 'wishlist') {
+      seasonBadge += '<span class="badge" style="top:' + (entry.type === 'series' ? 34 : 8) + 'px;left:8px">Watchlist</span>';
+    }
 
     if (entry.rewatchCount) seasonBadge += '<span class="badge" style="top:' + (entry.type === 'series' ? 34 : 8) + 'px;left:8px">🔁 Rewatched ' + entry.rewatchCount + '×</span>';
     var ratingBadge = '';

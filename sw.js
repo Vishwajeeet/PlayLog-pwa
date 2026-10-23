@@ -1,4 +1,4 @@
-var CACHE = 'playlog-v15';
+var CACHE = 'playlog-v17';
 
 var SHELL = [
   '/index.html', '/home.html', '/books.html', '/playlist.html', '/add.html', '/stats.html', '/entry.html', '/account.html',
@@ -35,7 +35,10 @@ self.addEventListener('fetch', function (e) {
       }).catch(function () {
         return cached || caches.match('/home.html');
       });
-      return net;
+      var wait = new Promise(function (r) { setTimeout(function () { r(cached); }, 3000); });
+      return Promise.race([net.catch(function () { return cached; }), wait]).then(function (r) {
+        return r || net.catch(function () { return caches.match('/home.html'); });
+      });
     })
   );
 });

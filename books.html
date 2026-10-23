@@ -23,8 +23,8 @@
       </header>
 
       <div class="type-pills has-3" id="type-pills">
-        <button class="type-pill" data-tab="media" type="button">🎬 Movies</button>
-        <button class="type-pill" data-tab="games" type="button">🎮 Games</button>
+        <button class="type-pill" data-tab="media" type="button">Movies</button>
+        <button class="type-pill" data-tab="games" type="button">Games</button>
         <button class="type-pill active" data-tab="books" type="button">Books</button>
       </div>
 
@@ -70,11 +70,12 @@
       <div id="bk-want-stats" class="bk-viz"></div>
 
       <div class="bk-head"><h3 class="bk-serif">Books Wrapped</h3></div>
-      <p class="text-sm text-muted bk-wrap-copy">A shareable recap of your reading.</p>
-      <div class="bk-wrap-controls">
-        <select id="bk-wrap-year" class="input-field" aria-label="Wrapped period"></select>
-        <button class="btn btn-primary" id="bk-wrap-generate" type="button">✨ Generate Wrapped</button>
+      <div class="toggle-pair" id="bk-card-style" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+        <button class="toggle-btn active" data-style="detailed">Detailed</button>
+        <button class="toggle-btn" data-style="aesthetic">Aesthetic</button>
       </div>
+      <p class="text-sm text-muted bk-wrap-copy">Card follows the year/month you pick in Your stats above.</p>
+      <button class="btn btn-primary" id="bk-wrap-generate" type="button" style="margin-bottom:16px">✨ Generate Wrapped</button>
       <div id="bk-wrap-canvas" class="bk-wrap-canvas"></div>
       <button class="btn btn-ghost bk-wrap-download" id="bk-wrap-download" type="button" style="display:none">⬇ Download Card</button>
     </main>

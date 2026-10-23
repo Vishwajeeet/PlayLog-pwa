@@ -29,8 +29,12 @@ AppAuth.requireAuth(function (user) {
       if (e.monthWatched) rows.push(['Played', AppUtils.monthName(e.monthWatched) + ' ' + e.yearWatched]);
       if (e.dropReason) rows.push(['Drop Reason', e.dropReason]);
     } else {
-      rows.push(['Rating', AppUtils.ratingToEmoji(e.rating) + ' (' + e.rating + '/5)']);
-      rows.push(['Watched', AppUtils.monthName(e.monthWatched) + ' ' + e.yearWatched]);
+      if (e.completionStatus === 'wishlist') {
+        rows.push(['Status', 'Watchlist']);
+      } else {
+        if (e.rating) rows.push(['Rating', AppUtils.ratingToEmoji(e.rating) + ' (' + e.rating + '/5)']);
+        if (e.monthWatched && e.yearWatched) rows.push(['Watched', AppUtils.monthName(e.monthWatched) + ' ' + e.yearWatched]);
+      }
       if (e.runtime) rows.push(['Runtime', AppUtils.formatHours(e.runtime)]);
       if (e.season) rows.push(['Season', e.seasonName || ('S' + e.season)]);
     }
@@ -216,7 +220,7 @@ AppAuth.requireAuth(function (user) {
   }
 
   function openEdit(en) {
-    var G = en.type === 'game', st = en.completionStatus, wl = G && st === 'wishlist', pl = G && st === 'playing';
+    var G = en.type === 'game', st = en.completionStatus, wl = st === 'wishlist', pl = G && st === 'playing';
     var now = new Date(), rating = (G ? en.gameRating : en.rating) || null, esc = AppUtils.esc;
     var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var mo = M.map(function (m, i) { return '<option value="' + (i + 1) + '"' + (en.monthWatched === i + 1 ? ' selected' : '') + '>' + m + '</option>'; }).join('');

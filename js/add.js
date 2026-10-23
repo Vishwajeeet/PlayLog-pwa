@@ -90,6 +90,7 @@ function initPage() {
       var tabsWrap = document.querySelector('.media-type-tabs');
       if (tabsWrap) tabsWrap.style.display = playlistType === 'game' ? 'none' : 'flex';
       setupPlaylistChip();
+      if (window.setupMediaImport) window.setupMediaImport(state);
     });
 
   buildYearSelect('year-select', 'selectedYear');

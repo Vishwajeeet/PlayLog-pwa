@@ -19,6 +19,32 @@ body .fab.fab{background:linear-gradient(145deg,rgba(255,255,255,.3),color-mix(i
 .type-pills.has-3 .type-pill{padding:11px 6px;font-size:13px;white-space:nowrap}
 body.home-page #type-pills.has-3{max-width:440px}
 
+/* ===== ACTIVITY HEATMAP ===== */
+.hm-card{padding:16px;border-radius:20px;margin-bottom:20px;background:var(--bg-card);border:1px solid rgba(128,128,128,.18)}
+.hm-nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;text-align:center}
+.hm-nums b{display:block;font-size:20px;font-weight:800;color:var(--accent)}
+.hm-nums span{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
+.hm-scroll{overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+.hm-scroll::-webkit-scrollbar{display:none}
+.hm-cols{display:flex;gap:3px;width:max-content}
+.hm-col{display:flex;flex-direction:column;gap:3px}
+.hm-m{display:block;width:13px;height:14px;font-size:10px;line-height:14px;white-space:nowrap;color:var(--text-muted)}
+.hm-c{width:13px;height:13px;padding:0;border:none;border-radius:3px;cursor:pointer;background:rgba(128,128,128,.16)}
+.hm-c.l1{background:color-mix(in srgb,var(--accent) 28%,transparent)}
+.hm-c.l2{background:color-mix(in srgb,var(--accent) 50%,transparent)}
+.hm-c.l3{background:color-mix(in srgb,var(--accent) 75%,transparent)}
+.hm-c.l4{background:var(--accent)}
+.hm-c.sel{outline:2px solid var(--text-primary);outline-offset:1px}
+.hm-c.fut{visibility:hidden}
+.hm-day{margin-top:14px}
+.hm-day h4{font-size:14px;margin-bottom:8px}
+.hm-it{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid rgba(128,128,128,.16);color:inherit;text-decoration:none}
+.hm-th{flex:0 0 36px;height:54px;border-radius:6px;overflow:hidden;background:var(--bg-card-2)}
+.hm-th img{width:100%;height:100%;object-fit:cover;display:block}
+.hm-it b{display:block;font-size:14px}
+.hm-it span{font-size:12px;color:var(--text-muted)}
+.hm-note{margin-top:10px;font-size:11px;color:var(--text-muted)}
+
 /* ===== UNDO BAR ===== */
 .undo-bar{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:350;display:flex;align-items:center;gap:16px;padding:9px 10px 9px 18px;border-radius:999px;background:#2a2a2a;color:#f0f0f0;font:600 14px Inter,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:ub-in .3s ease both;white-space:nowrap}
 .undo-bar button{border:none;border-radius:99px;padding:7px 16px;background:var(--accent);color:#000;font:700 13px Inter,sans-serif;cursor:pointer}
@@ -65,3 +91,5 @@ html[data-theme="light"] :is(.playlist-card:not(.new-tile),.poster-wrap,.recent-
 
 #pl-sort option{background:#1e1e1e;color:#f0f0f0}
 html[data-theme="light"] #pl-sort option{background:#fff;color:#1b1b1b}
+.mi-row select option{background:#1e1e1e;color:#f0f0f0}
+html[data-theme="light"] .mi-row select option{background:#fff;color:#1b1b1b}

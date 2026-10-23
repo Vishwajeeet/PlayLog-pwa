@@ -63,9 +63,9 @@
     var rdg = BOOKS.filter(function (b) { return b.bookStatus === 'reading'; }), yr = new Date().getFullYear();
     var rd = BOOKS.filter(function (b) { return b.bookStatus === 'read'; });
     var readCount = rd.reduce(function (total, b) {
-      return total + 1 + Math.max(0, Math.floor(Number(b.reReadCount) || 0), Array.isArray(b.reReadDates) ? b.reReadDates.length : 0);
+      return total + 1;
     }, 0);
-    var ty = readInstances().filter(function (b) { return b.finishYear === yr; }).length;
+    var ty = readInstances().filter(function (b) { return !b._reRead && b.finishYear === yr; }).length;
     var wn = BOOKS.filter(function (b) { return b.bookStatus === 'want'; }).length;
     $('bk-hero').innerHTML = '<div><p class="bk-eyebrow">MY BOOKS</p><h2 class="bk-serif">' +
       (rdg.length ? 'Currently reading' : BOOKS.length ? 'Pick your next read' : 'Start your shelf') + '</h2><div class="bk-chips">' +
@@ -143,20 +143,20 @@
   }
 
   function stats() {
-    var rd = readInstances(), yrs = {};
+    var all = readInstances(), rd = all.filter(function (b) { return !b._reRead; }), yrs = {};
     var py = $('bk-py'), pm = $('bk-pm'), box = $('bk-stats');
     rd.forEach(function (b) { yrs[b.finishYear] = 1; });
     var cur = py.value || 'all';
     py.innerHTML = '<option value="all">All time</option>' + Object.keys(yrs).sort(function (a, b) { return b - a; }).map(function (y) { return '<option>' + y + '</option>'; }).join('');
     py.value = yrs[cur] ? cur : 'all';
-    updateWrapYears(rd);
+    
     pm.style.display = py.value === 'all' ? 'none' : '';
     if (py.value === 'all') pm.value = '0';
     var Y = py.value, M = +pm.value;
     var l = rd.filter(function (b) { return (Y === 'all' || b.finishYear === +Y) && (!M || b.finishMonth === M); });
     if (!l.length) { box.innerHTML = '<p class="bk-empty">No finished books in this period yet.</p>'; return; }
 
-    var n = l.length, reReadTotal = l.filter(function (b) { return b._reRead; }).length;
+    var n = l.length, reReadTotal = all.filter(function (b) { return b._reRead && (Y === 'all' || b.finishYear === +Y) && (!M || b.finishMonth === M); }).length;
     var pg = 0, rs = 0, rn = 0, ps = 0, pn = 0, fc = 0, gc = {}, byA = {};
     var rc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], pb = [0, 0, 0, 0, 0, 0, 0, 0], TH = [100, 200, 300, 400, 500, 600, 1000];
     l.forEach(function (b) {
@@ -331,6 +331,209 @@
     }
   }
 
+  var wrapStyle = 'detailed', wTok = 0;
+
+  function wrapPeriod() {
+    var Y = $('bk-py').value, M = +$('bk-pm').value;
+    var inP = readInstances().filter(function (b) { return (Y === 'all' || b.finishYear === +Y) && (!M || b.finishMonth === M); });
+    var reads = inP.filter(function (b) { return !b._reRead; });
+    var label = Y === 'all' ? 'All Time' : String(Y), sh = Y === 'all' ? 'ALL TIME' : String(Y);
+    if (M) { label = AppUtils.monthName(M) + (Y === 'all' ? '' : ' ' + Y); sh = AppUtils.monthShort(M).toUpperCase() + (Y === 'all' ? '' : ' ' + Y); }
+    return { reads: reads, re: inP.length - reads.length, label: label, sh: sh };
+  }
+
+  function wImg(url) {
+    return new Promise(function (res) {
+      if (!url) return res(null);
+      var im = new Image();
+      im.onload = function () { res(im); }; im.onerror = function () { res(null); };
+      if (/^data:image\//.test(url)) im.src = url;
+      else { im.crossOrigin = 'anonymous'; im.src = AppUtils.getCanvasSafeUrl(url); }
+    });
+  }
+
+  function blurDraw(c, img, x, y, w, h, a) {
+    if (!img) return;
+    var sw = 24, sh = Math.max(1, Math.round(24 * h / w));
+    var s = document.createElement('canvas'); s.width = sw; s.height = sh;
+    var k = Math.max(sw / img.width, sh / img.height);
+    s.getContext('2d').drawImage(img, (sw - img.width * k) / 2, (sh - img.height * k) / 2, img.width * k, img.height * k);
+    var m = document.createElement('canvas'); m.width = sw * 6; m.height = sh * 6;
+    var mc = m.getContext('2d'); mc.imageSmoothingQuality = 'high'; mc.drawImage(s, 0, 0, m.width, m.height);
+    c.save(); c.globalAlpha = a; c.imageSmoothingQuality = 'high'; c.drawImage(m, x, y, w, h); c.restore();
+  }
+  function glass(c, x, y, w, h, r, a) {
+    c.fillStyle = 'rgba(255,255,255,' + (a || 0.07) + ')'; AppUtils.roundRectPath(c, x, y, w, h, r); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.14)'; c.lineWidth = 1.5; AppUtils.roundRectPath(c, x, y, w, h, r); c.stroke();
+  }
+
+  function generateBooksWrapped() {
+    var P = wrapPeriod(), reads = P.reads;
+    if (!reads.length) return AppUtils.showToast('No finished books to wrap for this period.');
+    var aes = wrapStyle === 'aesthetic', tok = ++wTok;
+    var pages = 0, rs = 0, rn = 0, ac = {}, mc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    reads.forEach(function (b) {
+      pages += Number(b.pages) || 0;
+      if (b.bookRating >= 1 && b.bookRating <= 10) { rs += b.bookRating; rn++; }
+      if (b.author) ac[b.author] = (ac[b.author] || 0) + 1;
+      if (b.finishMonth >= 1 && b.finishMonth <= 12) mc[b.finishMonth - 1]++;
+    });
+    var avg = rn ? rs / rn : 0;
+    var authors = Object.keys(ac).sort(function (a, b) { return ac[b] - ac[a]; });
+    var rated = reads.filter(function (b) { return b.bookRating; });
+    var top = (rated.length ? rated : reads).slice().sort(function (a, b) {
+      return (b.bookRating || 0) - (a.bookRating || 0) || (b.pages || 0) - (a.pages || 0);
+    }).slice(0, aes ? 5 : 3);
+
+    var W = 1080, H = 1920, canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d');
+    $('bk-wrap-download').style.display = 'none';
+
+    function trunc(t, mw) {
+      t = String(t || ''); var s = t;
+      while (ctx.measureText(s).width > mw && s.length > 3) s = s.slice(0, -1);
+      return s !== t ? s.trim() + '…' : s;
+    }
+    function cover(im, x, y, w, h) {
+      var s = Math.max(w / im.width, h / im.height);
+      ctx.drawImage(im, x + (w - im.width * s) / 2, y + (h - im.height * s) / 2, im.width * s, im.height * s);
+    }
+
+    Promise.all(['800 60px Inter', '700 34px Inter', '500 26px Inter', '600 20px Inter'].map(function (f) {
+      return document.fonts.load(f).catch(function () {});
+    })).then(function () {
+      return Promise.all(top.slice(0, aes ? 1 : 3).map(function (b) { return wImg(b.poster); }));
+    }).then(function (imgs) {
+      if (tok !== wTok) return;
+      ctx.textAlign = 'left';
+      if (aes) {
+        var C = { bg: '#2fae7c', ink: '#0b1f16', text: '#f2f2f2', mute: '#b8b8c0' }, img = imgs[0];
+        ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, 1040);
+        blurDraw(ctx, img, 0, 0, W, 1040, 0.35);
+        ctx.fillStyle = '#0e0e10'; ctx.fillRect(0, 1040, W, H - 1040);
+        blurDraw(ctx, img, 0, 1040, W, H - 1040, 0.55);
+        ctx.fillStyle = 'rgba(10,10,12,0.45)'; ctx.fillRect(0, 1040, W, H - 1040);
+        glass(ctx, 40, 1080, W - 80, 800, 32, 0.07);
+        var fx = 350, fy = 90, cs = 31;
+        for (var r = 0; r < 29; r++) for (var c = 0; c < 20; c++) {
+          ctx.fillStyle = (r + c) % 2 ? '#f1efe6' : '#111111';
+          ctx.fillRect(fx + c * cs, fy + r * cs, cs, cs);
+        }
+        var ix = 380, iy = 120, iw = 560, ih = 839;
+        ctx.fillStyle = '#f1efe6'; ctx.fillRect(ix - 6, iy - 6, iw + 12, ih + 12);
+        ctx.save(); ctx.beginPath(); ctx.rect(ix, iy, iw, ih); ctx.clip();
+        if (img) cover(img, ix, iy, iw, ih); else { ctx.fillStyle = '#1e1e1e'; ctx.fillRect(ix, iy, iw, ih); }
+        ctx.restore();
+        var size = 250;
+        ctx.font = '800 ' + size + 'px Inter, sans-serif';
+        var mw = ctx.measureText(P.sh).width;
+        if (mw > 860) size = Math.floor(size * 860 / mw);
+        ctx.font = '800 ' + size + 'px Inter, sans-serif';
+        ctx.save(); ctx.translate(270, 990); ctx.rotate(-Math.PI / 2);
+        ctx.fillStyle = C.ink; ctx.fillText(P.sh, 0, 0); ctx.restore();
+        ctx.fillStyle = C.ink; ctx.font = '800 28px Inter, sans-serif'; ctx.fillText('PLAYLOG', 60, 80);
+        var y0 = 1130;
+        ctx.fillStyle = C.mute; ctx.font = '500 26px Inter, sans-serif';
+        ctx.fillText('Top Books', 80, y0); ctx.fillText('Top Authors', 580, y0);
+        ctx.fillStyle = C.text; ctx.font = '700 34px Inter, sans-serif';
+        top.forEach(function (b, i) { ctx.fillText((i + 1) + '  ' + trunc(b.title, 380), 80, y0 + 60 + i * 58); });
+        authors.slice(0, 5).forEach(function (a, i) { ctx.fillText((i + 1) + '  ' + trunc(a, 380), 580, y0 + 60 + i * 58); });
+        var sy = 1530;
+        ctx.fillStyle = C.mute; ctx.font = '500 26px Inter, sans-serif';
+        ctx.fillText('Pages Read', 80, sy); ctx.fillText('Avg Rating', 580, sy);
+        ctx.fillStyle = C.text; ctx.font = '800 76px Inter, sans-serif';
+        ctx.fillText(trunc(pages ? pages.toLocaleString() : '—', 440), 80, sy + 90);
+        ctx.fillText(avg ? avg.toFixed(1) + '/10' : '—', 580, sy + 90);
+        ctx.font = '800 30px Inter, sans-serif'; ctx.fillText('PLAYLOG', 80, 1850);
+        ctx.textAlign = 'right'; ctx.fillText('BOOKS WRAPPED · ' + P.sh, 1000, 1850); ctx.textAlign = 'left';
+      } else {
+        var accent = '#4ade80', dim = 'rgba(34,197,94,0.35)';
+        ctx.fillStyle = '#0b0b0d'; ctx.fillRect(0, 0, W, H);
+        var heroH = 620, tw = 420, th = 600, c0 = W / 2 - tw / 2;
+        var layout = top.length === 1 ? [{ i: 0, x: c0, y: 10, r: 0 }]
+          : top.length === 2 ? [{ i: 1, x: c0 + 130, y: 40, r: 0.07 }, { i: 0, x: c0 - 130, y: 20, r: -0.05 }]
+          : [{ i: 1, x: c0 - 210, y: 40, r: -0.09 }, { i: 2, x: c0 + 210, y: 40, r: 0.09 }, { i: 0, x: c0, y: 10, r: 0 }];
+        ctx.save(); AppUtils.roundRectPath(ctx, 0, 0, W, heroH + 60, 0); ctx.clip();
+        layout.forEach(function (p) {
+          var im = imgs[p.i];
+          ctx.save(); ctx.translate(p.x + tw / 2, p.y + th / 2); ctx.rotate(p.r); ctx.translate(-tw / 2, -th / 2);
+          ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 20;
+          AppUtils.roundRectPath(ctx, 0, 0, tw, th, 24);
+          if (im) { ctx.clip(); cover(im, 0, 0, tw, th); } else { ctx.fillStyle = '#1e1e1e'; ctx.fill(); }
+          ctx.restore();
+        });
+        var fade = ctx.createLinearGradient(0, heroH - 260, 0, heroH + 60);
+        fade.addColorStop(0, 'rgba(11,11,13,0)'); fade.addColorStop(1, 'rgba(11,11,13,1)');
+        ctx.fillStyle = fade; ctx.fillRect(0, 0, W, heroH + 60);
+        var scrim = ctx.createLinearGradient(0, 0, 0, 220);
+        scrim.addColorStop(0, 'rgba(0,0,0,0.55)'); scrim.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = scrim; ctx.fillRect(0, 0, W, 220);
+        ctx.restore();
+        blurDraw(ctx, imgs[0], 0, 680, W, H - 680, 0.45);
+        var vg = ctx.createLinearGradient(0, 680, 0, 900);
+        vg.addColorStop(0, 'rgba(11,11,13,1)'); vg.addColorStop(1, 'rgba(11,11,13,0)');
+        ctx.fillStyle = vg; ctx.fillRect(0, 680, W, 220);
+        var vg2 = ctx.createLinearGradient(0, 1100, 0, H);
+        vg2.addColorStop(0, 'rgba(11,11,13,0)'); vg2.addColorStop(1, 'rgba(11,11,13,0.6)');
+        ctx.fillStyle = vg2; ctx.fillRect(0, 1100, W, H - 1100);
+        ctx.fillStyle = accent; ctx.font = '800 30px Inter, sans-serif';
+        ctx.fillText('BOOKS WRAPPED · ' + P.label.toUpperCase(), 60, 80);
+        ctx.fillRect(60, heroH + 20, 90, 8);
+        ctx.fillStyle = '#ffffff'; ctx.font = '800 130px Inter, sans-serif';
+        ctx.fillText(String(reads.length), 58, heroH + 175);
+        ctx.fillStyle = '#bbbbbb'; ctx.font = '500 34px Inter, sans-serif';
+        ctx.fillText('books read' + (P.re ? ' · ' + P.re + ' re-read' + (P.re > 1 ? 's' : '') : ''), 62, heroH + 215);
+
+        var cards = [[pages ? pages.toLocaleString() : '—', 'Pages Read'], [avg ? avg.toFixed(1) + '/10' : '—', 'Avg Rating'], [authors[0] || '—', 'Top Author']];
+        var gap = 20, cw = (W - 120 - gap * 2) / 3, sy2 = heroH + 260;
+        cards.forEach(function (s, i) {
+          var x = 60 + i * (cw + gap), y = sy2, val = String(s[0]);
+          ctx.fillStyle = 'rgba(255,255,255,0.05)'; AppUtils.roundRectPath(ctx, x, y, cw, 140, 20); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1.5; AppUtils.roundRectPath(ctx, x, y, cw, 140, 20); ctx.stroke();
+          ctx.fillStyle = accent;
+          ctx.font = 'bold ' + (val.length > 12 ? 26 : val.length > 9 ? 30 : val.length > 6 ? 36 : 44) + 'px Inter, sans-serif';
+          ctx.fillText(trunc(val, cw - 44), x + 22, y + 94);
+          ctx.fillStyle = '#999999'; ctx.font = '600 20px Inter, sans-serif';
+          ctx.fillText(s[1].toUpperCase(), x + 22, y + 122);
+        });
+
+        var ly = 1090;
+        ctx.fillStyle = accent; ctx.font = '800 28px Inter, sans-serif'; ctx.fillText('TOP ' + top.length, 60, ly);
+        top.forEach(function (b, i) {
+          var y = ly + 25 + i * 150;
+          glass(ctx, 60, y, W - 120, 130, 20, 0.08);
+          ctx.save(); AppUtils.roundRectPath(ctx, 72, y + 10, 73, 110, 10); ctx.clip();
+          if (imgs[i]) cover(imgs[i], 72, y + 10, 73, 110); else { ctx.fillStyle = '#1e1e1e'; ctx.fillRect(72, y + 10, 73, 110); }
+          ctx.restore();
+          ctx.fillStyle = accent; ctx.font = '800 54px Inter, sans-serif'; ctx.fillText(String(i + 1), 170, y + 82);
+          ctx.fillStyle = '#ffffff'; ctx.font = '700 34px Inter, sans-serif';
+          ctx.fillText(trunc(b.title, W - 330), 240, y + 58);
+          ctx.fillStyle = '#cccccc'; ctx.font = '500 26px Inter, sans-serif';
+          ctx.fillText(trunc((b.bookRating ? '★ ' + b.bookRating + '/10' : 'Unrated') + ' · ' + (b.author || '').toUpperCase(), W - 330), 240, y + 100);
+        });
+
+        var mx = Math.max.apply(null, mc);
+        if (mx > 0) {
+          glass(ctx, 40, 1585, W - 80, 275, 24, 0.06);
+          ctx.fillStyle = accent; ctx.font = '800 28px Inter, sans-serif'; ctx.fillText('FINISHED BY MONTH', 60, 1620);
+          var base = 1800, slot = (W - 120) / 12, bw = 44, letters = 'JFMAMJJASOND';
+          ctx.textAlign = 'center';
+          mc.forEach(function (n, m) {
+            var bh = Math.max(n ? 6 : 3, Math.round(n / mx * 100)), bx = 60 + m * slot + (slot - bw) / 2;
+            ctx.fillStyle = n === mx ? accent : dim; AppUtils.roundRectPath(ctx, bx, base - bh, bw, bh, 8); ctx.fill();
+            if (n) { ctx.fillStyle = '#dddddd'; ctx.font = '600 20px Inter, sans-serif'; ctx.fillText(String(n), bx + bw / 2, base - bh - 10); }
+            ctx.fillStyle = '#999999'; ctx.font = '500 20px Inter, sans-serif'; ctx.fillText(letters[m], bx + bw / 2, base + 34);
+          });
+          ctx.textAlign = 'left';
+        }
+        ctx.fillStyle = '#666666'; ctx.font = '500 24px Inter, sans-serif'; ctx.fillText('Generated with Playlog', 60, H - 40);
+      }
+      $('bk-wrap-canvas').replaceChildren(canvas);
+      $('bk-wrap-download').style.display = '';
+    });
+  }
+
   function updateWrapYears(reads) {
     var select = $('bk-wrap-year'), current = select.value || 'all', years = {};
     reads.forEach(function (b) { if (b.finishYear) years[b.finishYear] = true; });
@@ -340,7 +543,7 @@
   }
 
   function generateWrapped() {
-    var year = $('bk-wrap-year').value, reads = readInstances().filter(function (b) { return year === 'all' || b.finishYear === +year; });
+    var year = $('bk-wrap-year').value, inPeriod = readInstances().filter(function (b) { return year === 'all' || b.finishYear === +year; }), reads = inPeriod.filter(function (b) { return !b._reRead; });
     if (!reads.length) return AppUtils.showToast('No finished books to wrap for this period.');
     var canvas = document.createElement('canvas'), ctx, pages = 0, rated = [], authors = {}, titles = {};
     canvas.width = 900; canvas.height = 1200; ctx = canvas.getContext('2d');
@@ -366,7 +569,7 @@
     ctx.fillStyle = '#aaa'; ctx.font = '500 24px Inter, sans-serif'; ctx.fillText('YOUR YEAR IN READING', 96, 258);
     var cards = [
       { value: reads.length.toLocaleString(), label: 'BOOK READS' },
-      { value: reads.filter(function (b) { return b._reRead; }).length.toLocaleString(), label: 'RE-READS' },
+      { value: inPeriod.filter(function (b) { return b._reRead; }).length.toLocaleString(), label: 'RE-READS' },
       { value: pages.toLocaleString(), label: 'PAGES READ' },
       { value: avg, label: 'YOUR AVG RATING' },
       { value: topAuthor, label: 'TOP AUTHOR' }
@@ -593,12 +796,19 @@
     localStorage.setItem('pl-books-view', viewMode);
     lib();
   });
-  $('bk-wrap-generate').addEventListener('click', generateWrapped);
+  document.querySelectorAll('#bk-card-style .toggle-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#bk-card-style .toggle-btn').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active'); wrapStyle = b.dataset.style;
+      if ($('bk-wrap-canvas').firstChild) generateBooksWrapped();
+    });
+  });
+  $('bk-wrap-generate').addEventListener('click', generateBooksWrapped);
   $('bk-wrap-download').addEventListener('click', function () {
     var canvas = $('bk-wrap-canvas').querySelector('canvas');
     if (!canvas) return;
     var link = document.createElement('a');
-    link.download = 'playlog-books-wrapped-' + $('bk-wrap-year').value + '.png';
+    link.download = 'playlog-books-wrapped.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
   });

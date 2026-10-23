@@ -141,17 +141,11 @@
   $('btn-restore').addEventListener('click', function () { $('restore-input').click(); });
   $('restore-input').addEventListener('change', function (e) {
     var f = e.target.files[0]; this.value = '';
-    if (!f || !confirm('Restore this backup into the current account? Items with the same IDs will be overwritten.')) return;
+    if (!f) return;
     var r = new FileReader();
     r.onload = function () {
       var b; try { b = JSON.parse(r.result); } catch (x) { return AppUtils.showToast('Invalid file.'); }
-      AppUtils.showToast('Restoring…', 60000);
-      AppBackup.restore(user.uid, b).then(function () {
-        localStorage.removeItem('pl-entries');
-        ['pl-avatar', 'pl-tab-pref', 'mb-layout'].forEach(function (k) { localStorage.removeItem(k); });
-        AppUtils.showToast('Restored ✓');
-        setTimeout(function () { window.location.href = '/home.html'; }, 800);
-      }).catch(function () { AppUtils.showToast('Restore failed. Wrong file?'); });
+      AppBackup.restoreFlow(user.uid, b);
     };
     r.readAsText(f);
   });

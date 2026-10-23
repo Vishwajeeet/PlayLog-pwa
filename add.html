@@ -53,7 +53,11 @@
           })();
         </script>
 
-        <button id="pl-chip" class="pl-chip" type="button" style="display:none"></button>
+        <div id="media-actions" style="display:none;align-items:center;gap:8px;margin:8px 0 12px">
+          <button id="pl-chip" class="pl-chip" type="button" style="display:none;margin:0"></button>
+          <button id="btn-import-media" class="btn btn-ghost" type="button" style="display:none;width:auto;margin:0;padding:8px 14px;font-size:13px;white-space:nowrap">📥 Import list</button>
+        </div>
+        <input type="file" id="media-import-file" accept=".txt,text/plain" hidden>
 
         <input type="text" id="search-input" class="input-field" placeholder="Search for a title..."
           style="margin-bottom:8px">
@@ -156,6 +160,7 @@
   <script src="/js/tmdb.js"></script>
   <script src="/js/rawg.js"></script>
   <script src="/js/add.js"></script>
+  <script src="/js/media-import.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');

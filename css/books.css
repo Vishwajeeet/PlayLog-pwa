@@ -46,11 +46,11 @@ html[data-theme="light"] .bk-library-bar .input-field,html[data-theme="light"] .
 .bk-tile{display:flex;flex-direction:column;align-items:stretch;background:none;border:none;color:inherit;font:inherit;text-align:left;cursor:pointer;min-width:0;transition:transform .2s}
 .bk-tile:hover{transform:translateY(-4px)}
 .bk-grid.is-list{display:flex;flex-direction:column;gap:0}
-.bk-grid.is-list .bk-tile{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.18);text-align:left}
+.bk-grid.is-list .bk-tile{display:flex;flex-direction:row;align-items:center;gap:14px;width:100%;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.18);text-align:left}
 .bk-grid.is-list .bk-tile:hover{transform:none}
 .bk-grid.is-list .bk-cov{flex:0 0 52px;width:52px}
-.bk-grid.is-list .bk-t{flex:1;margin:0;min-width:0}
-.bk-grid.is-list .bk-a{flex:0 1 35%;min-width:0}
+.bk-grid.is-list .bk-t{flex:1;min-height:0;margin:0;min-width:0}
+.bk-grid.is-list .bk-a{flex:0 1 35%;min-width:0;margin:0;text-align:right}
 .bk-cov{position:relative;display:flex;aspect-ratio:2/3;border-radius:10px;overflow:hidden;background:linear-gradient(160deg,var(--bg-card-2),var(--bg-card));box-shadow:0 8px 22px rgba(0,0,0,.35);transition:transform .22s ease,box-shadow .22s ease}
 .bk-cov img{width:100%;height:100%;object-fit:cover}
 .bk-cov em{margin:auto;padding:8px;font-size:11px;font-style:normal;text-align:center;color:var(--text-muted)}

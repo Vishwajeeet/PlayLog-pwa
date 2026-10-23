@@ -180,15 +180,23 @@ window.AppDB = {
 
   moveEntry: function(uid, entryId, newPlaylistId) {
     var map = { 'Completed Games': 'completed', 'Currently Playing': 'playing', 'Dropped Games': 'dropped', 'Wishlist': 'wishlist' };
-    return db.collection('users').doc(uid).collection('playlists').doc(newPlaylistId).get()
-      .then(function(pl) {
+    var user = db.collection('users').doc(uid);
+    var entryRef = user.collection('entries').doc(entryId);
+    return Promise.all([
+      user.collection('playlists').doc(newPlaylistId).get(),
+      entryRef.get()
+    ]).then(function(docs) {
+        var pl = docs[0], entry = docs[1];
         var data = {
           playlistId: newPlaylistId,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
         var st = pl.exists && map[pl.data().name];
         if (st) data.completionStatus = st;
-        return db.collection('users').doc(uid).collection('entries').doc(entryId).update(data);
+        else if (entry.exists && entry.data().type !== 'game') {
+          data.completionStatus = pl.exists && pl.data().name === 'Watchlist' ? 'wishlist' : null;
+        }
+        return entryRef.update(data);
       });
   }
 
