@@ -2,7 +2,7 @@
 
 A personal movie, web series, game, and **book** tracking Progressive Web App (PWA). Track what you watch, play, and read; organize your media; and explore separate stats and Wrapped cards for movies/series, games, and books.
 
-**Live:** [Playlog-pwa.vercel.app](https://Playlog-pwa.vercel.app)
+**Live:** [Playlog-pwa.vercel.app](https://moviebase-pwa.vercel.app)
 
 ---
 
