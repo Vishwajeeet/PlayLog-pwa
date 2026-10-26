@@ -25,7 +25,7 @@ A personal movie, web series, game, and **book** tracking Progressive Web App (P
 - Filter, sort, and view stats by year and month — years shown are generated dynamically from your own data
 - Install directly from Chrome as a native-like app (PWA)
 - Fully synced across all your devices via Firebase
-- Backup & Restore (download everything as a JSON file, restore into any account) with optional weekly or monthly auto-backup
+- Backup & Restore (download everything as a JSON file, restore into any account) with a preview before restoring, Merge or Replace mode, optional weekly or monthly auto-backup, and a reminder after 30 days without a backup
 - Rewatch counter for movies and series (rewatches add to watch time)
 - Wishlist games are excluded from stats and ask for full details when moved to Completed, Playing or Dropped
 - Drag-to-reorder playlists (hold, then drag)
@@ -33,7 +33,8 @@ A personal movie, web series, game, and **book** tracking Progressive Web App (P
 - Edit rating, date, hours, rewatches and review from the entry page
 - Undo for deleted entries
 - Dark and light themes plus accent colour (Settings)
-- Mobile navigation for Movies, Games, and Books
+- Optional Books tab, off by default (Settings → Features → Books tab). When enabled, Home gets a third tab
+- Bottom tab bar on phones, and swipe left or right on Home to switch tabs
 - One-time "What's New" card for each release
 
 ---
@@ -49,7 +50,7 @@ A personal movie, web series, game, and **book** tracking Progressive Web App (P
 | Game Data | RAWG API |
 | Book Data | Open Library API |
 | Hosting | Vercel |
-| PWA | Web App Manifest + Service Worker (network-first for app files) |
+| PWA | Web App Manifest + Service Worker (network-first with a 3-second cache fallback) |
 | Stats/Share Cards | HTML Canvas API |
 | Image proxy | images.weserv.nl (adds CORS headers so RAWG posters can be drawn to canvas) |
 
@@ -77,6 +78,8 @@ No frameworks. No npm. No build step. Pure static files.
 - See Open Library community ratings for books on the Want to Read shelf
 - Generate a downloadable Books Wrapped card in detailed or aesthetic style
 - Upload a plain-text list of book titles to add multiple books
+- Re-read counter with dates: re-reads show in the Re-reads card and Wrapped, but books, pages, authors, genres and ratings count each book once
+- Books stay separate from Movies, Games, Stats and Wrapped; they have their own page, stats and Wrapped card
 
 **Games — status-driven flow**
 - Choosing **Wishlist** skips rating entirely and auto-creates/uses a "Wishlist" playlist
@@ -104,7 +107,7 @@ No frameworks. No npm. No build step. Pure static files.
 - A rotating fun-fact banner, tab-aware ("watched" vs "played", 5-star vs 8+/10, etc.)
 
 **Stats — fully separated by tab**
-- Movies & Series and Games each get their own complete stat grid, , deep cuts, and top picks — nothing bleeds between tabs
+- Movies & Series and Games each get their own complete stat grid, deep cuts, and top picks — nothing bleeds between tabs
 - Games get: games logged, hours played, completed, currently playing, dropped, wishlist, top genre, average rating (/10), most active month, longest single session
 - Movies & Series get: titles watched, watch time, movies, series seasons, top genre, average rating, most active month, longest watch, best month (avg rating), completion rate
 - A visual Playtime Leaderboard (top 5 by hours, medal-styled) for games
@@ -125,7 +128,7 @@ No frameworks. No npm. No build step. Pure static files.
 **PWA**
 - Installable from Chrome on Android and desktop
 - Runs in standalone mode (no browser bar)
-- Network-first service worker for app files (always fetches the latest JS/CSS when online, falls back to cache only when offline) — no more stale cached bugs during development
+- Network-first service worker for app files (always fetches the latest JS/CSS when online, waits at most 3 seconds, then serves the cached copy so a slow network never freezes the app) — no stale cached bugs
 - App shell + core routes precached for offline support
 
 ---
@@ -146,7 +149,11 @@ No frameworks. No npm. No build step. Pure static files.
 ├── sw.js                 # Service Worker (network-first)
 ├── css/
 │   ├── main.css          # Shared stylesheet
-│   └── books.css         # Book library and reading stats styles
+│   ├── books.css         # Book library and reading stats styles
+│   ├── entry.css         # Entry detail page styles
+│   ├── home.css          # Home dashboard styles
+│   ├── theme.css         # Light theme, accent colour, bottom tab bar
+│   └── whatsnew.css      # What's New popup styles
 ├── js/
 │   ├── config.js          # Firebase + TMDB + RAWG config (not committed)
 │   ├── firebase-init.js
@@ -167,7 +174,7 @@ No frameworks. No npm. No build step. Pure static files.
 │   ├── flow.js            # Rewatch prompt, wishlist-move form, undo delete
 │   ├── backup.js          # Backup / restore / auto-backup
 │   └── whatsnew.js        # One-time release popups (edit RELEASES array)
-├── css/theme.css          # Light theme, accent colour, navigation
+
 └── assets/
     └── icons/
 ```
@@ -324,6 +331,8 @@ finishMonth: number (1–12) | null
 finishYear: number | null
 openLibraryRating: { average: number, count: number } | null
 openLibraryRatingFetched: boolean
+reReadCount: number
+reReadDates: string[] (YYYY-MM-DD)
 playlistId: null
 addedAt: timestamp
 ```
@@ -333,7 +342,8 @@ addedAt: timestamp
 ## Extra Data
 
 - `users/{uid}/covers/{playlistId}`: `{ data: base64 }`. Playlist covers live in their own collection so playlist lists stay small. Old inline covers migrate automatically.
-- `users/{uid}/settings/prefs`: tab, layout, avatar, theme, accent, autoBackup, lastBackup, lastSeenRelease.
+- `users/{uid}/settings/prefs`: tab, layout, avatar, theme, accent, books (Books tab on/off), autoBackup, lastBackup, lastSeenRelease.
+- `localStorage` mirrors the Books toggle (`pl-books`) and the backup reminder state (`pl-last-backup`, `pl-backup-seen`, `pl-backup-snooze`). Restore re-applies the Books toggle, theme and accent right away.
 - Entry extras: `rewatchCount`. Playlist extra: `order`.
 - Entries are cached in `localStorage` for 5 minutes and cleared on every write. Use Settings → Refresh data after editing on another device.
 - All user text is HTML-escaped on render (`AppUtils.esc`), and restore sanitizes numeric and poster fields.

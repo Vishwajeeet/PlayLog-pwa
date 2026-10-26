@@ -393,7 +393,7 @@ AppAuth.requireAuth(function (user) {
     // Top genres
     var gk = Object.keys(gc).sort(function (a, b) { return gc[b] - gc[a]; }).slice(0, 5);
     html += '<div class="viz-pair">';
-    if (gk.length) { html += genreDonut(gk, gc, entries, isG, cls); }
+    if (gk.length) { html += '<div>' + genreDonut(gk, gc, entries, isG, cls) + '</div>'; }
     if (false) {
       html += '<p class="section-title">Top Genres</p><div class="viz-card ' + cls + '">' +
         gk.map(function (g) {
@@ -408,11 +408,11 @@ AppAuth.requireAuth(function (user) {
           .map(function (p) { return [p[0], cnt(function (e) { return e.completionStatus === p[1]; }), p[2]]; })
       : [['Movies', cnt(function (e) { return e.type === 'movie'; }), '#c9a84c'], ['Series', cnt(function (e) { return e.type === 'series'; }), '#8a7434']];
     if (entries.length) {
-      html += '<p class="section-title">' + (isG ? 'Status' : 'Movies vs Series') + '</p><div class="viz-card"><div class="viz-split">' +
+      html += '<div><p class="section-title">' + (isG ? 'Status' : 'Movies vs Series') + '</p><div class="viz-card"><div class="viz-split">' +
         parts.map(function (p) { return p[1] ? '<i style="flex:' + p[1] + ';background:' + p[2] + '"></i>' : ''; }).join('') +
         '</div><div class="viz-legend">' +
         parts.map(function (p) { return '<span><i style="background:' + p[2] + '"></i>' + p[0] + ' ' + p[1] + '</span>'; }).join('') +
-        '</div></div>';
+        '</div></div></div>';
     }
     html += '</div>';
     el.innerHTML = html;

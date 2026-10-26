@@ -1,4 +1,4 @@
-var CACHE = 'playlog-v17';
+var CACHE = 'playlog-v18';
 
 var SHELL = [
   '/index.html', '/home.html', '/books.html', '/playlist.html', '/add.html', '/stats.html', '/entry.html', '/account.html',
@@ -8,7 +8,7 @@ var SHELL = [
 ];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) { return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); })); }));
   self.skipWaiting();
 });
 
@@ -33,11 +33,11 @@ self.addEventListener('fetch', function (e) {
         }
         return res;
       }).catch(function () {
-        return cached || caches.match('/home.html');
+        return cached || (req.mode === 'navigate' ? caches.match('/home.html') : Response.error());
       });
       var wait = new Promise(function (r) { setTimeout(function () { r(cached); }, 3000); });
       return Promise.race([net.catch(function () { return cached; }), wait]).then(function (r) {
-        return r || net.catch(function () { return caches.match('/home.html'); });
+        return r || net;
       });
     })
   );
