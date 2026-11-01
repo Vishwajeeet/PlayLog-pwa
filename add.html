@@ -108,17 +108,18 @@
 
         <!-- GAME FIELDS -->
         <div id="game-fields" style="display:none">
-
-          <label class="label">Completion Status *</label>
-          <div class="completion-grid" id="completion-row">
-            <button class="completion-btn" data-status="completed"> Completed</button>
-            <button class="completion-btn" data-status="playing"> Playing</button>
-            <button class="completion-btn" data-status="dropped">Dropped</button>
-            <button class="completion-btn" data-status="wishlist"> Wishlist</button>
+          <div class="game-status-panel">
+            <label class="label">Completion Status *</label>
+            <div class="completion-grid" id="completion-row">
+              <button class="completion-btn" data-status="completed">Completed</button>
+              <button class="completion-btn" data-status="playing">Playing</button>
+              <button class="completion-btn" data-status="dropped">Dropped</button>
+              <button class="completion-btn" data-status="wishlist">Wishlist</button>
+            </div>
           </div>
 
           <div id="game-extra-fields">
-            <label class="label" style="margin-top:20px">Rating (1–10)</label>
+            <label class="label" style="margin-top:0">Rating (1–10)</label>
             <div class="number-rating-row" id="number-rating-row"></div>
 
             <label class="label" style="margin-top:20px">When did you play it?</label>

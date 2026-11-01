@@ -79,6 +79,26 @@ body{background:radial-gradient(900px 500px at 12% -10%,rgba(201,168,76,.13),tra
 .brand-bar span{background:linear-gradient(135deg,#fff 30%,#c9a84c);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
 .input-field,.result-item,.preview-row,.detail-card,.viz-card,.viz-hero div,.leaderboard-row{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .result-item,.leaderboard-row,.detail-card,.viz-card{border-radius:16px}
+.step.active.game-entry-active{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px;row-gap:16px;align-items:start}
+.game-entry-active>.page-header,.game-entry-active>#game-extra-fields,.game-entry-active>#btn-add{grid-column:1/-1}
+.game-entry-active>.preview-row{grid-column:1;grid-row:2;min-width:0;margin:0}
+.game-entry-active>#game-fields{display:contents!important}
+.game-status-panel{grid-column:2;grid-row:2;min-width:0;padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:rgba(255,255,255,.035);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.game-status-panel .label{margin-bottom:10px}
+.game-entry-active .completion-grid{grid-template-columns:1fr;gap:7px;margin:0}
+.game-entry-active .completion-btn{min-height:42px;padding:9px 10px;border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.035);color:var(--text-primary);transition:background .18s,border-color .18s,box-shadow .18s,transform .18s}
+.game-entry-active .completion-btn:hover,.game-entry-active .num-rating-btn:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.09)}
+.game-entry-active .completion-btn.selected,.game-entry-active .num-rating-btn.selected{transform:translateY(-1px);border-color:rgba(255,255,255,.68);background:rgba(255,255,255,.2);color:var(--text-primary);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 10px rgba(0,0,0,.18)}
+.game-entry-active #game-extra-fields{grid-column:1/-1;min-width:0}
+.game-entry-active #number-rating-row{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.game-entry-active .num-rating-btn{width:100%;height:44px;border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.035);color:var(--text-primary);transition:background .18s,border-color .18s,box-shadow .18s,transform .18s}
+.preview-row.is-game{position:relative;isolation:isolate;overflow:hidden;align-items:center;gap:14px;height:100%;padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:18px;background:rgba(255,255,255,.035);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.preview-row.is-game .preview-poster-img{width:120px;height:180px;object-fit:cover;border:1px solid rgba(255,255,255,.2);border-radius:14px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.preview-row.is-game .preview-info{position:relative;z-index:1}
+.preview-row.is-game .preview-title{font-size:18px;letter-spacing:-.02em;overflow-wrap:anywhere}
+.preview-row.is-game .preview-sub{display:inline-flex;align-items:center;margin-top:5px;padding:4px 8px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.045);color:var(--text-muted);font-size:11px;font-weight:600;letter-spacing:.02em}
+@media(max-width:420px){.step.active.game-entry-active{column-gap:8px;row-gap:12px}.game-status-panel{padding:10px;border-radius:14px}.game-status-panel .label{font-size:11px}.game-entry-active .completion-btn{min-height:38px;padding:7px 6px;font-size:11px}.preview-row.is-game{gap:9px;padding:10px;border-radius:14px}.preview-row.is-game .preview-poster-img{width:76px;height:114px;border-radius:10px}.preview-row.is-game .preview-title{font-size:15px}.game-entry-active #number-rating-row{gap:4px}.game-entry-active .num-rating-btn{height:40px;padding:0;font-size:13px}}
+@media(max-width:600px){.step.active.game-entry-active{grid-template-columns:minmax(0,1fr)}.game-entry-active>.preview-row{grid-column:1;grid-row:auto}.game-status-panel{grid-column:1;grid-row:auto}.game-entry-active .completion-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .leaderboard-row-top{border-color:rgba(124,58,237,.5)}
 .card{border:1px solid rgba(255,255,255,.07);transition:transform .25s,box-shadow .25s}
 .card:hover{transform:translateY(-4px);box-shadow:0 14px 32px rgba(0,0,0,.55)}

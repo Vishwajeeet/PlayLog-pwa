@@ -448,6 +448,17 @@ button {
   transition: border-color var(--transition);
 }
 
+select#year-select,
+select#game-year-select {
+  color-scheme: dark;
+}
+
+select#year-select option,
+select#game-year-select option {
+  background-color: #1e1e1e;
+  color: #f0f0f0;
+}
+
 .input-field:focus {
   border-color: var(--accent);
 }

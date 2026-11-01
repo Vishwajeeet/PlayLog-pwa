@@ -309,7 +309,7 @@ function applyStatusFields() {
   if (status === 'wishlist') return;
 
   var hideRating = status === 'playing';
-  ratingRow.style.display = hideRating ? 'none' : 'flex';
+  ratingRow.style.display = hideRating ? 'none' : 'grid';
   ratingLabel.style.display = hideRating ? 'none' : 'block';
 
   if (status === 'playing') {
@@ -338,7 +338,7 @@ function checkCanAdd() {
 function updateMediaWishlistFields() {
   var isWatchlist = state.type !== 'game' && state.playlistName === 'Watchlist';
   var fields = document.getElementById('movie-series-fields');
-  if (fields) fields.style.display = isWatchlist ? 'none' : 'block';
+  if (fields) fields.style.display = state.type === 'game' || isWatchlist ? 'none' : 'block';
   var btn = document.getElementById('btn-add');
   if (btn && btn.textContent !== 'Saving...') {
     btn.textContent = isWatchlist ? 'Add to Watchlist' : 'Add to Collection';
@@ -517,6 +517,9 @@ function showStep3() {
   prefetchDetails();
   var r = state.selectedResult;
   var s = state.selectedSeason;
+  var isGame = r.type === 'game';
+  document.getElementById('step-3').classList.toggle('game-entry-active', isGame);
+  document.querySelector('.preview-row').classList.toggle('is-game', isGame);
   var posterUrl = AppUtils.getPosterUrl(s ? s.poster : r.poster);
   var previewPoster = document.getElementById('preview-poster');
   if (posterUrl) {
@@ -546,7 +549,6 @@ function showStep3() {
   document.getElementById('btn-add').disabled = true;
 
   // Show right fields
-  var isGame = r.type === 'game';
   document.getElementById('movie-series-fields').style.display = isGame ? 'none' : 'block';
   document.getElementById('game-fields').style.display = isGame ? 'block' : 'none';
   updateMediaWishlistFields();
