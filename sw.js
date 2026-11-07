@@ -1,4 +1,4 @@
-var CACHE = 'playlog-v18';
+var CACHE = 'playlog-v19';
 
 var SHELL = [
   '/index.html', '/home.html', '/books.html', '/playlist.html', '/add.html', '/stats.html', '/entry.html', '/account.html',

@@ -29,7 +29,12 @@ window.AppBackup = {
     ['season', 'rawgId', 'tmdbId', 'runtime', 'monthWatched', 'yearWatched', 'rating', 'gameRating', 'playtime', 'rewatchCount', 'reReadCount', 'releaseYear', 'pages', 'bookRating', 'finishMonth', 'finishYear'].forEach(function (k) {
       if (e[k] != null && typeof e[k] !== 'number') e[k] = Number(e[k]) || null;
     });
-    if (e.poster != null) e.poster = String(e.poster).replace(/["'<>\s\\]/g, '') || null;
+    if (e.poster != null) {
+      e.poster = String(e.poster);
+      if (!/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(e.poster)) {
+        e.poster = e.poster.replace(/["'<>\s\\]/g, '') || null;
+      }
+    }
     return e;
   },
   build: function (uid) {

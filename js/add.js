@@ -51,7 +51,13 @@ function rewatchGate(r, seasonNum) {
 
 function findDuplicate(r, seasonNum) {
   return state.existingEntries.some(function(e) {
-    if (r.type === 'game') return e.type === 'game' && e.rawgId === r.rawgId;
+    if (r.type === 'game') {
+      var title = String(r.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (e.type !== 'game') return false;
+      if (r.rawgId && e.rawgId === r.rawgId) return true;
+      return !!title && (!r.rawgId || !e.rawgId) &&
+        String(e.title || '').toLowerCase().replace(/[^a-z0-9]/g, '') === title;
+    }
     if (r.type === 'series') return e.type === 'series' && e.tmdbId === r.tmdbId && e.season === seasonNum;
     return e.type === 'movie' && e.tmdbId === r.tmdbId;
   });
@@ -351,6 +357,9 @@ function setupSearch() {
   var debouncedSearch = AppUtils.debounce(function(query) { doSearch(query); }, 300);
   input.addEventListener('input', function() {
     var query = this.value.trim();
+    clearTimeout(state.searchTimer);
+    state.searchToken++;
+    document.getElementById('manual-game-option').style.display = 'none';
     if (query.length < 2) {
       state.lastQuery = '';
       document.getElementById('search-results').innerHTML = '';
@@ -359,28 +368,156 @@ function setupSearch() {
     }
     if (query === state.lastQuery) return;
     state.lastQuery = query;
+    document.getElementById('search-results').innerHTML = '';
     document.getElementById('search-status').textContent = 'Searching...';
     debouncedSearch(query);
   });
 }
 
 function doSearch(query) {
+  clearTimeout(state.searchTimer);
   var token = ++state.searchToken;
   var fn;
   if (state.type === 'movie') fn = AppTMDB.searchMovies.bind(AppTMDB);
   else if (state.type === 'series') fn = AppTMDB.searchSeries.bind(AppTMDB);
   else fn = AppRAWG.searchGames.bind(AppRAWG);
 
+  if (state.type === 'game') {
+    state.searchTimer = setTimeout(function() {
+      if (token !== state.searchToken) return;
+      document.getElementById('search-status').textContent = 'RAWG is taking longer than 20 seconds.';
+      showManualGameOption(query);
+    }, 20000);
+  }
+
   fn(query).then(function(results) {
     if (token !== state.searchToken) return;
+    clearTimeout(state.searchTimer);
+    document.getElementById('manual-game-option').style.display = 'none';
     document.getElementById('search-status').textContent = '';
     renderResults(results);
   }).catch(function(err) {
     if (token !== state.searchToken) return;
+    clearTimeout(state.searchTimer);
     console.error(err);
     document.getElementById('search-status').textContent = 'Search failed. Check connection.';
     document.getElementById('search-results').innerHTML = '';
+    if (state.type === 'game') showManualGameOption(query);
   });
+}
+
+function showManualGameOption(query) {
+  var container = document.getElementById('manual-game-option');
+  container.innerHTML = '';
+  var note = document.createElement('p');
+  note.className = 'text-sm text-muted';
+  note.style.marginBottom = '8px';
+  note.textContent = 'You can add this game manually. We’ll retry RAWG and refresh its game details when the API is available.';
+  var button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'btn btn-ghost';
+  button.textContent = 'Add game manually';
+  button.addEventListener('click', function() { openManualGameEntry(query); });
+  container.appendChild(note);
+  container.appendChild(button);
+  container.style.display = 'block';
+}
+
+function readManualPoster(file) {
+  return new Promise(function(resolve, reject) {
+    if (!file) return resolve(null);
+    if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) {
+      return reject(new Error('Choose a JPG, PNG, or WebP image.'));
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      return reject(new Error('Choose an image smaller than 10 MB.'));
+    }
+    var reader = new FileReader();
+    reader.onerror = function() { reject(new Error('Could not read the selected image.')); };
+    reader.onload = function() {
+      var image = new Image();
+      image.onerror = function() { reject(new Error('Could not open the selected image.')); };
+      image.onload = function() {
+        var scale = Math.min(1, 500 / image.width, 750 / image.height);
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        var context = canvas.getContext('2d');
+        if (!context) return reject(new Error('Image processing is not available.'));
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        var quality = 0.8, poster;
+        do {
+          poster = canvas.toDataURL('image/jpeg', quality);
+          quality -= 0.1;
+        } while (poster.length > 900000 && quality >= 0.4);
+        if (poster.length > 900000) return reject(new Error('This image could not be compressed enough. Choose a smaller image.'));
+        resolve(poster);
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function openManualGameEntry(query) {
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.innerHTML = '<div class="modal-box" style="max-height:90vh;overflow-y:auto">' +
+    '<p class="modal-title">Add game manually</p>' +
+    '<label class="label" for="manual-game-title">Game name *</label>' +
+    '<input id="manual-game-title" class="input-field" maxlength="120" value="' + AppUtils.esc(query) + '" style="margin-bottom:16px">' +
+    '<label class="label" for="manual-game-poster">Custom poster (optional)</label>' +
+    '<input id="manual-game-poster" class="input-field" type="file" accept="image/jpeg,image/png,image/webp" style="margin-bottom:12px">' +
+    '<img id="manual-game-preview" alt="Poster preview" style="display:none;width:96px;height:144px;object-fit:cover;border-radius:8px;margin-bottom:16px">' +
+    '<div class="modal-actions"><button class="btn btn-ghost" id="manual-game-cancel">Cancel</button>' +
+    '<button class="btn btn-primary" id="manual-game-continue">Continue</button></div></div>';
+  var titleInput = overlay.querySelector('#manual-game-title');
+  var fileInput = overlay.querySelector('#manual-game-poster');
+  var preview = overlay.querySelector('#manual-game-preview');
+  var cancel = function() { overlay.remove(); };
+  fileInput.addEventListener('change', function() {
+    var file = fileInput.files && fileInput.files[0];
+    if (!file) {
+      preview.style.display = 'none';
+      return;
+    }
+    if (preview._url) URL.revokeObjectURL(preview._url);
+    preview._url = URL.createObjectURL(file);
+    preview.src = preview._url;
+    preview.style.display = 'block';
+  });
+  overlay.querySelector('#manual-game-cancel').onclick = cancel;
+  overlay.addEventListener('click', function(event) { if (event.target === overlay) cancel(); });
+  overlay.querySelector('#manual-game-continue').onclick = function() {
+    var title = titleInput.value.trim();
+    if (!title) {
+      titleInput.focus();
+      return AppUtils.showToast('Enter a game name.');
+    }
+    var button = this;
+    button.disabled = true;
+    readManualPoster(fileInput.files && fileInput.files[0]).then(function(poster) {
+      if (preview._url) URL.revokeObjectURL(preview._url);
+      overlay.remove();
+      state.selectedResult = {
+        type: 'game',
+        title: title,
+        poster: poster,
+        releaseYear: '',
+        genres: [],
+        rawgId: null,
+        rawgPending: true
+      };
+      state.selectedSeason = null;
+      showStep3();
+    }).catch(function(err) {
+      button.disabled = false;
+      console.error(err);
+      AppUtils.showToast(err.message);
+    });
+  };
+  document.body.appendChild(overlay);
+  titleInput.focus();
 }
 
 function renderResults(results) {
@@ -469,7 +606,7 @@ function prefetchDetails() {
       state.markWatchedEntry.genres || []
     ]);
   }
-  else if (r.type === 'game') state.pre = AppRAWG.getGameDetails(r.rawgId).then(function (d) { return [0, d.genres]; });
+  else if (r.type === 'game' && r.rawgId) state.pre = AppRAWG.getGameDetails(r.rawgId).then(function (d) { return [0, d.genres]; });
   else if (r.type === 'movie') state.pre = AppTMDB.getMovieDetails(r.tmdbId).then(function (d) { return [d.runtime, d.genres]; });
   else if (s) state.pre = Promise.all([AppTMDB.getSeasonRuntime(r.tmdbId, s.seasonNumber), AppTMDB.getSeriesGenres(r.tmdbId)]).then(function (x) { return [x[0] * (s.episodeCount || 1), x[1]]; });
   if (state.pre) state.pre.catch(function () {});
@@ -573,10 +710,13 @@ function setupBackButtons() {
 }
 
 function clearSearch() {
+  clearTimeout(state.searchTimer);
+  state.searchToken++;
   state.lastQuery = '';
   document.getElementById('search-input').value = '';
   document.getElementById('search-results').innerHTML = '';
   document.getElementById('search-status').textContent = '';
+  document.getElementById('manual-game-option').style.display = 'none';
 }
 
 document.getElementById('btn-add').addEventListener('click', function() {
@@ -600,6 +740,7 @@ document.getElementById('btn-add').addEventListener('click', function() {
 
     if (isGame) {
       entry.rawgId = r.rawgId || null;
+      if (r.rawgPending) entry.rawgPending = true;
       entry.tmdbId = null;
       entry.season = null;
       entry.seasonName = null;
@@ -665,10 +806,12 @@ document.getElementById('btn-add').addEventListener('click', function() {
   if (state.pre) {
     state.pre.then(function (x) { saveEntry(x[0], x[1]); })
       .catch(function () { saveEntry(r.type === 'game' ? 0 : r.type === 'movie' ? 90 : 30 * ((s && s.episodeCount) || 1), r.genres || []); });
-  } else if (r.type === 'game') {
+  } else if (r.type === 'game' && r.rawgId) {
     AppRAWG.getGameDetails(r.rawgId)
       .then(function(details) { saveEntry(0, details.genres); })
       .catch(function() { saveEntry(0, r.genres || []); });
+  } else if (r.type === 'game') {
+    saveEntry(0, r.genres || []);
   } else if (r.type === 'movie') {
     AppTMDB.getMovieDetails(r.tmdbId)
       .then(function(details) { saveEntry(details.runtime, details.genres); })

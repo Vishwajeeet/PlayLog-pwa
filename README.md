@@ -9,6 +9,7 @@ A personal movie, web series, game, and **book** tracking Progressive Web App (P
 ## What It Does
 
 - Search any movie or web series via TMDB, or any game via RAWG, and add it to your collection
+- If RAWG is unavailable or takes more than 20 seconds, add a game manually with an optional custom poster; Playlog retries RAWG later and refreshes game metadata without changing your play history, ratings, hours, or review
 - Search for books via Open Library and manage them on dedicated reading shelves
 - For series, pick a specific season with its own poster
 - Import mixed movie and series title lists (up to 100 titles) from a `.txt` file, review TMDB matches, and add watched entries or an unwatched Watchlist

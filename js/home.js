@@ -35,6 +35,16 @@ AppAuth.requireAuth(function(user) {
         ALL_PLAYLISTS = playlists;
 
         ALL_ENTRIES = entries;
+        AppRAWG.refreshPendingEntries(uid, entries).then(function (updated) {
+          if (!updated.length) return;
+          updated.forEach(function (game) {
+            var entry = ALL_ENTRIES.filter(function (e) { return e.id === game.id; })[0];
+            if (entry) Object.assign(entry, game);
+          });
+          applyYearFilter();
+        }).catch(function (err) {
+          console.error('Could not refresh pending game metadata.', err);
+        });
         playlists.forEach(function (p) { if (p.coverImage) COVERS[p.id] = p.coverImage; });
         AppDB.getCovers(uid).then(function (m) {
           var n = 0; Object.keys(m).forEach(function (k) { COVERS[k] = m[k]; n++; });

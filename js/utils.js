@@ -99,7 +99,8 @@ window.AppUtils = {
     getPosterUrl: function(path) {
     if (!path) return null;
     var w = arguments[1];
-    if (path.startsWith('http')) {
+      if (/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(path)) return path;
+      if (path.startsWith('http')) {
       if (path.indexOf('media.rawg.io') > -1) return path.replace(/\/media\/(games|screenshots)\//, '/media/resize/' + (w && w <= 200 ? 200 : 640) + '/-/$1/');
       return path;
     }
@@ -111,12 +112,14 @@ window.AppUtils = {
   // be drawn onto a <canvas> and exported (RAWG's CDN has no CORS headers).
   getCanvasSafeUrl: function(url) {
     if (!url) return null;
+    if (url.indexOf('data:image/') === 0) return url;
     var bare = url.replace(/^https?:\/\//, '');
     return 'https://images.weserv.nl/?url=' + encodeURIComponent(bare);
   },
 
   ambientUrl: function(p) {
     var u = this.getPosterUrl(p, 154);
+    if (u && u.indexOf('data:image/') === 0) return null;
     return u ? 'https://images.weserv.nl/?url=' + encodeURIComponent(u.replace(/^https?:\/\//, '')) + '&w=40&h=60&fit=cover&blur=3' : null;
   },
 
