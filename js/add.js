@@ -787,7 +787,7 @@ document.getElementById('btn-add').addEventListener('click', function() {
       entry.playlistId = pid;
       if (!isGame) try { localStorage.setItem('pl-last-playlist', pid); } catch (e) {}
       if (state.markWatchedEntryId) {
-        delete entry.addedAt;
+        entry.addedAt = firebase.firestore.FieldValue.serverTimestamp();
         return AppDB.updateEntry(state.uid, state.markWatchedEntryId, entry).then(function() { return pid; });
       }
       return AppDB.addEntry(state.uid, entry).then(function() { return pid; });
