@@ -13,12 +13,5 @@ const APP_CONFIG = {
     baseUrl: "https://api.themoviedb.org/3",
     posterBase: "https://image.tmdb.org/t/p/w500"
   }
-
-  ,
-  rawg: {
-    key: "83c62856fb2a401bb0bce5bc3277d2f2",
-    baseUrl: "https://api.rawg.io/api"
-  }
 };
-
 

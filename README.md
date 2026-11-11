@@ -8,8 +8,8 @@ A personal movie, web series, game, and **book** tracking Progressive Web App (P
 
 ## What It Does
 
-- Search any movie or web series via TMDB, or any game via RAWG, and add it to your collection
-- If RAWG is unavailable or takes more than 20 seconds, add a game manually with an optional custom poster; Playlog retries RAWG later and refreshes game metadata without changing your play history, ratings, hours, or review
+- Search any movie or web series via TMDB, or any game via IGDB, and add it to your collection
+- If IGDB is unavailable or takes more than 20 seconds, add a game manually with an optional custom poster; Playlog retries IGDB later and refreshes game metadata without changing your play history, ratings, hours, or review
 - Search for books via Open Library and manage them on dedicated reading shelves
 - For series, pick a specific season with its own poster
 - Import mixed movie and series title lists (up to 100 titles) from a `.txt` file, review TMDB matches, and add watched entries or an unwatched Watchlist
@@ -48,12 +48,12 @@ A personal movie, web series, game, and **book** tracking Progressive Web App (P
 | Database | Firebase Firestore |
 | Auth | Firebase Authentication (Google Sign-In) |
 | Movie/Series Data | TMDB API |
-| Game Data | RAWG API |
+| Game Data | IGDB API (via a Vercel Function) |
 | Book Data | Open Library API |
 | Hosting | Vercel |
 | PWA | Web App Manifest + Service Worker (network-first with a 3-second cache fallback) |
 | Stats/Share Cards | HTML Canvas API |
-| Image proxy | images.weserv.nl (adds CORS headers so RAWG posters can be drawn to canvas) |
+| Image proxy | images.weserv.nl (adds CORS headers so external posters can be drawn to canvas) |
 
 No frameworks. No npm. No build step. Pure static files.
 
@@ -63,7 +63,7 @@ No frameworks. No npm. No build step. Pure static files.
 
 **Core**
 - Google Sign-In (with account picker forced, so switching accounts always works) — your data is private and tied to your account
-- Search movies and TV series with live TMDB results, or games with live RAWG results
+- Search movies and TV series with live TMDB results, or games with live IGDB results
 - Category/genre for games is auto-fetched — no manual tagging
 - Season-level tracking for series (separate entry per season)
 - Emoji rating system for movies/series: 😭 🙁 😐 😊 🤩
@@ -124,7 +124,7 @@ No frameworks. No npm. No build step. Pure static files.
 **Sharing**
 - Share a single entry as a poster-background image card
 - Share an entire playlist as a responsive poster grid (auto-sizes tiles based on how many entries you have) with title labels
-- All share cards route poster images through a CORS-safe proxy so RAWG posters always render correctly, instead of failing silently
+- All share cards route poster images through a CORS-safe proxy so external posters render correctly
 
 **PWA**
 - Installable from Chrome on Android and desktop
@@ -156,12 +156,12 @@ No frameworks. No npm. No build step. Pure static files.
 │   ├── theme.css         # Light theme, accent colour, bottom tab bar
 │   └── whatsnew.css      # What's New popup styles
 ├── js/
-│   ├── config.js          # Firebase + TMDB + RAWG config (not committed)
+│   ├── config.js          # Firebase + TMDB config (not committed)
 │   ├── firebase-init.js
 │   ├── auth.js
 │   ├── firestore.js
 │   ├── tmdb.js
-│   ├── rawg.js
+│   ├── igdb.js            # IGDB game search/details client
 │   ├── utils.js
 │   ├── home.js
 │   ├── playlist.js
@@ -209,10 +209,6 @@ const APP_CONFIG = {
     key: "YOUR_TMDB_API_KEY",
     baseUrl: "https://api.themoviedb.org/3",
     posterBase: "https://image.tmdb.org/t/p/w500"
-  },
-  rawg: {
-    key: "YOUR_RAWG_API_KEY",
-    baseUrl: "https://api.rawg.io/api"
   }
 };
 ```
@@ -242,16 +238,17 @@ service cloud.firestore {
 - Go to Settings → API → Create (Developer)
 - Copy the v3 API key
 
-### 5. RAWG API key
+### 5. IGDB API credentials
 
-- Create a free account at [rawg.io](https://rawg.io/apidocs)
-- Copy your API key from the dashboard
+- Create a Twitch account, enable two-factor authentication, and register a **Confidential** app in the [Twitch Developer Console](https://dev.twitch.tv/console/apps/create). Use `http://localhost` as the OAuth redirect URL.
+- In Vercel → Project Settings → Environment Variables, add `IGDB_CLIENT_ID` and `IGDB_CLIENT_SECRET` as secrets for Production (and Preview if you use preview deployments). The credentials must only be available to the server-side Vercel Function; never add them to frontend config.
+- IGDB's free API is for non-commercial usage. See the [IGDB API documentation](https://api-docs.igdb.com/).
 
 Books use the public Open Library API and do not require an API key.
 
 ### 6. Run locally
 
-Open with [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) in VS Code. Do not open as a plain file — Firebase Auth requires HTTP.
+Open with [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) in VS Code. Do not open as a plain file — Firebase Auth requires HTTP. IGDB search uses the Vercel Function in `api/igdb.js`, so test game search on the deployed site or run the project with Vercel's local development CLI.
 
 ### 7. Deploy
 
@@ -296,7 +293,8 @@ addedAt: timestamp
 **Entry document (game):**
 ```
 playlistId: string
-rawgId: number
+igdbId: number
+rawgId: number (legacy entries only)
 title: string
 type: "game"
 poster: string (full URL)

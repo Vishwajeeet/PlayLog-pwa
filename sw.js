@@ -1,10 +1,10 @@
-var CACHE = 'playlog-v19';
+var CACHE = 'playlog-v20';
 
 var SHELL = [
   '/index.html', '/home.html', '/books.html', '/playlist.html', '/add.html', '/stats.html', '/entry.html', '/account.html',
   '/css/main.css', '/css/home.css', '/css/whatsnew.css', '/css/theme.css', '/css/books.css',
   '/js/config.js', '/js/firebase-init.js', '/js/auth.js', '/js/utils.js', '/js/firestore.js',
-  '/js/tmdb.js', '/js/rawg.js', '/js/flow.js', '/js/backup.js', '/js/whatsnew.js', '/js/openlibrary.js', '/js/books.js', '/js/home.js', '/js/account.js', '/js/playlist.js', '/js/add.js', '/js/stats.js', '/js/entry.js'
+  '/js/tmdb.js', '/js/igdb.js', '/js/flow.js', '/js/backup.js', '/js/whatsnew.js', '/js/openlibrary.js', '/js/books.js', '/js/home.js', '/js/account.js', '/js/playlist.js', '/js/add.js', '/js/stats.js', '/js/entry.js'
 ];
 
 self.addEventListener('install', function (e) {
@@ -22,7 +22,7 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var req = e.request;
   var url = new URL(req.url);
-  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (req.method !== 'GET' || url.origin !== self.location.origin || url.pathname.indexOf('/api/') === 0) return;
   url.search = '';
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then(function (cached) {

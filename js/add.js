@@ -54,8 +54,9 @@ function findDuplicate(r, seasonNum) {
     if (r.type === 'game') {
       var title = String(r.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       if (e.type !== 'game') return false;
-      if (r.rawgId && e.rawgId === r.rawgId) return true;
-      return !!title && (!r.rawgId || !e.rawgId) &&
+      if (r.igdbId && e.igdbId != null) return e.igdbId === r.igdbId;
+      if (r.rawgId && e.rawgId != null) return e.rawgId === r.rawgId;
+      return !!title &&
         String(e.title || '').toLowerCase().replace(/[^a-z0-9]/g, '') === title;
     }
     if (r.type === 'series') return e.type === 'series' && e.tmdbId === r.tmdbId && e.season === seasonNum;
@@ -380,12 +381,12 @@ function doSearch(query) {
   var fn;
   if (state.type === 'movie') fn = AppTMDB.searchMovies.bind(AppTMDB);
   else if (state.type === 'series') fn = AppTMDB.searchSeries.bind(AppTMDB);
-  else fn = AppRAWG.searchGames.bind(AppRAWG);
+  else fn = AppIGDB.searchGames.bind(AppIGDB);
 
   if (state.type === 'game') {
     state.searchTimer = setTimeout(function() {
       if (token !== state.searchToken) return;
-      document.getElementById('search-status').textContent = 'RAWG is taking longer than 20 seconds.';
+      document.getElementById('search-status').textContent = 'Game search is taking longer than 20 seconds.';
       showManualGameOption(query);
     }, 20000);
   }
@@ -412,7 +413,7 @@ function showManualGameOption(query) {
   var note = document.createElement('p');
   note.className = 'text-sm text-muted';
   note.style.marginBottom = '8px';
-  note.textContent = 'You can add this game manually. We’ll retry RAWG and refresh its game details when the API is available.';
+  note.textContent = 'You can add this game manually. We’ll retry the game catalog and refresh its details when available.';
   var button = document.createElement('button');
   button.type = 'button';
   button.className = 'btn btn-ghost';
@@ -505,8 +506,8 @@ function openManualGameEntry(query) {
         poster: poster,
         releaseYear: '',
         genres: [],
-        rawgId: null,
-        rawgPending: true
+        igdbId: null,
+        igdbPending: true
       };
       state.selectedSeason = null;
       showStep3();
@@ -606,7 +607,7 @@ function prefetchDetails() {
       state.markWatchedEntry.genres || []
     ]);
   }
-  else if (r.type === 'game' && r.rawgId) state.pre = AppRAWG.getGameDetails(r.rawgId).then(function (d) { return [0, d.genres]; });
+  else if (r.type === 'game' && r.igdbId) state.pre = AppIGDB.getGameDetails(r.igdbId).then(function (d) { return [0, d.genres]; });
   else if (r.type === 'movie') state.pre = AppTMDB.getMovieDetails(r.tmdbId).then(function (d) { return [d.runtime, d.genres]; });
   else if (s) state.pre = Promise.all([AppTMDB.getSeasonRuntime(r.tmdbId, s.seasonNumber), AppTMDB.getSeriesGenres(r.tmdbId)]).then(function (x) { return [x[0] * (s.episodeCount || 1), x[1]]; });
   if (state.pre) state.pre.catch(function () {});
@@ -739,8 +740,8 @@ document.getElementById('btn-add').addEventListener('click', function() {
     };
 
     if (isGame) {
-      entry.rawgId = r.rawgId || null;
-      if (r.rawgPending) entry.rawgPending = true;
+      entry.igdbId = r.igdbId || null;
+      if (r.igdbPending) entry.igdbPending = true;
       entry.tmdbId = null;
       entry.season = null;
       entry.seasonName = null;
@@ -806,8 +807,8 @@ document.getElementById('btn-add').addEventListener('click', function() {
   if (state.pre) {
     state.pre.then(function (x) { saveEntry(x[0], x[1]); })
       .catch(function () { saveEntry(r.type === 'game' ? 0 : r.type === 'movie' ? 90 : 30 * ((s && s.episodeCount) || 1), r.genres || []); });
-  } else if (r.type === 'game' && r.rawgId) {
-    AppRAWG.getGameDetails(r.rawgId)
+  } else if (r.type === 'game' && r.igdbId) {
+    AppIGDB.getGameDetails(r.igdbId)
       .then(function(details) { saveEntry(0, details.genres); })
       .catch(function() { saveEntry(0, r.genres || []); });
   } else if (r.type === 'game') {

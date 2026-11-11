@@ -109,7 +109,7 @@ window.AppUtils = {
   },
 
   // Proxies external images through a CORS-friendly service so they can
-  // be drawn onto a <canvas> and exported (RAWG's CDN has no CORS headers).
+  // be drawn onto a <canvas> and exported.
   getCanvasSafeUrl: function(url) {
     if (!url) return null;
     if (url.indexOf('data:image/') === 0) return url;

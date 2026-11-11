@@ -35,7 +35,7 @@ AppAuth.requireAuth(function(user) {
         ALL_PLAYLISTS = playlists;
 
         ALL_ENTRIES = entries;
-        AppRAWG.refreshPendingEntries(uid, entries).then(function (updated) {
+        AppIGDB.refreshPendingEntries(uid, entries).then(function (updated) {
           if (!updated.length) return;
           updated.forEach(function (game) {
             var entry = ALL_ENTRIES.filter(function (e) { return e.id === game.id; })[0];
