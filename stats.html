@@ -277,11 +277,21 @@
   <button class="toggle-btn" data-style="aesthetic">Aesthetic</button>
 </div>
 
-<p class="text-sm text-muted" style="margin-bottom:12px">Card follows the year/month you pick above. Try a single year for a sharper recap. <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false" style="color:var(--accent)">↑ Change</a></p>
+        <div class="wrapped-period-controls" role="group" aria-label="Wrapped card period">
+          <label>Year<select id="wrapped-year" class="input-field"></select></label>
+          <label>Month<select id="wrapped-month" class="input-field">
+            <option value="0">Full year</option>
+            <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+            <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+          </select></label>
+        </div>
 
 <button class="btn btn-primary" id="btn-generate" style="margin-bottom:16px">
           ✨ Generate Wrapped Card
         </button>
+        <p class="text-sm text-muted wrapped-card-help">Choose the year and month here to generate a focused recap.</p>
 
         <p id="wrapped-card-message" class="text-muted" style="
           margin-bottom:16px;

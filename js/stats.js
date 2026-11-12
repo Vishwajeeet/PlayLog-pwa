@@ -10,6 +10,9 @@ AppAuth.requireAuth(function (user) {
   var currentMonth = 0;
 
   var statsTab = 'media';
+  var wrappedYear = null;
+  var wrappedMonth = null;
+  var wrappedRenderTab = null;
 
   document.getElementById('stats-type-pills').addEventListener('click', function (e) {
     var btn = e.target.closest('.type-pill');
@@ -216,6 +219,14 @@ AppAuth.requireAuth(function (user) {
 
     window.currentStatsEntries = entries;
     renderViz(entries);
+    updateWrappedPeriodOptions();
+    updateWrappedCardState();
+    if (wrappedRenderTab !== null && wrappedRenderTab !== statsTab &&
+        document.getElementById('canvas-wrap').style.display === 'block' &&
+        !document.getElementById('btn-generate').disabled) {
+      generateCurrentWrappedCard();
+    }
+    wrappedRenderTab = statsTab;
     updateGenLabel();
 
   }
@@ -781,41 +792,6 @@ AppAuth.requireAuth(function (user) {
 
     }
 
-    // WRAPPED CARD BUTTON STATE
-
-    var generateBtn =
-      document.getElementById(
-        'btn-generate'
-      );
-
-    var wrappedMessage =
-      document.getElementById(
-        'wrapped-card-message'
-      );
-
-    if (entries.length === 0) {
-
-      generateBtn.disabled = true;
-
-      generateBtn.style.opacity = '0.5';
-
-      wrappedMessage.textContent =
-        'Add some entries to generate your card.';
-
-      wrappedMessage.style.display =
-        'block';
-
-    } else {
-
-      generateBtn.disabled = false;
-
-      generateBtn.style.opacity = '1';
-
-      wrappedMessage.style.display =
-        'none';
-
-    }
-
   }
   function renderTopPicks(entries) {
 
@@ -1237,6 +1213,59 @@ AppAuth.requireAuth(function (user) {
 
   setupWrappedCard();
 
+  function getWrappedEntries() {
+    return allEntries.filter(function (entry) {
+      var typeMatch = statsTab === 'games' ? entry.type === 'game' : entry.type !== 'game';
+      var yearMatch = wrappedYear === 'all' || Number(entry.yearWatched) === Number(wrappedYear);
+      var monthMatch = wrappedMonth === 0 || Number(entry.monthWatched) === wrappedMonth;
+      return typeMatch && yearMatch && monthMatch && entry.completionStatus !== 'wishlist';
+    });
+  }
+
+  function updateWrappedPeriodOptions() {
+    var yearSelect = document.getElementById('wrapped-year');
+    var monthSelect = document.getElementById('wrapped-month');
+    var years = {};
+    allEntries.forEach(function (entry) {
+      var matchesTab = statsTab === 'games' ? entry.type === 'game' : entry.type !== 'game';
+      if (matchesTab && entry.yearWatched) years[entry.yearWatched] = true;
+    });
+
+    if (wrappedYear === null) {
+      wrappedYear = years[currentYear] ? String(currentYear) : 'all';
+      wrappedMonth = currentMonth;
+    } else if (wrappedYear !== 'all' && !years[wrappedYear]) {
+      wrappedYear = 'all';
+    }
+
+    yearSelect.innerHTML = '<option value="all">All years</option>' +
+      Object.keys(years).sort(function (a, b) { return b - a; })
+        .map(function (year) { return '<option value="' + year + '">' + year + '</option>'; }).join('');
+    yearSelect.value = wrappedYear;
+    monthSelect.value = String(wrappedMonth);
+  }
+
+  function updateWrappedCardState() {
+    var button = document.getElementById('btn-generate');
+    var message = document.getElementById('wrapped-card-message');
+    var entries = getWrappedEntries();
+    button.disabled = entries.length === 0;
+    button.style.opacity = entries.length ? '1' : '0.5';
+    if (entries.length) {
+      message.style.display = 'none';
+      return;
+    }
+    message.textContent = 'No entries in this period. Try a different year or month.';
+    message.style.display = 'block';
+    document.getElementById('canvas-wrap').style.display = 'none';
+    document.getElementById('canvas-wrap').replaceChildren();
+    document.getElementById('btn-download').style.display = 'none';
+  }
+
+  function generateCurrentWrappedCard() {
+    cardStyle === 'aesthetic' ? generateAestheticCard() : generateWrappedCard2();
+  }
+
   function setupWrappedCard() {
 
     var generateBtn =
@@ -1253,10 +1282,22 @@ AppAuth.requireAuth(function (user) {
       'click',
       function () {
 
-        cardStyle === 'aesthetic' ? generateAestheticCard() : generateWrappedCard2();
+        generateCurrentWrappedCard();
 
       }
     );
+
+    ['wrapped-year', 'wrapped-month'].forEach(function (id) {
+      document.getElementById(id).addEventListener('change', function () {
+        wrappedYear = document.getElementById('wrapped-year').value;
+        wrappedMonth = Number(document.getElementById('wrapped-month').value);
+        updateWrappedCardState();
+        updateGenLabel();
+        if (!generateBtn.disabled && document.getElementById('canvas-wrap').style.display === 'block') {
+          generateCurrentWrappedCard();
+        }
+      });
+    });
 
     downloadBtn.addEventListener(
       'click',
@@ -1307,27 +1348,27 @@ AppAuth.requireAuth(function (user) {
       document.querySelectorAll('#card-style .toggle-btn').forEach(function (x) { x.classList.remove('active'); });
       b.classList.add('active');
       cardStyle = b.dataset.style;
-      if (document.getElementById('canvas-wrap').style.display === 'block') document.getElementById('btn-generate').click();
+      if (document.getElementById('canvas-wrap').style.display === 'block') generateCurrentWrappedCard();
     });
   });
 
   function updateGenLabel() {
     var b = document.getElementById('btn-generate');
     if (!b) return;
-    var p = currentYear === 'all' ? 'All Time' : String(currentYear);
-    if (currentMonth !== 0) p = AppUtils.monthName(currentMonth) + (currentYear === 'all' ? '' : ' ' + currentYear);
+    var p = wrappedYear === 'all' ? 'All Time' : String(wrappedYear);
+    if (wrappedMonth !== 0) p = AppUtils.monthName(wrappedMonth) + (wrappedYear === 'all' ? ' · All Time' : ' ' + wrappedYear);
     b.textContent = '✨ Generate Wrapped · ' + p;
   }
 
   function generateAestheticCard() {
-    var entries = window.currentStatsEntries || [];
+    var entries = getWrappedEntries();
     if (!entries.length) { AppUtils.showToast('No entries to generate.'); return; }
     var G = statsTab === 'games';
     var C = G
       ? { bg: '#7c5cff', panel: '#1f1f22', ink: '#ffffff', text: '#f2f2f2', mute: '#9a9aa2' }
       : { bg: '#e0b93a', panel: '#f1efe6', ink: '#151515', text: '#ffffff', mute: '#b8b8c0' };
-    var lab = currentYear === 'all' ? 'ALL TIME' : String(currentYear);
-    if (currentMonth !== 0) lab = AppUtils.monthShort(currentMonth).toUpperCase() + (currentYear === 'all' ? '' : ' ' + currentYear);
+    var lab = wrappedYear === 'all' ? 'ALL TIME' : String(wrappedYear);
+    if (wrappedMonth !== 0) lab = AppUtils.monthShort(wrappedMonth).toUpperCase() + (wrappedYear === 'all' ? ' · ALL TIME' : ' ' + wrappedYear);
 
     var wrap = document.getElementById('canvas-wrap');
     wrap.style.display = 'block'; wrap.innerHTML = '';
@@ -1444,13 +1485,13 @@ AppAuth.requireAuth(function (user) {
   }
 
   function generateWrappedCard2() {
-    var entries = window.currentStatsEntries || [];
+    var entries = getWrappedEntries();
     if (!entries.length) { AppUtils.showToast('No entries to generate.'); return; }
     var G = statsTab === 'games';
     var accent = G ? '#a78bfa' : '#f4d15c';
     var dim = G ? 'rgba(124,58,237,0.35)' : 'rgba(201,168,76,0.35)';
-    var period = currentYear === 'all' ? 'All Time' : String(currentYear);
-    if (currentMonth !== 0) period = AppUtils.monthName(currentMonth) + (currentYear === 'all' ? '' : ' ' + currentYear);
+    var period = wrappedYear === 'all' ? 'All Time' : String(wrappedYear);
+    if (wrappedMonth !== 0) period = AppUtils.monthName(wrappedMonth) + (wrappedYear === 'all' ? ' · All Time' : ' ' + wrappedYear);
 
     var wrap = document.getElementById('canvas-wrap');
     wrap.style.display = 'block'; wrap.innerHTML = '';
@@ -1621,7 +1662,7 @@ AppAuth.requireAuth(function (user) {
 
   function generateWrappedCard() {
 
-    var entries = window.currentStatsEntries || [];
+    var entries = getWrappedEntries();
     if (entries.length === 0) {
       AppUtils.showToast('No entries to generate.');
       return;
@@ -1631,8 +1672,8 @@ AppAuth.requireAuth(function (user) {
     var accent = isGames ? '#a78bfa' : '#f4d15c';
     var accentDim = isGames ? 'rgba(124,58,237,0.35)' : 'rgba(201,168,76,0.35)';
 
-    var periodLabel = currentYear === 'all' ? 'All Time' : String(currentYear);
-    if (currentMonth !== 0) periodLabel = AppUtils.monthName(currentMonth) + ' ' + currentYear;
+    var periodLabel = wrappedYear === 'all' ? 'All Time' : String(wrappedYear);
+    if (wrappedMonth !== 0) periodLabel = AppUtils.monthName(wrappedMonth) + (wrappedYear === 'all' ? ' · All Time' : ' ' + wrappedYear);
 
     var wrap = document.getElementById('canvas-wrap');
     wrap.style.display = 'block';

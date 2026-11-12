@@ -10,6 +10,20 @@ html[data-theme="light"] .bk-bar select.input-field{color-scheme:light}
 html[data-theme="light"] .bk-bar select.input-field option{background:#fff;color:#1b1b1b}
 .bk-library-head{margin:24px 0 12px}
 .bk-library-head h3{font-size:23px}
+.bk-folder-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.bk-folder-card{position:relative;width:100%;min-width:0;border:1px solid rgba(255,255,255,.11);background:linear-gradient(140deg,rgba(255,255,255,.075),rgba(255,255,255,.035));box-shadow:inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);font:inherit;text-align:left}
+.playlist-card.bk-folder-card::before,.playlist-card.bk-folder-card::after{display:none}
+.bk-folder-card:hover{border-color:color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 12px 30px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.1)}
+.bk-folder-card .playlist-card-name,.bk-folder-card .playlist-card-count{position:absolute;left:16px;z-index:2;display:block}
+.bk-folder-card .playlist-card-name{top:14px;max-width:calc(100% - 32px);font-size:15px}
+.bk-folder-card .playlist-card-count{top:40px;width:max-content;margin:0;padding:3px 10px;border-radius:99px;background:rgba(255,255,255,.09);font-size:12px}
+.bk-folder-card.is-selected{border-color:color-mix(in srgb,var(--accent) 65%,transparent);box-shadow:0 10px 28px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.1)}
+.bk-folder-card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.bk-folder-card .mini-posters{pointer-events:none}
+html[data-theme="light"] .bk-folder-card{border-color:rgba(0,0,0,.1);background:linear-gradient(140deg,rgba(255,255,255,.82),rgba(255,255,255,.5));box-shadow:inset 0 1px 0 rgba(255,255,255,.95);color:var(--text-primary)}
+html[data-theme="light"] .bk-folder-card .playlist-card-count{background:rgba(0,0,0,.06);color:var(--text-muted)}
+html[data-theme="light"] .bk-folder-card.is-selected{border-color:color-mix(in srgb,var(--accent) 60%,transparent);box-shadow:0 10px 28px rgba(0,0,0,.08),inset 0 1px 0 rgba(255,255,255,.95)}
+@media(min-width:700px){.bk-folder-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.bk-folder-card .playlist-card-name{font-size:18px}}
 .bk-library-bar{grid-template-columns:minmax(0,1fr) minmax(140px,.78fr);gap:9px;margin:0 0 24px}
 .bk-search{position:relative;min-width:0}
 .bk-search svg{position:absolute;left:13px;top:50%;width:16px;height:16px;transform:translateY(-50%);fill:none;stroke:var(--text-muted);stroke-width:1.8;stroke-linecap:round;pointer-events:none}
@@ -114,7 +128,11 @@ html[data-theme="light"] .bk-detail-close{background:rgba(255,255,255,.78);borde
 .bk-distribution .viz-cols em{font-size:9px;white-space:nowrap}
 .bk-distribution .viz-cols span{font-size:10px}
 .viz-empty{min-height:70px;display:flex;align-items:center;padding:16px;border:1px solid rgba(128,128,128,.18);border-radius:12px;background:rgba(255,255,255,.04);font-size:12px;color:var(--text-muted)}
-.bk-wrap-copy{margin:-4px 0 12px}
+.bk-wrap-period{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px;padding:12px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:linear-gradient(140deg,rgba(255,255,255,.075),rgba(255,255,255,.035));box-shadow:inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.bk-wrap-period label{display:grid;gap:6px;min-width:0;font-size:11px;font-weight:650;color:var(--text-muted)}
+.bk-wrap-period select{width:100%;min-width:0;padding:9px 10px;color-scheme:dark;font-size:13px}
+.bk-wrap-period select option{background:#1e1e1e;color:#f0f0f0}
+.bk-wrap-copy{margin:-6px 0 16px}
 .bk-wrap-controls{display:flex;gap:10px;margin-bottom:14px}
 .bk-wrap-controls select{flex:1;min-width:0;color-scheme:dark}
 .bk-wrap-controls select option{background:#1e1e1e;color:#f0f0f0}
@@ -123,6 +141,9 @@ html[data-theme="light"] .bk-detail-close{background:rgba(255,255,255,.78);borde
 .bk-wrap-download{width:100%;margin-top:10px}
 html[data-theme="light"] .bk-wrap-controls select{color-scheme:light}
 html[data-theme="light"] .bk-wrap-controls select option{background:#fff;color:#1b1b1b}
+html[data-theme="light"] .bk-wrap-period{border-color:rgba(0,0,0,.1);background:linear-gradient(140deg,rgba(255,255,255,.95),rgba(245,243,237,.8));box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
+html[data-theme="light"] .bk-wrap-period select{color-scheme:light}
+html[data-theme="light"] .bk-wrap-period select option{background:#fff;color:#1b1b1b}
 .bk-num{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:6px}
 @media(min-width:700px){.bk-num{grid-template-columns:repeat(4,1fr)}}
 .bk-n{padding:16px;border-radius:18px;background:var(--bg-card);border:1px solid rgba(128,128,128,.18)}

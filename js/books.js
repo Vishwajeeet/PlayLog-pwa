@@ -53,11 +53,11 @@
   function load() {
     return AppDB.getBooks(uid).then(function (l) {
       BOOKS = l;
-      if (!shelf) shelf = BOOKS.some(function (b) { return b.bookStatus === 'reading'; }) ? 'reading' : BOOKS.some(function (b) { return b.bookStatus === 'read'; }) ? 'read' : 'want';
+      if (shelf !== 'want' && shelf !== 'read') shelf = BOOKS.some(function (b) { return b.bookStatus === 'read'; }) ? 'read' : 'want';
       render();
     }).catch(function () { AppUtils.showToast('Failed to load books.'); });
   }
-  function render() { hero(); shelves(); lib(); stats(); wantStats(); }
+  function render() { hero(); folders(); lib(); stats(); updateBooksWrappedPeriodOptions(); wantStats(); }
 
   function hero() {
     var rdg = BOOKS.filter(function (b) { return b.bookStatus === 'reading'; }), yr = new Date().getFullYear();
@@ -75,10 +75,25 @@
           '<span class="bk-now-info"><strong>' + esc(b.title) + '</strong><small>' + esc(b.author) + '</small></span></button>';
       }).join('') + '</div>' : '');
   }
-  function shelves() {
-    $('bk-shelf').innerHTML = ['want', 'reading', 'read'].map(function (k) {
-      var n = BOOKS.filter(function (b) { return b.bookStatus === k; }).length;
-      return '<button class="toggle-btn' + (k === shelf ? ' active' : '') + '" data-v="' + k + '">' + ST[k] + ' · ' + n + '</button>';
+  function folders() {
+    $('bk-folders').innerHTML = ['want', 'read'].map(function (k) {
+      var books = BOOKS.filter(function (b) { return b.bookStatus === k; });
+      var count = books.length, displayBooks = books.slice(0, 3);
+      var label = k === 'want' ? 'To Read' : 'Read';
+      var posters = displayBooks.map(function (b) {
+        var image = src(b.poster);
+        return image
+          ? '<img class="mini-poster" loading="lazy" alt="" src="' + esc(image) + '" onerror="this.style.visibility=\'hidden\'">'
+          : '<div class="mini-poster"></div>';
+      }).join('');
+      while (displayBooks.length < 3) {
+        posters += '<div class="mini-poster"></div>';
+        displayBooks.push(null);
+      }
+      return '<button type="button" class="playlist-card bk-folder-card' + (k === shelf ? ' is-selected' : '') +
+        '" data-v="' + k + '" aria-pressed="' + (k === shelf) + '"><span class="playlist-card-name">' + label +
+        '</span><span class="playlist-card-count">' + count + ' book' +
+        (count === 1 ? '' : 's') + '</span><span class="mini-posters">' + posters + '</span></button>';
     }).join('');
   }
   function lib() {
@@ -330,12 +345,27 @@
   var wrapStyle = 'detailed', wTok = 0;
 
   function wrapPeriod() {
-    var Y = $('bk-py').value, M = +$('bk-pm').value;
+    var Y = $('bk-wrap-py').value, M = +$('bk-wrap-pm').value;
     var inP = readInstances().filter(function (b) { return (Y === 'all' || b.finishYear === +Y) && (!M || b.finishMonth === M); });
     var reads = inP.filter(function (b) { return !b._reRead; });
     var label = Y === 'all' ? 'All Time' : String(Y), sh = Y === 'all' ? 'ALL TIME' : String(Y);
     if (M) { label = AppUtils.monthName(M) + (Y === 'all' ? '' : ' ' + Y); sh = AppUtils.monthShort(M).toUpperCase() + (Y === 'all' ? '' : ' ' + Y); }
     return { reads: reads, re: inP.length - reads.length, label: label, sh: sh };
+  }
+
+  function updateBooksWrappedPeriodOptions() {
+    var select = $('bk-wrap-py'), month = $('bk-wrap-pm'), years = {};
+    readInstances().forEach(function (b) { if (b.finishYear) years[b.finishYear] = true; });
+    var initialized = select.dataset.initialized === 'true';
+    var currentYear = select.value, statYear = $('bk-py').value || 'all';
+    var keepYear = initialized && (currentYear === 'all' || years[currentYear]);
+    var nextYear = keepYear ? currentYear : (years[statYear] ? statYear : 'all');
+    var currentMonth = month.value;
+    select.innerHTML = '<option value="all">All time</option>' + Object.keys(years).sort(function (a, b) { return b - a; })
+      .map(function (year) { return '<option value="' + year + '">' + year + '</option>'; }).join('');
+    select.value = nextYear;
+    month.value = initialized ? currentMonth : (nextYear === statYear ? $('bk-pm').value || '0' : '0');
+    select.dataset.initialized = 'true';
   }
 
   function wImg(url) {
@@ -653,7 +683,7 @@
         ov.remove();
         AppUtils.showToast(ratingFetchFailed ? 'Saved; Open Library rating could not be fetched.' :
           shouldFetchRating && !d.openLibraryRating ? 'Saved; Open Library has no rating for this book.' : 'Saved ✓');
-        if (d.bookStatus !== shelf) shelf = d.bookStatus;
+        if (d.bookStatus === 'want' || d.bookStatus === 'read') shelf = d.bookStatus;
         return load();
       }).catch(function () { q('#be-ok').disabled = false; AppUtils.showToast('Failed to save.'); });
     };
@@ -761,7 +791,7 @@
           AppUtils.showToast(failedRatings
             ? 'Added ' + selected.length + ' books; ratings could not be fetched for ' + failedRatings + '.'
             : 'Added ' + selected.length + ' book' + (selected.length === 1 ? '' : 's') + ' ✓');
-          shelf = st;
+          if (st === 'want' || st === 'read') shelf = st;
           load();
         } catch (e) {
           ok.disabled = false;
@@ -778,7 +808,10 @@
     var t = e.target.closest('.bk-tile[data-id], .bk-now-item[data-id]');
     if (t) { var b = BOOKS.filter(function (x) { return x.id === t.dataset.id; })[0]; if (b) detail(b); }
   });
-  $('bk-shelf').addEventListener('click', function (e) { var t = e.target.closest('.toggle-btn'); if (t) { shelf = t.dataset.v; shelves(); lib(); } });
+  $('bk-folders').addEventListener('click', function (e) {
+    var t = e.target.closest('.bk-folder-card[data-v]');
+    if (t) { shelf = t.dataset.v; folders(); lib(); }
+  });
   $('bk-q').addEventListener('input', lib);
   $('bk-sort').addEventListener('change', lib);
   $('bk-view').addEventListener('click', function (e) {
@@ -796,6 +829,12 @@
     });
   });
   $('bk-wrap-generate').addEventListener('click', generateBooksWrapped);
+  $('bk-wrap-py').addEventListener('change', function () {
+    if ($('bk-wrap-canvas').firstChild) generateBooksWrapped();
+  });
+  $('bk-wrap-pm').addEventListener('change', function () {
+    if ($('bk-wrap-canvas').firstChild) generateBooksWrapped();
+  });
   $('bk-wrap-download').addEventListener('click', function () {
     var canvas = $('bk-wrap-canvas').querySelector('canvas');
     if (!canvas) return;

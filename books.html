@@ -38,7 +38,7 @@
           <button class="toggle-btn" type="button" data-view="list" aria-label="List view" title="List view">☰</button>
         </div>
       </div>
-      <div class="toggle-pair" id="bk-shelf" style="grid-template-columns:1fr 1fr 1fr"></div>
+      <div class="bk-folder-grid" id="bk-folders" role="group" aria-label="Book folders"></div>
       <div class="bk-bar bk-library-bar">
         <label class="bk-search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
@@ -75,8 +75,16 @@
         <button class="toggle-btn active" data-style="detailed">Detailed</button>
         <button class="toggle-btn" data-style="aesthetic">Aesthetic</button>
       </div>
-      <p class="text-sm text-muted bk-wrap-copy">Card follows the year/month you pick in Your stats above.</p>
+      <div class="bk-wrap-period">
+        <label>Year<select id="bk-wrap-py" class="input-field"></select></label>
+        <label>Month<select id="bk-wrap-pm" class="input-field">
+          <option value="0">Full year</option><option value="1">January</option><option value="2">February</option><option value="3">March</option>
+          <option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option>
+          <option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option>
+        </select></label>
+      </div>
       <button class="btn btn-primary" id="bk-wrap-generate" type="button" style="margin-bottom:16px">✨ Generate Wrapped</button>
+      <p class="text-sm text-muted bk-wrap-copy">Card follows the year and month selected here.</p>
       <div id="bk-wrap-canvas" class="bk-wrap-canvas"></div>
       <button class="btn btn-ghost bk-wrap-download" id="bk-wrap-download" type="button" style="display:none">⬇ Download Card</button>
     </main>
