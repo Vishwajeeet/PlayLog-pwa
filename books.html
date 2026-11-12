@@ -71,9 +71,10 @@
       <div id="bk-want-stats" class="bk-viz"></div>
 
       <div class="bk-head"><h3 class="bk-serif">Books Wrapped</h3></div>
-      <div class="toggle-pair" id="bk-card-style" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
-        <button class="toggle-btn active" data-style="detailed">Detailed</button>
+      <div class="toggle-pair" id="bk-card-style" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px">
+        <button class="toggle-btn" data-style="detailed">Detailed</button>
         <button class="toggle-btn" data-style="aesthetic">Aesthetic</button>
+        <button class="toggle-btn active" data-style="share">Share-ready</button>
       </div>
       <div class="bk-wrap-period">
         <label>Year<select id="bk-wrap-py" class="input-field"></select></label>
@@ -84,9 +85,14 @@
         </select></label>
       </div>
       <button class="btn btn-primary" id="bk-wrap-generate" type="button" style="margin-bottom:16px">✨ Generate Wrapped</button>
-      <p class="text-sm text-muted bk-wrap-copy">Card follows the year and month selected here.</p>
-      <div id="bk-wrap-canvas" class="bk-wrap-canvas"></div>
-      <button class="btn btn-ghost bk-wrap-download" id="bk-wrap-download" type="button" style="display:none">⬇ Download Card</button>
+      <p class="text-sm text-muted bk-wrap-copy">Card follows the selected period. Tap its preview to enlarge.</p>
+      <div id="bk-wrap-result" class="wrapped-card-result">
+        <div id="bk-wrap-canvas" class="bk-wrap-canvas wrapped-card-preview"></div>
+        <div class="wrapped-card-actions">
+          <button class="btn btn-ghost bk-wrap-download" id="bk-wrap-download" type="button" style="display:none">⬇ Download Card</button>
+          <button class="btn btn-ghost" id="bk-wrap-share" type="button" style="display:none">↗ Share Card</button>
+        </div>
+      </div>
     </main>
   </div>
 

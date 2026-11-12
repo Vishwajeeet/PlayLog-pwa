@@ -69,6 +69,63 @@ window.AppUtils = {
     }, duration);
   },
 
+  shareCanvas: function(canvas, fileName, title) {
+    if (!navigator.share) {
+      return Promise.reject(new Error('Native sharing is unavailable in this browser. Use Download Card instead.'));
+    }
+    if (typeof File === 'undefined' || !canvas.toBlob) {
+      return Promise.reject(new Error('This browser cannot prepare the image for sharing. Use Download Card instead.'));
+    }
+    return new Promise(function(resolve, reject) {
+      try {
+        canvas.toBlob(function(blob) {
+          try {
+            if (!blob) {
+              reject(new Error('Could not prepare the image for sharing.'));
+              return;
+            }
+            var file = new File([blob], fileName, { type: 'image/png' });
+            navigator.share({ files: [file], title: title }).then(resolve).catch(reject);
+          } catch (error) {
+            reject(error);
+          }
+        }, 'image/png');
+      } catch (error) {
+        reject(error);
+      }
+    });
+  },
+
+  showCanvasPreview: function(canvas) {
+    if (!canvas || typeof HTMLDialogElement === 'undefined') return;
+    var previousFocus = document.activeElement;
+    var dialog = document.createElement('dialog');
+    dialog.className = 'wrapped-image-dialog';
+    dialog.setAttribute('aria-label', 'Expanded Wrapped card preview');
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'wrapped-image-dialog-close';
+    close.setAttribute('aria-label', 'Close preview');
+    close.textContent = '×';
+    var image = document.createElement('canvas');
+    image.width = canvas.width;
+    image.height = canvas.height;
+    image.setAttribute('aria-label', 'Full-size Wrapped card');
+    image.getContext('2d').drawImage(canvas, 0, 0);
+    dialog.append(close, image);
+    document.body.appendChild(dialog);
+    close.addEventListener('click', function() { dialog.close(); });
+    dialog.addEventListener('click', function(event) {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', function() {
+      dialog.remove();
+      if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+    }, { once: true });
+    dialog.showModal();
+    close.focus();
+  },
+
   formatHours: function(totalMinutes) {
     if (!totalMinutes || totalMinutes <= 0) return '0m';
     var h = Math.floor(totalMinutes / 60);

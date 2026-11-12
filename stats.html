@@ -272,10 +272,11 @@
           Wrapped Card
         </p>
 
-        <div class="toggle-pair" id="card-style" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
-  <button class="toggle-btn active" data-style="detailed">Detailed</button>
-  <button class="toggle-btn" data-style="aesthetic">Aesthetic</button>
-</div>
+        <div class="toggle-pair" id="card-style" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:12px">
+          <button class="toggle-btn" data-style="detailed">Detailed</button>
+          <button class="toggle-btn" data-style="aesthetic">Aesthetic</button>
+          <button class="toggle-btn active" data-style="share">Share-ready</button>
+        </div>
 
         <div class="wrapped-period-controls" role="group" aria-label="Wrapped card period">
           <label>Year<select id="wrapped-year" class="input-field"></select></label>
@@ -291,21 +292,24 @@
 <button class="btn btn-primary" id="btn-generate" style="margin-bottom:16px">
           ✨ Generate Wrapped Card
         </button>
-        <p class="text-sm text-muted wrapped-card-help">Choose the year and month here to generate a focused recap.</p>
+        <p class="text-sm text-muted wrapped-card-help">Choose a period, then tap the preview to see it full size.</p>
 
         <p id="wrapped-card-message" class="text-muted" style="
           margin-bottom:16px;
           display:none
         "></p>
 
-        <div id="canvas-wrap" style="
-          margin-bottom:12px;
-          display:none
-        "></div>
-
-        <button class="btn btn-ghost" id="btn-download" style="display:none">
-          ⬇ Download Card
-        </button>
+        <div id="wrapped-card-result" class="wrapped-card-result">
+          <div id="canvas-wrap" class="wrapped-card-preview" style="display:none"></div>
+          <div class="wrapped-card-actions">
+            <button class="btn btn-ghost" id="btn-download" type="button" style="display:none">
+              ⬇ Download Card
+            </button>
+            <button class="btn btn-ghost" id="btn-share" type="button" style="display:none">
+              ↗ Share Card
+            </button>
+          </div>
+        </div>
 
     </main>
 

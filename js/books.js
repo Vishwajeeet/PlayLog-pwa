@@ -141,13 +141,24 @@
   }
   function f(v) { return (+v.toFixed(v >= 100 ? 0 : v >= 10 ? 1 : 2)).toLocaleString(); }
 
+  function rereadData(b) {
+    var validDates = Array.isArray(b.reReadDates)
+      ? b.reReadDates.filter(function (date) { return /^\d{4}-\d{2}-\d{2}$/.test(date); })
+      : [];
+    var dates = validDates.filter(function (date) { return date !== b.finishDate; });
+    var legacyCount = Math.max(0, Math.floor(Number(b.reReadCount) || 0));
+    return {
+      dates: dates,
+      count: dates.length || legacyCount
+    };
+  }
+
   function readInstances() {
     var reads = [];
     BOOKS.forEach(function (b) {
       if (b.bookStatus !== 'read' || !b.finishYear) return;
       reads.push(Object.assign({}, b));
-      var dates = Array.isArray(b.reReadDates) ? b.reReadDates.filter(function (date) { return /^\d{4}-\d{2}-\d{2}$/.test(date); }) : [];
-      var count = Math.max(0, Math.floor(Number(b.reReadCount) || 0), dates.length);
+      var rereads = rereadData(b), dates = rereads.dates, count = rereads.count;
       for (var i = 0; i < count; i++) {
         var date = dates[i] || b.finishDate;
         var year = date ? +date.slice(0, 4) : b.finishYear, month = date ? +date.slice(5, 7) : b.finishMonth;
@@ -211,8 +222,8 @@
       (gk.length ? '<p class="section-title">Top genres</p>' + donut(gk.map(function (g, i) {
         return [g, gc[g], genreColors[i % genreColors.length]];
       }), 'genre tags') : '') +
-      '<div class="viz-pair bk-distribution"><div><p class="section-title">Ratings</p>' + (rn ? '<span class="bk-badge">Average ★ ' + (rs / rn).toFixed(2) + '</span>' + cols(rc, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) : '<p class="viz-empty">No rated books in this period.</p>') + '</div>' +
-      '<div><p class="section-title">Page counts</p>' + (pn ? '<span class="bk-badge">Average ' + Math.round(ps / pn) + ' pages</span>' + cols(pb, ['100', '200', '300', '400', '500', '600', '1000', '1000+'], 'bk-pages') : '<p class="viz-empty">No page counts in this period.</p>') + '</div></div>' +
+      '<div class="viz-pair bk-distribution"><div><p class="section-title">Ratings' + (rn ? '<span class="bk-badge bk-dist-average">Average ★ ' + (rs / rn).toFixed(2) + '</span>' : '') + '</p>' + (rn ? cols(rc, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) : '<p class="viz-empty">No rated books in this period.</p>') + '</div>' +
+      '<div><p class="section-title">Page counts' + (pn ? '<span class="bk-badge bk-dist-average">Average ' + Math.round(ps / pn) + ' pages</span>' : '') + '</p>' + (pn ? cols(pb, ['100', '200', '300', '400', '500', '600', '1000', '1000+'], 'bk-pages') : '<p class="viz-empty">No page counts in this period.</p>') + '</div></div>' +
       (as.length ? '<p class="section-title">Most read authors</p><div class="viz-card">' + as.map(function (x) {
         var top = x.bs.slice().sort(function (p, q) { return (q.bookRating || 0) - (p.bookRating || 0); }).slice(0, 4);
         return '<div class="bk-au"><div class="bk-au-i"><p class="bk-serif">' + esc(x.n) + '</p><p class="text-sm text-muted">' + x.bs.length + ' read' + (x.r.length ? ' · ★ ' + x.avg.toFixed(1) + ' avg' : '') + '</p></div>' +
@@ -266,7 +277,7 @@
     if (b.finishDate && b.bookStatus === 'read') rows.push(['Finished', b.finishDate]);
     if (b.startDate && b.bookStatus !== 'want') rows.push(['Started', b.startDate]);
     if (rt) rows.push(['Reading time', rt]);
-    var rereads = Math.max(0, Math.floor(Number(b.reReadCount) || 0), Array.isArray(b.reReadDates) ? b.reReadDates.length : 0);
+    var rereads = rereadData(b).count;
     if (b.bookStatus === 'read') rows.push(['Re-read', rereads + ' time' + (rereads === 1 ? '' : 's')]);
     var chips = ['<span class="bk-chip">' + ST[b.bookStatus] + '</span>'];
     if (b.pages) chips.push('<span class="bk-chip">' + Number(b.pages) + ' pages</span>');
@@ -293,12 +304,11 @@
     };
     var rereadButton = ov.querySelector('#bd-reread');
     if (rereadButton) rereadButton.onclick = function () {
-      var dates = Array.isArray(b.reReadDates) ? b.reReadDates.filter(function (date) { return /^\d{4}-\d{2}-\d{2}$/.test(date); }) : [];
-      var button = this, count = Math.max(0, Math.floor(Number(b.reReadCount) || 0), dates.length);
-      while (dates.length < count) dates.push(b.finishDate || ymd());
+      var existing = rereadData(b), dates = existing.dates.slice();
+      var button = this;
       dates.push(ymd());
       button.disabled = true;
-      AppDB.updateEntry(uid, b.id, { reReadCount: dates.length, reReadDates: dates }).then(function () {
+      AppDB.updateEntry(uid, b.id, { reReadCount: existing.count + 1, reReadDates: dates }).then(function () {
         ov.remove();
         AppUtils.showToast('Re-read added ✓');
         return load();
@@ -342,7 +352,7 @@
     }
   }
 
-  var wrapStyle = 'detailed', wTok = 0;
+  var wrapStyle = 'share', wTok = 0;
 
   function wrapPeriod() {
     var Y = $('bk-wrap-py').value, M = +$('bk-wrap-pm').value;
@@ -393,16 +403,107 @@
     c.strokeStyle = 'rgba(255,255,255,0.14)'; c.lineWidth = 1.5; AppUtils.roundRectPath(c, x, y, w, h, r); c.stroke();
   }
 
+  function generateBooksShareCard(P) {
+    var reads = P.reads;
+    if (!reads.length) return AppUtils.showToast('No finished books to wrap for this period.');
+    var tok = ++wTok, W = 1080, H = 1350, canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    var ctx = canvas.getContext('2d'), pages = 0, ratingTotal = 0, ratingCount = 0;
+    var authorCounts = {};
+    reads.forEach(function (book) {
+      pages += Number(book.pages) || 0;
+      if (book.bookRating >= 1 && book.bookRating <= 10) {
+        ratingTotal += Number(book.bookRating);
+        ratingCount++;
+      }
+      if (book.author) authorCounts[book.author] = (authorCounts[book.author] || 0) + 1;
+    });
+    var avg = ratingCount ? (ratingTotal / ratingCount).toFixed(1) + '/10' : '—';
+    var author = Object.keys(authorCounts).sort(function (a, b) { return authorCounts[b] - authorCounts[a]; })[0] || '';
+    var top = reads.slice().sort(function (a, b) {
+      return (b.bookRating || 0) - (a.bookRating || 0) || (b.pages || 0) - (a.pages || 0);
+    }).slice(0, 3);
+    $('bk-wrap-download').style.display = 'none';
+    $('bk-wrap-share').style.display = 'none';
+
+    function fit(text, maxWidth) {
+      var value = String(text || '');
+      while (ctx.measureText(value).width > maxWidth && value.length > 3) value = value.slice(0, -1);
+      return value === text ? value : value.trim() + '…';
+    }
+
+    Promise.all([
+      document.fonts.load('800 64px Inter').catch(function () {}),
+      document.fonts.load('600 30px Inter').catch(function () {})
+    ])
+      .then(function () { return wImg(top[0].poster); })
+      .then(function (coverImage) {
+        if (tok !== wTok) return;
+        var bg = ctx.createLinearGradient(0, 0, W, H);
+        bg.addColorStop(0, '#282116'); bg.addColorStop(.55, '#111317'); bg.addColorStop(1, '#171426');
+        ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+        if (coverImage) {
+          ctx.save();
+          AppUtils.roundRectPath(ctx, 650, 54, 350, 520, 28); ctx.clip();
+          var scale = Math.max(350 / coverImage.width, 520 / coverImage.height);
+          ctx.globalAlpha = .8;
+          ctx.drawImage(coverImage, 650 + (350 - coverImage.width * scale) / 2, 54 + (520 - coverImage.height * scale) / 2, coverImage.width * scale, coverImage.height * scale);
+          ctx.restore();
+          var shade = ctx.createLinearGradient(500, 0, 1010, 0);
+          shade.addColorStop(0, '#151515'); shade.addColorStop(1, 'rgba(15,15,17,.05)');
+          ctx.fillStyle = shade; ctx.fillRect(500, 0, 510, 640);
+        }
+        ctx.fillStyle = '#e5c66a'; ctx.font = '700 24px Inter, sans-serif';
+        ctx.fillText('PLAYLOG  /  BOOKS WRAPPED', 72, 90);
+        ctx.fillStyle = '#f6f2e8'; ctx.font = '800 62px Inter, sans-serif';
+        ctx.fillText(P.label === 'All Time' ? 'Your reading story' : 'Your reading recap', 72, 190);
+        ctx.fillStyle = '#aaa'; ctx.font = '600 30px Inter, sans-serif'; ctx.fillText(P.label.toUpperCase(), 74, 242);
+        ctx.fillStyle = '#e5c66a'; ctx.font = '800 142px Inter, sans-serif';
+        ctx.fillText(reads.length.toLocaleString(), 66, 420);
+        ctx.fillStyle = '#f6f2e8'; ctx.font = '600 34px Inter, sans-serif'; ctx.fillText('books finished', 76, 474);
+        ctx.fillStyle = '#bdb8ad'; ctx.font = '500 27px Inter, sans-serif';
+        ctx.fillText(P.re ? P.re.toLocaleString() + ' re-reads' : 'A fresh chapter in your reading life', 76, 522);
+
+        var metricY = 630, metricW = 290, metricGap = 25;
+        [
+          [pages ? pages.toLocaleString() : '—', 'PAGES READ'],
+          [avg, 'AVERAGE RATING'],
+          [author || '—', 'TOP AUTHOR']
+        ].forEach(function (metric, index) {
+          var x = 70 + index * (metricW + metricGap), value = String(metric[0]);
+          ctx.fillStyle = 'rgba(255,255,255,.07)'; AppUtils.roundRectPath(ctx, x, metricY, metricW, 145, 22); ctx.fill();
+          ctx.strokeStyle = 'rgba(255,255,255,.12)'; AppUtils.roundRectPath(ctx, x, metricY, metricW, 145, 22); ctx.stroke();
+          ctx.fillStyle = '#4ade80'; ctx.font = '800 ' + (value.length > 12 ? 24 : value.length > 8 ? 32 : 42) + 'px Inter, sans-serif';
+          ctx.fillText(fit(value, metricW - 36), x + 20, metricY + 80);
+          ctx.fillStyle = '#aaa'; ctx.font = '600 22px Inter, sans-serif'; ctx.fillText(metric[1], x + 20, metricY + 119);
+        });
+
+        ctx.fillStyle = '#f6f2e8'; ctx.font = '800 29px Inter, sans-serif'; ctx.fillText('A FEW FAVORITES', 72, 850);
+        top.forEach(function (book, index) {
+          var y = 895 + index * 105;
+          ctx.fillStyle = 'rgba(255,255,255,.055)'; AppUtils.roundRectPath(ctx, 70, y, 940, 64, 16); ctx.fill();
+          ctx.fillStyle = '#4ade80'; ctx.font = '800 28px Inter, sans-serif'; ctx.fillText(String(index + 1).padStart(2, '0'), 92, y + 42);
+          ctx.fillStyle = '#fff'; ctx.font = '600 27px Inter, sans-serif'; ctx.fillText(fit(book.title, 660), 155, y + 40);
+          ctx.textAlign = 'right'; ctx.fillStyle = '#c9c5bb'; ctx.font = '500 22px Inter, sans-serif';
+          ctx.fillText(book.bookRating ? book.bookRating + '/10' : '', 980, y + 40); ctx.textAlign = 'left';
+        });
+        ctx.fillStyle = '#777'; ctx.font = '500 22px Inter, sans-serif'; ctx.fillText('Made with Playlog', 72, 1320);
+        showWrappedPreview($('bk-wrap-canvas'), canvas);
+        $('bk-wrap-download').style.display = '';
+        $('bk-wrap-share').style.display = '';
+      });
+  }
+
   function generateBooksWrapped() {
     var P = wrapPeriod(), reads = P.reads;
     if (!reads.length) return AppUtils.showToast('No finished books to wrap for this period.');
+    if (wrapStyle === 'share') return generateBooksShareCard(P);
     var aes = wrapStyle === 'aesthetic', tok = ++wTok;
-    var pages = 0, rs = 0, rn = 0, ac = {}, mc = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var pages = 0, rs = 0, rn = 0, ac = {};
     reads.forEach(function (b) {
       pages += Number(b.pages) || 0;
       if (b.bookRating >= 1 && b.bookRating <= 10) { rs += b.bookRating; rn++; }
       if (b.author) ac[b.author] = (ac[b.author] || 0) + 1;
-      if (b.finishMonth >= 1 && b.finishMonth <= 12) mc[b.finishMonth - 1]++;
     });
     var avg = rn ? rs / rn : 0;
     var authors = Object.keys(ac).sort(function (a, b) { return ac[b] - ac[a]; });
@@ -415,6 +516,7 @@
     canvas.width = W; canvas.height = H;
     var ctx = canvas.getContext('2d');
     $('bk-wrap-download').style.display = 'none';
+    $('bk-wrap-share').style.display = 'none';
 
     function trunc(t, mw) {
       t = String(t || ''); var s = t;
@@ -474,7 +576,7 @@
         ctx.font = '800 30px Inter, sans-serif'; ctx.fillText('PLAYLOG', 80, 1850);
         ctx.textAlign = 'right'; ctx.fillText('BOOKS WRAPPED · ' + P.sh, 1000, 1850); ctx.textAlign = 'left';
       } else {
-        var accent = '#4ade80', dim = 'rgba(34,197,94,0.35)';
+        var accent = '#4ade80';
         ctx.fillStyle = '#0b0b0d'; ctx.fillRect(0, 0, W, H);
         var heroH = 620, tw = 420, th = 600, c0 = W / 2 - tw / 2;
         var layout = top.length === 1 ? [{ i: 0, x: c0, y: 10, r: 0 }]
@@ -539,24 +641,32 @@
           ctx.fillText(trunc((b.bookRating ? '★ ' + b.bookRating + '/10' : 'Unrated') + ' · ' + (b.author || '').toUpperCase(), W - 330), 240, y + 100);
         });
 
-        var mx = Math.max.apply(null, mc);
-        if (mx > 0) {
-          glass(ctx, 40, 1585, W - 80, 275, 24, 0.06);
-          ctx.fillStyle = accent; ctx.font = '800 28px Inter, sans-serif'; ctx.fillText('FINISHED BY MONTH', 60, 1620);
-          var base = 1800, slot = (W - 120) / 12, bw = 44, letters = 'JFMAMJJASOND';
-          ctx.textAlign = 'center';
-          mc.forEach(function (n, m) {
-            var bh = Math.max(n ? 6 : 3, Math.round(n / mx * 100)), bx = 60 + m * slot + (slot - bw) / 2;
-            ctx.fillStyle = n === mx ? accent : dim; AppUtils.roundRectPath(ctx, bx, base - bh, bw, bh, 8); ctx.fill();
-            if (n) { ctx.fillStyle = '#dddddd'; ctx.font = '600 20px Inter, sans-serif'; ctx.fillText(String(n), bx + bw / 2, base - bh - 10); }
-            ctx.fillStyle = '#999999'; ctx.font = '500 20px Inter, sans-serif'; ctx.fillText(letters[m], bx + bw / 2, base + 34);
-          });
-          ctx.textAlign = 'left';
-        }
         ctx.fillStyle = '#666666'; ctx.font = '500 24px Inter, sans-serif'; ctx.fillText('Generated with Playlog', 60, H - 40);
       }
-      $('bk-wrap-canvas').replaceChildren(canvas);
+      showWrappedPreview($('bk-wrap-canvas'), canvas);
       $('bk-wrap-download').style.display = '';
+      $('bk-wrap-share').style.display = '';
+    });
+  }
+
+  function showWrappedPreview(wrap, canvas) {
+    wrap.style.setProperty('--card-ratio', canvas.width / canvas.height);
+    wrap.replaceChildren(canvas);
+    wrap.classList.add('has-card');
+    $('bk-wrap-result').classList.add('has-card');
+    wrap.tabIndex = 0;
+    wrap.setAttribute('role', 'button');
+    wrap.setAttribute('aria-label', 'Open full-size Books Wrapped preview');
+    if (wrap.dataset.previewBound) return;
+    wrap.dataset.previewBound = 'true';
+    wrap.addEventListener('click', function () {
+      AppUtils.showCanvasPreview(wrap.querySelector('canvas'));
+    });
+    wrap.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        AppUtils.showCanvasPreview(wrap.querySelector('canvas'));
+      }
     });
   }
 
@@ -618,8 +728,9 @@
     });
     ctx.fillStyle = '#888'; ctx.font = '500 18px Inter, sans-serif'; ctx.fillText('Logged on Playlog', 96, 1085);
     var wrap = $('bk-wrap-canvas');
-    wrap.replaceChildren(canvas);
+    showWrappedPreview(wrap, canvas);
     $('bk-wrap-download').style.display = '';
+    $('bk-wrap-share').style.display = '';
   }
 
   /* ---------- add / edit ---------- */
@@ -830,9 +941,11 @@
   });
   $('bk-wrap-generate').addEventListener('click', generateBooksWrapped);
   $('bk-wrap-py').addEventListener('change', function () {
+    wTok++;
     if ($('bk-wrap-canvas').firstChild) generateBooksWrapped();
   });
   $('bk-wrap-pm').addEventListener('change', function () {
+    wTok++;
     if ($('bk-wrap-canvas').firstChild) generateBooksWrapped();
   });
   $('bk-wrap-download').addEventListener('click', function () {
@@ -842,6 +955,14 @@
     link.download = 'playlog-books-wrapped.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
+  });
+  $('bk-wrap-share').addEventListener('click', function () {
+    var canvas = $('bk-wrap-canvas').querySelector('canvas');
+    if (!canvas) return;
+    AppUtils.shareCanvas(canvas, 'playlog-books-wrapped.png', 'Books Wrapped')
+      .catch(function (error) {
+        if (error.name !== 'AbortError') AppUtils.showToast(error.message || 'Could not share the card.');
+      });
   });
   $('bk-py').addEventListener('change', stats);
   $('bk-pm').addEventListener('change', stats);
