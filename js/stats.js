@@ -275,6 +275,10 @@ AppAuth.requireAuth(function (user) {
   }
 
   var donutData = [];
+  window.addEventListener('resize', AppUtils.debounce(function () {
+    var b = document.getElementById('act-chart');
+    if (b && b.clientWidth) b.innerHTML = actSvg(actYear, b.clientWidth);
+  }, 150));
 
   function genreDonut(gk, gc, entries, isG, cls) {
     var pal = ['#c9a84c', '#e07a5f', '#81b29a', '#5aa9e6', '#b388eb'];
@@ -391,6 +395,17 @@ AppAuth.requireAuth(function (user) {
     html += '<p class="section-title">Activity</p><div class="viz-card ' + cls + '"><div class="act-years">' +
       ayl.map(function (y) { return '<button class="chip act-y' + (y == actYear ? ' selected' : '') + '" data-y="' + y + '">' + y + '</button>'; }).join('') +
       '</div><div id="act-chart">' + actSvg(actYear, Math.max(280, el.clientWidth - 32)) + '</div></div>';
+
+    var th = allEntries.filter(function (e) { return e.type === 'movie' && e.theatre; });
+    if (!isG && th.length) {
+      var ty = {}, thMin = 0, mvAll = allEntries.filter(function (e) { return e.type === 'movie'; }).length;
+      th.forEach(function (e) { var y = e.yearWatched || '—'; ty[y] = (ty[y] || 0) + 1; thMin += e.runtime || 0; });
+      var tk = Object.keys(ty).sort();
+      html += '<p class="section-title">In Theatres</p>' +
+        '<div class="tk"><div class="tk-main"><b>' + th.length + '</b><span>on the big screen</span></div>' +
+        '<div class="tk-side"><div><b>' + Math.round(th.length / (mvAll || 1) * 100) + '%</b><span>of your movies</span></div><div><b>' + AppUtils.formatHours(thMin) + '</b><span>in theatres</span></div></div></div>' +
+        '<div class="fs"><div class="fs-row">' + tk.map(function (k) { return '<div class="fs-f"><b>' + ty[k] + '</b><span>' + k + '</span></div>'; }).join('') + '</div></div>';
+    }
 
     // Rating distribution
     var n = isG ? 10 : 5, rc = [], em = ['😭','🙁','😐','😊','🤩'];
@@ -1192,6 +1207,15 @@ AppAuth.requireAuth(function (user) {
 
     }
 
+    var thE = entries.filter(function (e) { return e.type === 'movie' && e.theatre; });
+    if (thE.length) {
+      var thMn = thE.reduce(function (s, e) { return s + (e.runtime || 0); }, 0);
+      var mvN = entries.filter(function (e) { return e.type === 'movie'; }).length || 1;
+      deepCuts.push('🎟️ ' + thE.length + ' movie' + (thE.length > 1 ? 's' : '') + ' in theatres, ' + Math.round(thE.length / mvN * 100) + '% of your movies and ' + AppUtils.formatHours(thMn) + ' on the big screen');
+      var thBest = thE.filter(function (e) { return e.rating; }).sort(function (a, b) { return b.rating - a.rating; })[0];
+      if (thBest) deepCuts.push('🍿 Your best theatre night: ' + thBest.title);
+    }
+
     deepCuts.forEach(function (cut) {
 
       var box =
@@ -1396,7 +1420,8 @@ AppAuth.requireAuth(function (user) {
         ctx.fillText(isGames ? 'games completed' : 'titles in your story', 76, 474);
         ctx.fillStyle = '#bdb8ad'; ctx.font = '500 27px Inter, sans-serif';
         var mediaCount = entries.filter(function (entry) { return entry.type === 'movie'; }).length;
-        if (!isGames) ctx.fillText(mediaCount + ' movies · ' + (entries.length - mediaCount) + ' series', 76, 522);
+        var thCount = entries.filter(function (entry) { return entry.theatre; }).length;
+        if (!isGames) ctx.fillText(mediaCount + ' movies · ' + (entries.length - mediaCount) + ' series' + (thCount ? ' · ' + thCount + ' in theatres' : ''), 76, 522);
 
         var values = [
           [AppUtils.formatHours(minutes), isGames ? 'TIME PLAYED' : 'WATCH TIME'],
@@ -1650,6 +1675,8 @@ AppAuth.requireAuth(function (user) {
       ctx.fillStyle = C.text; ctx.font = '800 76px Inter, sans-serif';
       ctx.fillText(trunc(AppUtils.formatHours(mins), 440), 80, sy + 90);
       ctx.fillText(avg ? avg.toFixed(1) + (G ? '/10' : '/5') : '—', 580, sy + 90);
+      var thN = entries.filter(function (e) { return e.theatre; }).length;
+      if (!G && thN) { ctx.fillStyle = C.mute; ctx.font = '500 26px Inter, sans-serif'; ctx.fillText(thN + ' watched in theatres', 80, sy + 140); }
 
       // footer
       ctx.font = '800 30px Inter, sans-serif';
@@ -1767,7 +1794,8 @@ AppAuth.requireAuth(function (user) {
       ctx.fillStyle = '#ffffff'; ctx.font = '800 130px Inter, sans-serif';
       ctx.fillText(String(entries.length), 58, heroH + 175);
       ctx.fillStyle = '#bbbbbb'; ctx.font = '500 34px Inter, sans-serif';
-      ctx.fillText(G ? 'games logged' : 'titles logged', 62, heroH + 215);
+      var thN = entries.filter(function (e) { return e.theatre; }).length;
+      ctx.fillText(G ? 'games logged' : 'titles logged' + (thN ? ' · ' + thN + ' in theatres' : ''), 62, heroH + 215);
 
       // 3 STATS
       var mins = entries.reduce(function (s, e) { return s + (G ? (e.playtime || 0) * 60 : (e.runtime || 0)); }, 0);

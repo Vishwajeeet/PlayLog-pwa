@@ -153,9 +153,16 @@ AppAuth.requireAuth(function(user) {
     if (ACTIVE_TAB === 'games') {
       document.getElementById('stat-type').textContent = completedGameCount;
       document.getElementById('stat-type-label').textContent = 'Completed';
+      var tb0 = document.getElementById('stat-theatre-box'); if (tb0) tb0.style.display = 'none';
+      document.querySelector('.stat-strip').classList.remove('has-th');
     } else {
       document.getElementById('stat-type').textContent = movieCount + ' · ' + seriesCount;
       document.getElementById('stat-type-label').textContent = 'Movies · Series';
+      var thc = entries.filter(function (e) { return e.type === 'movie' && e.theatre; }).length;
+      var strip = document.querySelector('.stat-strip'), tb = document.getElementById('stat-theatre-box');
+      if (thc && !tb) { tb = document.createElement('div'); tb.id = 'stat-theatre-box'; tb.className = 'stat-box'; tb.innerHTML = '<div class="stat-number" id="stat-theatre"></div><div class="stat-label">In Theatres</div>'; strip.appendChild(tb); }
+      if (tb) { tb.style.display = thc ? '' : 'none'; document.getElementById('stat-theatre').textContent = thc; }
+      strip.classList.toggle('has-th', !!thc);
     }
 
     document.getElementById(

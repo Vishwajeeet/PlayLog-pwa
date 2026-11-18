@@ -29,6 +29,19 @@
     tip: 'It is off by default, so nothing changes unless you turn it on.',
     go: { label: 'Open Settings', href: '/account.html' }
   });
+  RELEASES.push({
+    id: 'theatre-v1', icon: '🎟️', title: 'Theatre log',
+    sub: 'Mark the movies you watch on the big screen.',
+    why: 'Track them in Stats and Wrapped.',
+    steps: [
+      ['1', 'Add a movie', 'Turn on Watched in theatre.'],
+      ['2', 'Update older ones', 'Open a movie, then tap Edit.'],
+      ['3', 'Spot them', 'Theatre movies get a glowing gold border.'],
+      ['4', 'See your stats', 'Find In Theatres under Stats.']
+    ],
+    tip: 'Optional. Nothing changes until you use it.',
+    go: { label: 'Open Stats', href: '/stats.html' }
+  });
   var latest = RELEASES[RELEASES.length - 1];
   var done = false;
 

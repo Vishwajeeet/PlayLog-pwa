@@ -39,6 +39,7 @@ AppAuth.requireAuth(function (user) {
       if (e.runtime) rows.push(['Runtime', AppUtils.formatHours(e.runtime)]);
       if (e.season) rows.push(['Season', e.seasonName || ('S' + e.season)]);
     }
+    if (e.theatre) rows.push(['Theatre', 'Yes']);
     if (e.rewatchCount) rows.push(['Rewatched', e.rewatchCount + ' time' + (e.rewatchCount > 1 ? 's' : '')]);
     if (e.releaseYear) rows.push(['Release Year', e.releaseYear]);
     if (e.genres && e.genres.length) rows.push(['Genres', e.genres.join(', ')]);
@@ -249,7 +250,8 @@ AppAuth.requireAuth(function (user) {
       (wl ? '' : '<label class="label">' + (G ? 'Played' : 'Watched') + '</label><div style="display:flex;gap:8px;margin-bottom:16px"><select id="ed-m" class="input-field">' + mo + '</select><select id="ed-y" class="input-field">' + yr + '</select></div>') +
       (wl || pl ? '' : '<label class="label">Rating</label><div class="' + (G ? 'number-rating-row' : 'emoji-row') + '" id="ed-r" style="margin-bottom:16px"></div>') +
       (G && !wl ? '<label class="label">Hours played</label><input type="number" id="ed-h" class="input-field" min="0" max="9999" value="' + (Number(en.playtime) || '') + '" style="margin-bottom:16px">' : '') +
-      (!G ? '<label class="label">Times rewatched</label><input type="number" id="ed-w" class="input-field" min="0" max="99" value="' + (Number(en.rewatchCount) || 0) + '" style="margin-bottom:16px">' : '') +
+      (!G ? '<div class="theatre-row" style="cursor:default"><span>Times rewatched</span><span class="stepper"><button type="button" onclick="var i=this.nextElementSibling;i.value=Math.max(0,(+i.value||0)-1)">−</button><input type="number" id="ed-w" readonly value="' + (Number(en.rewatchCount) || 0) + '"><button type="button" onclick="var i=this.previousElementSibling;i.value=Math.min(99,(+i.value||0)+1)">+</button></span></div>' : '') +
+      (en.type === 'movie' && !wl ? '<label class="theatre-row"><span>Watched in theatre</span><span class="gs"><input type="checkbox" id="ed-t"' + (en.theatre ? ' checked' : '') + '><i></i></span></label>' : '') +
       (st === 'dropped' ? '<label class="label">Reason for dropping</label><textarea id="ed-d" class="input-field" rows="2" style="resize:none;margin-bottom:16px">' + esc(en.dropReason) + '</textarea>' : '') +
       '<label class="label">Review</label><textarea id="ed-v" class="input-field" rows="3" style="resize:none">' + esc(en.review) + '</textarea>' +
       '<div class="modal-actions"><button class="btn btn-ghost" id="ed-x">Cancel</button><button class="btn btn-primary" id="ed-ok">Save</button></div></div>';
@@ -280,6 +282,7 @@ AppAuth.requireAuth(function (user) {
       }
       if (q('#ed-h')) d.playtime = parseInt(q('#ed-h').value) || null;
       if (q('#ed-w')) d.rewatchCount = Math.max(0, parseInt(q('#ed-w').value) || 0);
+      if (q('#ed-t')) d.theatre = q('#ed-t').checked;
       if (q('#ed-d')) d.dropReason = q('#ed-d').value.trim() || null;
       this.disabled = true;
       AppDB.updateEntry(uid, entryId, d).then(function () { location.reload(); })

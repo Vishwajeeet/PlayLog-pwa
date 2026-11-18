@@ -688,6 +688,8 @@ function showStep3() {
 
   // Show right fields
   document.getElementById('movie-series-fields').style.display = isGame ? 'none' : 'block';
+  var tw = document.getElementById('theatre-wrap'), ti = document.getElementById('theatre-input');
+  if (tw) { tw.style.display = r.type === 'movie' ? 'flex' : 'none'; ti.checked = false; }
   document.getElementById('game-fields').style.display = isGame ? 'block' : 'none';
   updateMediaWishlistFields();
 
@@ -771,6 +773,7 @@ document.getElementById('btn-add').addEventListener('click', function() {
       entry.playtime = null;
       entry.category = null;
       entry.review = state.markWatchedEntry ? (state.markWatchedEntry.review || null) : null;
+      if (r.type === 'movie' && !isWatchlist && document.getElementById('theatre-input').checked) entry.theatre = true;
     }
 
     var targetName = isGame ? ({

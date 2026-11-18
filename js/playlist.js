@@ -27,6 +27,13 @@ AppAuth.requireAuth(function (user) {
 
   var currentFilter = 'all';
 
+  function syncTheatreOpt() {
+    var sel = document.getElementById('pl-sort'), opt = sel.querySelector('option[value="theatre"]');
+    var has = allEntries.some(function (e) { return e.type === 'movie' && e.theatre; });
+    if (has && !opt) { opt = document.createElement('option'); opt.value = 'theatre'; opt.textContent = 'In theatres'; sel.appendChild(opt); }
+    if (!has && opt) { opt.remove(); if (plSort === 'theatre') { plSort = 'new'; sel.value = 'new'; } }
+  }
+
   loadPlaylist();
 
   function loadPlaylist() {
@@ -84,6 +91,7 @@ AppAuth.requireAuth(function (user) {
         }
 
         allEntries = entries;
+        syncTheatreOpt();
         AppUtils.setAmbient(entries[0] && entries[0].poster);
 
         document.getElementById(
@@ -165,7 +173,7 @@ AppAuth.requireAuth(function (user) {
   function plRefresh() {
     var l = getFilteredEntries();
     renderEntries(l);
-    if (plQuery) document.getElementById('entry-count').textContent = l.length + ' of ' + allEntries.length;
+    if (plQuery || plSort === 'theatre') document.getElementById('entry-count').textContent = l.length + ' of ' + allEntries.length;
     else updateEntryCount();
   }
 
@@ -181,7 +189,8 @@ AppAuth.requireAuth(function (user) {
     if (plQuery) list = list.filter(function (e) { return (e.title || '').toLowerCase().indexOf(plQuery) > -1; });
     var rate = function (e) { return (e.type === 'game' ? e.gameRating : e.rating) || 0; };
     var len = function (e) { return e.type === 'game' ? (e.playtime || 0) * 60 : (e.runtime || 0); };
-    if (plSort === 'old') list.reverse();
+    if (plSort === 'theatre') list = list.filter(function (e) { return e.type === 'movie' && e.theatre; });
+    else if (plSort === 'old') list.reverse();
     else if (plSort === 'title') list.sort(function (a, b) { return (a.title || '').localeCompare(b.title || ''); });
     else if (plSort === 'rating') list.sort(function (a, b) { return rate(b) - rate(a); });
     else if (plSort === 'length') list.sort(function (a, b) { return len(b) - len(a); });
@@ -224,6 +233,8 @@ AppAuth.requireAuth(function (user) {
         btn.classList.add('active');
 
         currentFilter = btn.dataset.filter;
+        
+        
 
         updateEntryCount();
 
@@ -241,6 +252,7 @@ AppAuth.requireAuth(function (user) {
     var card = document.createElement('div');
     card.className = 'card';
     card.dataset.entryId = entry.id;
+    if (entry.theatre && entry.type === 'movie') card.classList.add('theatre');
 
     var posterUrl = AppUtils.getPosterUrl(entry.poster);
     var posterHTML = posterUrl
@@ -260,6 +272,7 @@ AppAuth.requireAuth(function (user) {
       seasonBadge += '<span class="badge" style="top:' + (entry.type === 'series' ? 34 : 8) + 'px;left:8px">Watchlist</span>';
     }
 
+    
     if (entry.rewatchCount) seasonBadge += '<span class="badge" style="top:' + (entry.type === 'series' ? 34 : 8) + 'px;left:8px">🔁 Rewatched ' + entry.rewatchCount + '×</span>';
     var ratingBadge = '';
     if (entry.type === 'game') {
