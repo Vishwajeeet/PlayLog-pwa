@@ -107,9 +107,18 @@
 
       <section>
 
-        <p class="section-title">
-          My Playlists
-        </p>
+        <div class="playlist-section-head">
+          <p class="section-title">My Playlists</p>
+          <div class="home-global-search" id="home-global-search">
+            <div class="home-search-field">
+              <input id="home-search" type="search" placeholder="Search all movies &amp; series…" autocomplete="off" aria-label="Search all playlists" disabled>
+              <button class="home-search-toggle" id="home-search-toggle" type="button" aria-expanded="false" aria-label="Search all movies and series">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+              </button>
+            </div>
+            <div id="home-search-results" class="home-search-results" hidden></div>
+          </div>
+        </div>
 
         <div id="playlists-grid" class="grid-2">
 

@@ -301,7 +301,31 @@ AppAuth.requireAuth(function (user) {
       openEntryOptions(entry);
     });
 
-    card.addEventListener('click', function () {
+    var holdTimer = null, longPressed = false, holdX = 0, holdY = 0;
+    card.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('.btn-menu-entry') || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      holdX = e.clientX; holdY = e.clientY; longPressed = false;
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(function () {
+        longPressed = true;
+        openEntryOptions(entry);
+        if (navigator.vibrate) navigator.vibrate(15);
+      }, 450);
+    });
+    card.addEventListener('pointermove', function (e) {
+      if (Math.hypot(e.clientX - holdX, e.clientY - holdY) > 10) clearTimeout(holdTimer);
+    });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (name) {
+      card.addEventListener(name, function () { clearTimeout(holdTimer); });
+    });
+    card.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    card.addEventListener('click', function (e) {
+      if (longPressed) {
+        e.preventDefault();
+        e.stopPropagation();
+        longPressed = false;
+        return;
+      }
       window.location.href = '/entry.html?id=' + entry.id;
     });
 
@@ -478,6 +502,15 @@ AppAuth.requireAuth(function (user) {
     document.getElementById('btn-move-entry').style.display = isMediaWishlist ? 'none' : '';
     document.getElementById('btn-share-entry').style.display = isMediaWishlist ? 'none' : '';
     document.getElementById('btn-mark-watched-entry').style.display = isMediaWishlist ? '' : 'none';
+    document.getElementById('btn-rewatch-entry').style.display =
+      entry.type !== 'game' && !isMediaWishlist ? '' : 'none';
+    ['playing', 'completed', 'dropped'].forEach(function (status) {
+      var button = document.getElementById('btn-game-' + status);
+      button.style.display = entry.type === 'game' && entry.completionStatus !== status ? '' : 'none';
+    });
+    document.getElementById('btn-move-entry').style.display = isMediaWishlist ? 'none' : '';
+    document.getElementById('btn-share-entry').style.display = isMediaWishlist ? 'none' : '';
+    document.getElementById('btn-delete-entry').style.display = '';
 
     document.getElementById(
       'entry-options-modal'
@@ -489,6 +522,46 @@ AppAuth.requireAuth(function (user) {
     if (!currentEditEntry) return;
     document.getElementById('entry-options-modal').classList.remove('open');
     window.location.href = '/entry.html?id=' + encodeURIComponent(currentEditEntry.id);
+  });
+
+  document.getElementById('btn-rewatch-entry').addEventListener('click', function () {
+    if (!currentEditEntry) return;
+    var button = this, entry = currentEditEntry;
+    button.disabled = true;
+    AppDB.updateEntry(uid, entry.id, { rewatchCount: (Number(entry.rewatchCount) || 0) + 1 }).then(function () {
+      document.getElementById('entry-options-modal').classList.remove('open');
+      AppUtils.showToast('Rewatch logged ✓');
+      return loadPlaylist();
+    }).catch(function (err) {
+      console.error('Could not update rewatch count.', err);
+      AppUtils.showToast('Failed to log rewatch.');
+    }).then(function () { button.disabled = false; });
+  });
+
+  ['playing', 'completed', 'dropped'].forEach(function (status) {
+    document.getElementById('btn-game-' + status).addEventListener('click', function () {
+      if (!currentEditEntry || currentEditEntry.type !== 'game') return;
+      var entry = currentEditEntry, button = this;
+      var names = { playing: 'Currently Playing', completed: 'Completed Games', dropped: 'Dropped Games' };
+      button.disabled = true;
+      AppDB.getOrCreatePlaylist(uid, names[status], 'game').then(function (pid) {
+        var now = new Date();
+        var update = {
+          completionStatus: status,
+          playlistId: pid,
+          monthWatched: now.getMonth() + 1,
+          yearWatched: now.getFullYear()
+        };
+        return AppDB.updateEntry(uid, entry.id, update);
+      }).then(function () {
+        document.getElementById('entry-options-modal').classList.remove('open');
+        AppUtils.showToast('Status changed to ' + status + ' ✓');
+        return loadPlaylist();
+      }).catch(function (err) {
+        console.error('Could not change game status.', err);
+        AppUtils.showToast('Failed to change status.');
+      }).then(function () { button.disabled = false; });
+    });
   });
 
   // EDIT ENTRY

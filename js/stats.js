@@ -9,7 +9,12 @@ AppAuth.requireAuth(function (user) {
 
   var currentMonth = 0;
 
-  var statsTab = 'media';
+  var statsTab = (function () {
+    var t = new URLSearchParams(window.location.search).get('tab') || localStorage.getItem('pl-tab-pref') || 'media';
+    if (t === 'last') t = localStorage.getItem('pl-last-tab') || 'media';
+    return t === 'games' ? 'games' : 'media';
+  })();
+  document.querySelectorAll('#stats-type-pills .type-pill').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === statsTab); });
   var wrappedYear = null;
   var wrappedMonth = null;
   var wrappedRenderTab = null;
@@ -242,7 +247,7 @@ AppAuth.requireAuth(function (user) {
       cnt[e.monthWatched - 1]++;
     });
     cnt.forEach(function (c) { if (c > mx) mx = c; });
-    var H = 190, pl = 30, pr = 14, pt = 24, pb = 30, pw = w - pl - pr, ph = H - pt - pb;
+    var H = 190, pl = 14, pr = 14, pt = 24, pb = 30, pw = w - pl - pr, ph = H - pt - pb;
     var X = function (i) { return pl + i * pw / 11; };
     var Y = function (c) { return pt + ph - c / mx * ph; };
     var pts = cnt.map(function (c, i) { return X(i).toFixed(1) + ',' + Y(c).toFixed(1); }).join(' ');
@@ -250,7 +255,7 @@ AppAuth.requireAuth(function (user) {
     [0, 1].forEach(function (f) {
       var y = pt + ph - f * ph;
       s += '<line x1="' + pl + '" x2="' + (w - pr) + '" y1="' + y + '" y2="' + y + '" style="stroke:var(--bg-card-2)"/>' +
-        '<text x="' + (pl - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" style="fill:var(--text-muted)">' + (f ? mx : 0) + '</text>';
+        '';
     });
     s += '<polygon points="' + X(0) + ',' + (pt + ph) + ' ' + pts + ' ' + X(11) + ',' + (pt + ph) + '" style="fill:var(--vz);fill-opacity:.15"/>' +
       '<polyline points="' + pts + '" fill="none" stroke-width="2.5" stroke-linejoin="round" style="stroke:var(--vz)"/>';
@@ -396,15 +401,17 @@ AppAuth.requireAuth(function (user) {
       ayl.map(function (y) { return '<button class="chip act-y' + (y == actYear ? ' selected' : '') + '" data-y="' + y + '">' + y + '</button>'; }).join('') +
       '</div><div id="act-chart">' + actSvg(actYear, Math.max(280, el.clientWidth - 32)) + '</div></div>';
 
-    var th = allEntries.filter(function (e) { return e.type === 'movie' && e.theatre; });
+    var th = entries.filter(function (e) { return e.type === 'movie' && e.theatre; });
     if (!isG && th.length) {
-      var ty = {}, thMin = 0, mvAll = allEntries.filter(function (e) { return e.type === 'movie'; }).length;
-      th.forEach(function (e) { var y = e.yearWatched || '—'; ty[y] = (ty[y] || 0) + 1; thMin += e.runtime || 0; });
-      var tk = Object.keys(ty).sort();
+      var ty = {}, thMin = 0, mvAll = entries.filter(function (e) { return e.type === 'movie'; }).length;
+      var yrs = {}; th.forEach(function (e) { yrs[e.yearWatched] = 1; });
+      var byMon = Object.keys(yrs).length <= 1;
+      th.forEach(function (e) { var y = byMon ? e.monthWatched : (e.yearWatched || '—'); ty[y] = (ty[y] || 0) + 1; thMin += e.runtime || 0; });
+      var tk = Object.keys(ty).sort(function (a, b) { return a - b; });
       html += '<p class="section-title">In Theatres</p>' +
         '<div class="tk"><div class="tk-main"><b>' + th.length + '</b><span>on the big screen</span></div>' +
         '<div class="tk-side"><div><b>' + Math.round(th.length / (mvAll || 1) * 100) + '%</b><span>of your movies</span></div><div><b>' + AppUtils.formatHours(thMin) + '</b><span>in theatres</span></div></div></div>' +
-        '<div class="fs"><div class="fs-row">' + tk.map(function (k) { return '<div class="fs-f"><b>' + ty[k] + '</b><span>' + k + '</span></div>'; }).join('') + '</div></div>';
+        '<div class="fs"><div class="fs-row">' + tk.map(function (k) { return '<div class="fs-f"><b>' + ty[k] + '</b><span>' + (byMon ? mon[k - 1] : k) + '</span></div>'; }).join('') + '</div></div>';
     }
 
     // Rating distribution
@@ -412,7 +419,8 @@ AppAuth.requireAuth(function (user) {
     for (var i = 0; i < n; i++) rc.push(0);
     entries.forEach(function (e) { var r = isG ? e.gameRating : e.rating; if (r >= 1 && r <= n) rc[r - 1]++; });
     var rmax = Math.max.apply(null, rc.concat(1));
-    html += '<p class="section-title">Ratings</p><div class="viz-card viz-cols ' + cls + '">' +
+    if (isG) html += '<p class="section-title">Ratings</p><div class="viz-card ' + cls + '">' + rc.map(function (c, i) { return c ? '<div class="viz-row"><span style="width:24px">' + (i + 1) + '</span><div><i style="width:' + Math.round(c / rmax * 100) + '%"></i></div><b>' + c + '</b></div>' : ''; }).reverse().join('') + '</div>';
+    else html += '<p class="section-title">Ratings</p><div class="viz-card viz-cols ' + cls + '">' +
       rc.map(function (c, i) {
         return '<div><span>' + c + '</span><i style="height:' + Math.round(c / rmax * 80) + 'px"></i><em>' + (isG ? i + 1 : em[i]) + '</em></div>';
       }).join('') + '</div>';
@@ -432,7 +440,7 @@ AppAuth.requireAuth(function (user) {
     var cnt = function (f) { return entries.filter(f).length; };
     var parts = isG
       ? [['Completed', 'completed', '#22c55e'], ['Playing', 'playing', '#f59e0b'], ['Dropped', 'dropped', '#ef4444'], ['Wishlist', 'wishlist', '#6366f1']]
-          .map(function (p) { return [p[0], cnt(function (e) { return e.completionStatus === p[1]; }), p[2]]; })
+          .map(function (p) { return [p[0], p[1] === 'wishlist' ? allEntries.filter(function (e) { return e.type === 'game' && e.completionStatus === 'wishlist'; }).length : cnt(function (e) { return e.completionStatus === p[1]; }), p[2]]; })
       : [['Movies', cnt(function (e) { return e.type === 'movie'; }), '#c9a84c'], ['Series', cnt(function (e) { return e.type === 'series'; }), '#8a7434']];
     if (entries.length) {
       html += '<div><p class="section-title">' + (isG ? 'Status' : 'Movies vs Series') + '</p><div class="viz-card"><div class="viz-split">' +
@@ -464,7 +472,7 @@ AppAuth.requireAuth(function (user) {
       entries.filter(function (e) { return e.completionStatus === 'dropped'; }).length;
 
     document.querySelector('#g-wishlist .stat-number').textContent =
-      entries.filter(function (e) { return e.completionStatus === 'wishlist'; }).length;
+      allEntries.filter(function (e) { return e.type === 'game' && e.completionStatus === 'wishlist'; }).length;
 
     var genreMap = {};
     entries.forEach(function (e) {
@@ -823,7 +831,7 @@ AppAuth.requireAuth(function (user) {
 
         return entry.rating === 5;
 
-      }).slice(0, 4);
+      }).slice(0, window.innerWidth >= 900 ? 7 : 4);
 
     if (topRated.length === 0) {
 
@@ -1662,10 +1670,19 @@ AppAuth.requireAuth(function (user) {
       var y0 = 1130;
       ctx.fillStyle = C.mute; ctx.font = '500 26px Inter, sans-serif';
       ctx.fillText(G ? 'Top Games' : 'Top Titles', 80, y0);
-      ctx.fillText('Top Genres', 580, y0);
+      ctx.save(); ctx.textAlign = 'right'; ctx.fillText('Rating  ·  ' + (G ? 'Hours' : 'Runtime'), 1000, y0); ctx.restore();
       ctx.fillStyle = C.text; ctx.font = '700 34px Inter, sans-serif';
-      top.forEach(function (e, i) { ctx.fillText((i + 1) + '  ' + trunc(e.title, 380), 80, y0 + 60 + i * 58); });
-      gk.forEach(function (g, i) { ctx.fillText((i + 1) + '  ' + trunc(g, 380), 580, y0 + 60 + i * 58); });
+      top.forEach(function (e, i) {
+        var ry = y0 + 60 + i * 58, rr = G ? e.gameRating : e.rating;
+        var hh = G ? (e.playtime ? e.playtime + 'h' : '—') : AppUtils.formatHours(e.runtime || 0);
+        ctx.font = '700 34px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = C.text;
+        ctx.fillText((i + 1) + '  ' + trunc(e.title, 560), 80, ry);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = C.mute; ctx.fillText(hh, 1000, ry);
+        ctx.fillStyle = C.text; ctx.font = '800 34px Inter, sans-serif'; ctx.fillText(rr ? String(rr) : '—', 840, ry);
+        ctx.textAlign = 'left'; ctx.font = '700 34px Inter, sans-serif';
+      });
+      
 
       // big stats
       var sy = 1530;
@@ -1716,7 +1733,7 @@ AppAuth.requireAuth(function (user) {
     var pool = G ? entries.filter(function (e) { return e.completionStatus === 'completed' && e.gameRating; }) : [];
     if (!pool.length) pool = entries.filter(function (e) { return rate(e); });
     if (!pool.length) pool = entries;
-    var top = pool.slice().sort(function (a, b) { return rate(b) - rate(a) || vol(b) - vol(a); }).slice(0, 3);
+    var top = pool.slice().sort(function (a, b) { return rate(b) - rate(a) || vol(b) - vol(a); }).slice(0, G ? 5 : 3);
 
     function loadImg(url) {
       return new Promise(function (res) {
@@ -1789,13 +1806,13 @@ AppAuth.requireAuth(function (user) {
       ctx.fillStyle = vg2; ctx.fillRect(0, 1100, W, H - 1100);
       // HEADER + BIG NUMBER
       ctx.fillStyle = accent; ctx.font = '800 30px Inter, sans-serif';
-      ctx.fillText((G ? 'GAMES WRAPPED' : 'WRAPPED') + ' · ' + period.toUpperCase(), 60, 80);
+      ctx.fillText((G ? 'GAMES WRAPPED' : 'WRAPPED') + ' · ' + period.toUpperCase(), 60, heroH + 72);
       ctx.fillRect(60, heroH + 20, 90, 8);
       ctx.fillStyle = '#ffffff'; ctx.font = '800 130px Inter, sans-serif';
-      ctx.fillText(String(entries.length), 58, heroH + 175);
+      ctx.fillText(String(entries.length), 58, heroH + 200);
       ctx.fillStyle = '#bbbbbb'; ctx.font = '500 34px Inter, sans-serif';
       var thN = entries.filter(function (e) { return e.theatre; }).length;
-      ctx.fillText(G ? 'games logged' : 'titles logged' + (thN ? ' · ' + thN + ' in theatres' : ''), 62, heroH + 215);
+      ctx.fillText(G ? 'games logged' : 'titles logged' + (thN ? ' · ' + thN + ' in theatres' : ''), 62, heroH + 240);
 
       // 3 STATS
       var mins = entries.reduce(function (s, e) { return s + (G ? (e.playtime || 0) * 60 : (e.runtime || 0)); }, 0);
@@ -1812,7 +1829,7 @@ AppAuth.requireAuth(function (user) {
         [avg ? avg.toFixed(1) + (G ? '/10' : '/5') : '—', 'Avg Rating'],
         [tg, 'Top Genre']
       ];
-      var gap = 20, cw = (W - 120 - gap * 2) / 3, sy = heroH + 260;
+      var gap = 20, cw = (W - 120 - gap * 2) / 3, sy = heroH + 275;
       stats.forEach(function (s, i) { statCard(60 + i * (cw + gap), sy, cw, 140, s[0], s[1]); });
 
       // TOP 3
@@ -1829,12 +1846,21 @@ AppAuth.requireAuth(function (user) {
         ctx.fillStyle = accent; ctx.font = '800 54px Inter, sans-serif';
         ctx.fillText(String(i + 1), 170, y + 82);
         ctx.fillStyle = '#ffffff'; ctx.font = '700 34px Inter, sans-serif';
-        ctx.fillText(trunc(e.title, W - 60 - 240 - 30), 240, y + 58);
+        ctx.fillText(trunc(e.title, W - 60 - 240 - (G ? 230 : 30)), 240, G ? y + 78 : y + 58);
         var r = rate(e);
         var line = (G ? (r ? r + '/10' : 'Unrated') : (r ? AppUtils.ratingToEmoji(r) + ' ' + r + '/5' : 'Unrated'))
-          + ' · ' + (G ? (e.completionStatus || 'logged') : (e.type || '')).toUpperCase();
+          + ' · ' + (G ? (e.completionStatus || 'logged') : (e.type || '')).toUpperCase() + (G && e.playtime ? ' · ' + e.playtime + 'H' : '');
         ctx.fillStyle = '#cccccc'; ctx.font = '500 26px Inter, sans-serif';
-        ctx.fillText(line, 240, y + 100);
+        if (G) {
+          var hrs = e.playtime ? e.playtime + 'H' : '';
+          ctx.save(); ctx.textAlign = 'right';
+          ctx.font = '700 34px Inter, sans-serif'; ctx.fillStyle = '#ffffff';
+          ctx.fillText(hrs, W - 90, y + 84);
+          var hw = hrs ? ctx.measureText(hrs).width + 50 : 0;
+          ctx.fillStyle = accent;
+          ctx.font = '800 60px Inter, sans-serif'; ctx.fillText(r ? String(r) : '—', W - 90 - hw, y + 84);
+          ctx.restore();
+        } else ctx.fillText(line, 240, y + 100);
       });
 
       // FOOTER
@@ -2003,7 +2029,7 @@ AppAuth.requireAuth(function (user) {
         ctx.fillText(String(entries.length), 58, heroH + 175);
         ctx.font = '500 34px Inter, sans-serif';
         ctx.fillStyle = '#bbbbbb';
-        ctx.fillText(isGames ? 'games logged' : 'titles logged', 62, heroH + 215);
+        ctx.fillText(isGames ? 'games logged' : 'titles logged', 62, heroH + 240);
 
         // ===== STAT CARD GRID =====
         var totalMinutes = entries.reduce(function (sum, e) {
@@ -2090,7 +2116,7 @@ AppAuth.requireAuth(function (user) {
         ctx.font = '500 28px Inter, sans-serif';
         ctx.fillStyle = '#cccccc';
         var ratingLine = isGames
-          ? (top.gameRating ? top.gameRating + '/10' : 'Unrated')
+          ? (top.gameRating ? top.gameRating + '/10' : 'Unrated') + (top.playtime ? '  ·  ' + top.playtime + 'h' : '')
           : (top.rating ? AppUtils.ratingToEmoji(top.rating) + ' ' + top.rating + '/5' : 'Unrated');
         ctx.fillText(ratingLine, textX, thumbY + 110);
 

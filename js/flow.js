@@ -23,14 +23,13 @@ window.AppFlow = {
       }).catch(function () { btn.disabled = false; btn.textContent = 'Undo'; AppUtils.showToast('Undo failed.'); });
     };
   },
-  rewatch: function (title) {
+  rewatch: function (title, year) {
     return new Promise(function (res) {
       var ov = document.createElement('div');
       ov.className = 'modal-overlay open';
-      ov.innerHTML = '<div class="modal-box"><p class="modal-title">Already in your collection</p>' +
-        '<p style="color:var(--text-muted);margin-bottom:20px">Is this a rewatch of ' + AppUtils.esc(title) + '?</p>' +
-        '<button class="btn btn-primary" data-v="yes" style="margin-bottom:8px">Yes, count a rewatch</button>' +
-        '<button class="btn btn-ghost" data-v="new" style="margin-bottom:8px">No, add as new entry</button>' +
+      ov.innerHTML = '<div class="modal-box"><p class="modal-title">Already logged' + (year ? ' in ' + AppUtils.esc(year) : '') + '</p>' +
+        '<p style="color:var(--text-muted);margin-bottom:20px">Add ' + AppUtils.esc(title) + ' as a rewatch?</p>' +
+        '<button class="btn btn-primary" data-v="yes" style="margin-bottom:8px">Mark as rewatch</button>' +
         '<button class="btn btn-ghost" data-v="">Cancel</button></div>';
       ov.addEventListener('click', function (e) {
         var b = e.target.closest('button'); if (!b) return;

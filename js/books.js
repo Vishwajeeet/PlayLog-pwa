@@ -1,6 +1,14 @@
 (function () {
   var $ = function (id) { return document.getElementById(id); }, esc = AppUtils.esc;
   var uid, BOOKS = [], DESC_PENDING = {}, shelf = null, viewMode = localStorage.getItem('pl-books-view') === 'list' ? 'list' : 'grid';
+  var suppressBookTileClick = false, suppressBookTileTimer = null;
+  var suppressSeriesTileClick = false, suppressSeriesTileTimer = null;
+  var seriesBackfillPending = null, booksListener = null;
+  var SERIES_EXPANDED = Object.create(null), SERIES_ONLY_LIBRARY = Object.create(null);
+  var SERIES_BOUNCE = Object.create(null), SERIES_COLLAPSE = Object.create(null);
+  var SERIES_CATALOG = Object.create(null), SERIES_PENDING = Object.create(null), SERIES_ERRORS = Object.create(null);
+  var SERIES_UPDATED_AT = Object.create(null), SERIES_CACHE_TTL = 12 * 60 * 60 * 1000;
+  var SERIES_CACHE_PREFIX = 'pl-books-series-catalog-v1:';
   var ST = { want: 'Want to Read', reading: 'Reading', read: 'Read' };
   var col = function () { return db.collection('users').doc(uid).collection('entries'); };
 
@@ -18,22 +26,155 @@
         : '') +
       '<p class="bk-t">' + esc(b.title) + '</p><p class="bk-a">' + esc(b.author) + '</p></button>';
   }
+  function seriesEntries(seriesKey, seriesName) {
+    var name = (seriesName || '').trim().toLowerCase();
+    return BOOKS.filter(function (book) {
+      return (seriesKey && book.seriesKey === seriesKey) ||
+        (name && (book.seriesName || '').trim().toLowerCase() === name);
+    });
+  }
+  function seriesKeyPriority(key) { return /^OL\d+L$/.test(key || '') ? 2 : key ? 1 : 0; }
+  function seriesPosterFor(seriesKey, seriesName) {
+    var entry = seriesEntries(seriesKey, seriesName).filter(function (book) { return !!book.seriesPoster; })[0];
+    return entry ? entry.seriesPoster : null;
+  }
+  function seriesBookTile(book, tracked) {
+    var statusBadge = '';
+    if (!tracked) {
+      statusBadge = '<span class="bk-series-status">Not in library</span>';
+    } else if (tracked.bookStatus === 'read') {
+      if (tracked.bookRating) statusBadge = '<span class="badge badge-tr badge-rating-big" style="background:var(--accent-game);color:#fff">' + Number(tracked.bookRating) + '</span>';
+    } else {
+      statusBadge = '<span class="bk-series-status">' + esc(ST[tracked.bookStatus] || 'In library') + '</span>';
+    }
+    var displayBook = tracked && tracked.poster ? Object.assign({}, book, { poster: tracked.poster }) : book;
+    return '<button type="button" class="bk-tile ' + (tracked ? 'bk-series-owned' : 'bk-series-unowned') + '"' +
+      (tracked ? ' data-id="' + esc(tracked.id) + '"' : ' disabled aria-disabled="true"') + '>' +
+      cov(displayBook, statusBadge) +
+      '<p class="bk-t">' + esc(book.title) + '</p><p class="bk-a">' + esc(book.author) + '</p></button>';
+  }
+  function findLibraryBook(book) {
+    if (book.olKey) {
+      var exact = BOOKS.filter(function (candidate) { return candidate.olKey === book.olKey; })[0];
+      if (exact) return exact;
+    }
+    var normalize = function (value) { return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); };
+    var title = normalize(book.title), author = normalize(book.author);
+    if (!title) return null;
+    var candidates = BOOKS.filter(function (candidate) { return normalize(candidate.title) === title; });
+    if (!author) return candidates.length === 1 ? candidates[0] : null;
+    var sameAuthor = candidates.filter(function (candidate) { return normalize(candidate.author) === author; });
+    if (sameAuthor.length) return sameAuthor[0];
+    return candidates.length === 1 && !normalize(candidates[0].author) ? candidates[0] : null;
+  }
+  function releaseOrder(books, catalog) {
+    var years = Object.create(null), order = Object.create(null);
+    (catalog || []).forEach(function (book, index) {
+      if (book.olKey) order[book.olKey] = Number(book.seriesNumber) || index + 1;
+      if (book.olKey && Number(book.year)) years[book.olKey] = Number(book.year);
+    });
+    return books.slice().sort(function (a, b) {
+      var ay = Number(a.releaseYear) || Number(a.year) || years[a.olKey] || Number.MAX_SAFE_INTEGER;
+      var by = Number(b.releaseYear) || Number(b.year) || years[b.olKey] || Number.MAX_SAFE_INTEGER;
+      var an = order[a.olKey] || Number(a.seriesNumber) || Number.MAX_SAFE_INTEGER;
+      var bn = order[b.olKey] || Number(b.seriesNumber) || Number.MAX_SAFE_INTEGER;
+      return an - bn || ay - by || (a.title || '').localeCompare(b.title || '');
+    });
+  }
+  function ensureSeriesCatalog(key) {
+    if (!key || SERIES_PENDING[key]) return;
+    var now = Date.now(), hasMemoryCatalog = Object.prototype.hasOwnProperty.call(SERIES_CATALOG, key);
+    if (hasMemoryCatalog && now - (SERIES_UPDATED_AT[key] || 0) < SERIES_CACHE_TTL) return;
+    if (!hasMemoryCatalog) {
+      var cacheKey = SERIES_CACHE_PREFIX + encodeURIComponent(key), raw = null, cached = null;
+      try {
+        raw = localStorage.getItem(cacheKey);
+      } catch (error) {
+        console.warn('Could not read the cached Open Library series.', error);
+      }
+      if (raw) {
+        try {
+          cached = JSON.parse(raw);
+        } catch (error) {
+          console.warn('Could not parse the cached Open Library series.', error);
+        }
+        if (!cached || cached.version !== 1 || !Number.isFinite(cached.updatedAt) ||
+            !Array.isArray(cached.books) || !cached.books.every(function (book) { return book && typeof book.title === 'string'; })) {
+          try {
+            localStorage.removeItem(cacheKey);
+          } catch (error) {
+            console.warn('Could not remove an invalid Open Library series cache.', error);
+          }
+          cached = null;
+        }
+      }
+      if (cached) {
+        SERIES_CATALOG[key] = cached.books;
+        SERIES_UPDATED_AT[key] = cached.updatedAt;
+        if (now - cached.updatedAt < SERIES_CACHE_TTL) return;
+      }
+    }
+    if (SERIES_ERRORS[key]) return;
+    SERIES_PENDING[key] = AppOL.seriesBooks(key).then(function (books) {
+      SERIES_CATALOG[key] = books;
+      SERIES_UPDATED_AT[key] = Date.now();
+      delete SERIES_PENDING[key];
+      try {
+        localStorage.setItem(SERIES_CACHE_PREFIX + encodeURIComponent(key), JSON.stringify({
+          version: 1,
+          updatedAt: SERIES_UPDATED_AT[key],
+          books: books.map(function (book) {
+            return {
+              olKey: book.olKey || null,
+              title: book.title || '',
+              author: book.author || '',
+              year: Number(book.year) || null,
+              poster: book.poster || null,
+              seriesKey: book.seriesKey || null,
+              seriesName: book.seriesName || null,
+              seriesPosition: book.seriesPosition || null,
+              seriesNumber: Number(book.seriesNumber) || null
+            };
+          })
+        }));
+      } catch (error) {
+        console.warn('Could not cache the Open Library series.', error);
+      }
+      delete SERIES_ERRORS[key];
+      render();
+    }).catch(function (error) {
+      delete SERIES_PENDING[key];
+      SERIES_ERRORS[key] = true;
+      var hasCachedCatalog = Object.prototype.hasOwnProperty.call(SERIES_CATALOG, key);
+      console.error(hasCachedCatalog ? 'Could not refresh the cached Open Library series.' : 'Could not load Open Library series books.', error);
+      AppUtils.showToast(hasCachedCatalog ? 'Could not refresh this series; showing cached titles.' : 'Could not load this series from Open Library.');
+      render();
+    });
+  }
   function modal(html) {
     var ov = document.createElement('div');
     ov.className = 'modal-overlay open'; ov.innerHTML = html;
     ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
     document.body.appendChild(ov); return ov;
   }
-  function shrink(file, cb) {
+  function shrink(file, cb, onerror) {
     var r = new FileReader();
+    function fail() {
+      if (onerror) onerror();
+      else AppUtils.showToast('Could not load the image.');
+    }
+    r.onerror = fail;
     r.onload = function (e) {
       var im = new Image();
       im.onload = function () {
         var k = Math.min(1, 300 / im.width), c = document.createElement('canvas');
         c.width = im.width * k; c.height = im.height * k;
-        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        var context = c.getContext('2d');
+        if (!context) return fail();
+        context.drawImage(im, 0, 0, c.width, c.height);
         cb(c.toDataURL('image/jpeg', 0.72));
       };
+      im.onerror = fail;
       im.src = e.target.result;
     };
     r.readAsDataURL(file);
@@ -42,6 +183,10 @@
     var n = new Date();
     var d = { type: 'book', title: m.title, author: m.author || '', poster: m.poster || null, pages: m.pages || null,
       genres: m.genres || [], fiction: m.fiction !== false, olKey: m.olKey || null, bookStatus: st, bookRating: null,
+      seriesKey: m.seriesKey || null, seriesName: m.seriesName || null,
+      seriesPosition: m.seriesPosition || null, seriesNumber: Number(m.seriesNumber) || null,
+      seriesMetadataChecked: !!m.olKey, seriesMetadataVersion: 3, releaseYear: Number(m.year) || null,
+      seriesPoster: m.seriesPoster || seriesPosterFor(m.seriesKey, m.seriesName),
       review: null, startDate: null, finishDate: st === 'read' ? ymd(n) : null,
       finishMonth: st === 'read' ? n.getMonth() + 1 : null, finishYear: st === 'read' ? n.getFullYear() : null,
       playlistId: null, addedAt: firebase.firestore.FieldValue.serverTimestamp() };
@@ -53,9 +198,84 @@
   function load() {
     return AppDB.getBooks(uid).then(function (l) {
       BOOKS = l;
-      if (shelf !== 'want' && shelf !== 'read') shelf = BOOKS.some(function (b) { return b.bookStatus === 'read'; }) ? 'read' : 'want';
+      if (['want', 'reading', 'read', 'series'].indexOf(shelf) === -1) {
+        shelf = BOOKS.some(function (b) { return b.bookStatus === 'read'; }) ? 'read' :
+          BOOKS.some(function (b) { return b.bookStatus === 'want'; }) ? 'want' :
+            BOOKS.some(function (b) { return b.bookStatus === 'reading'; }) ? 'reading' : 'want';
+      }
       render();
+      listenForBookChanges();
+      backfillSeriesMetadata(l).then(function (found) {
+        if (found) render();
+      }).catch(function (error) {
+        console.error('Could not fetch Open Library series information.', error);
+        AppUtils.showToast('Could not update series details from Open Library.');
+      });
     }).catch(function () { AppUtils.showToast('Failed to load books.'); });
+  }
+
+  function listenForBookChanges() {
+    if (booksListener) return;
+    booksListener = col().where('type', '==', 'book').onSnapshot(function (snapshot) {
+      BOOKS = snapshot.docs.map(function (doc) { return Object.assign({ id: doc.id }, doc.data()); });
+      var addedAt = function (book) { return book.addedAt && book.addedAt.toMillis ? book.addedAt.toMillis() : 9e15; };
+      BOOKS.sort(function (a, b) { return addedAt(b) - addedAt(a); });
+      render();
+      backfillSeriesMetadata(BOOKS).then(function (found) {
+        if (found) render();
+      }).catch(function (error) {
+        console.error('Could not fetch Open Library series information.', error);
+        AppUtils.showToast('Could not update series details from Open Library.');
+      });
+    }, function (error) {
+      console.error('Could not keep the book library up to date.', error);
+      AppUtils.showToast('Could not keep the book library up to date.');
+    });
+  }
+
+  function backfillSeriesMetadata(books) {
+    if (seriesBackfillPending) return seriesBackfillPending;
+    var pending = books.filter(function (book) {
+      return (Number(book.seriesMetadataVersion) || 0) < 3 && /^\/works\/OL\d+W$/.test(book.olKey || '');
+    });
+    if (!pending.length) return Promise.resolve(false);
+
+    var chunks = [];
+    for (var i = 0; i < pending.length; i += 30) chunks.push(pending.slice(i, i + 30));
+    var found = false;
+    var operation = chunks.reduce(function (chain, chunk) {
+      return chain.then(function () {
+        var keys = chunk.map(function (book) { return book.olKey; });
+        return AppOL.seriesMetadata(keys).then(function (metadata) {
+          var batch = db.batch(), updates = [];
+          chunk.forEach(function (book) {
+            var fresh = metadata[book.olKey] || {};
+            var update = { seriesMetadataChecked: true, seriesMetadataVersion: 3 };
+            ['seriesKey', 'seriesName', 'seriesPosition', 'seriesNumber', 'releaseYear'].forEach(function (field) {
+              if (!book[field] && fresh[field] != null) update[field] = fresh[field];
+            });
+            if ((!book.seriesName && fresh.seriesName) || (!book.seriesKey && fresh.seriesKey)) found = true;
+            batch.update(col().doc(book.id), update);
+            updates.push([book, update]);
+          });
+          return batch.commit().then(function () {
+            updates.forEach(function (pair) {
+              Object.assign(pair[0], pair[1]);
+              var current = BOOKS.filter(function (item) { return item.id === pair[0].id; })[0];
+              if (current) Object.assign(current, pair[1]);
+            });
+          });
+        });
+      });
+    }, Promise.resolve()).then(function () { return found; });
+    seriesBackfillPending = operation.then(function (value) {
+      seriesBackfillPending = null;
+      return value;
+    }, function (error) {
+      seriesBackfillPending = null;
+      throw error;
+    });
+    return seriesBackfillPending;
   }
   function render() { hero(); folders(); lib(); stats(); updateBooksWrappedPeriodOptions(); wantStats(); }
 
@@ -76,10 +296,10 @@
       }).join('') + '</div>' : '');
   }
   function folders() {
-    $('bk-folders').innerHTML = ['want', 'read'].map(function (k) {
+    var statusFolders = ['want', 'reading', 'read'].map(function (k) {
       var books = BOOKS.filter(function (b) { return b.bookStatus === k; });
       var count = books.length, displayBooks = books.slice(0, 3);
-      var label = k === 'want' ? 'To Read' : 'Read';
+      var label = k === 'want' ? 'To Read' : k === 'reading' ? 'Reading' : 'Read';
       var posters = displayBooks.map(function (b) {
         var image = src(b.poster);
         return image
@@ -95,10 +315,42 @@
         '</span><span class="playlist-card-count">' + count + ' book' +
         (count === 1 ? '' : 's') + '</span><span class="mini-posters">' + posters + '</span></button>';
     }).join('');
+    var seriesByName = Object.create(null);
+    BOOKS.forEach(function (book) {
+      var name = (book.seriesName || '').trim(), key = name.toLowerCase();
+      if (!key) return;
+      if (!seriesByName[key]) {
+        seriesByName[key] = { name: name, seriesKey: book.seriesKey || '', poster: book.poster || null };
+      }
+      if (seriesKeyPriority(book.seriesKey) > seriesKeyPriority(seriesByName[key].seriesKey)) {
+        seriesByName[key].seriesKey = book.seriesKey;
+      }
+    });
+    var seriesList = Object.keys(seriesByName).map(function (key) { return seriesByName[key]; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name); });
+    var seriesPosters = seriesList.slice(0, 3).map(function (series) {
+      var image = src(seriesPosterFor(series.seriesKey, series.name) || series.poster);
+      return image
+        ? '<img class="mini-poster" loading="lazy" alt="" src="' + esc(image) + '" onerror="this.style.visibility=\'hidden\'">'
+        : '<div class="mini-poster"></div>';
+    }).join('');
+    for (var i = seriesList.length; i < 3; i++) seriesPosters += '<div class="mini-poster"></div>';
+    var seriesFolder = '<button type="button" class="playlist-card bk-folder-card' + (shelf === 'series' ? ' is-selected' : '') +
+      '" data-v="series" aria-pressed="' + (shelf === 'series') + '"><span class="playlist-card-name">Series</span>' +
+      '<span class="playlist-card-count">' + seriesList.length + ' series</span><span class="mini-posters">' + seriesPosters + '</span></button>';
+    $('bk-folders').innerHTML = statusFolders + seriesFolder;
   }
   function lib() {
+    var focusedSeriesKey = document.activeElement && document.activeElement.matches('[data-series-toggle]')
+      ? document.activeElement.dataset.seriesKey : null;
+    var focusedSeriesFilterKey = document.activeElement && document.activeElement.matches('.bk-series-library-only')
+      ? document.activeElement.dataset.seriesKey : null;
     var q = $('bk-q').value.trim().toLowerCase(), s = $('bk-sort').value;
-    var l = BOOKS.filter(function (b) { return b.bookStatus === shelf && (!q || ((b.title || '') + ' ' + (b.author || '')).toLowerCase().indexOf(q) > -1); });
+    var seriesShelf = shelf === 'series';
+    var l = BOOKS.filter(function (b) {
+      return (seriesShelf ? !!(b.seriesName || '').trim() : b.bookStatus === shelf) &&
+        (!q || ((b.title || '') + ' ' + (b.author || '') + ' ' + (b.seriesName || '')).toLowerCase().indexOf(q) > -1);
+    });
     var T = function (b) { return (b.title || '').toLowerCase(); };
     if (s === 'title') l.sort(function (a, b) { return T(a) < T(b) ? -1 : 1; });
     else if (s === 'rating') l.sort(function (a, b) { return (b.bookRating || 0) - (a.bookRating || 0); });
@@ -106,12 +358,116 @@
     else if (s === 'finished') l.sort(function (a, b) { return (b.finishDate || '').localeCompare(a.finishDate || ''); });
     var grid = $('bk-grid');
     grid.classList.toggle('is-list', viewMode === 'list');
-    grid.innerHTML = l.map(tile).join('') || '<p class="bk-empty">' + (q ? 'No matches.' : 'Nothing on this shelf yet. Tap “Add Book”.') + '</p>';
+    var groups = Object.create(null), items = [];
+    l.forEach(function (book) {
+      var name = (book.seriesName || '').trim(), key = name.toLowerCase();
+      if (!seriesShelf || !key) { items.push({ book: book }); return; }
+      var seriesId = book.seriesKey || '';
+      var groupKey = 'name:' + key;
+      if (!groups[groupKey]) {
+        groups[groupKey] = { name: name, seriesKey: seriesId, seriesPoster: book.seriesPoster || null, books: [] };
+        items.push({ group: groups[groupKey], key: groupKey });
+      }
+      if (seriesKeyPriority(seriesId) > seriesKeyPriority(groups[groupKey].seriesKey)) groups[groupKey].seriesKey = seriesId;
+      if (!groups[groupKey].seriesPoster && book.seriesPoster) groups[groupKey].seriesPoster = book.seriesPoster;
+      groups[groupKey].books.push(book);
+    });
+    grid.innerHTML = items.map(function (item) {
+      if (!item.group) return tile(item.book);
+      var catalog = item.group.seriesKey && SERIES_CATALOG[item.group.seriesKey];
+      var groupBooks = releaseOrder(item.group.books, catalog);
+      var canExpand = groupBooks.length > 1 || !!item.group.seriesKey;
+      if (!canExpand) return tile(groupBooks[0]);
+      var expandedKey = encodeURIComponent(item.key);
+      var expanded = !!SERIES_EXPANDED[expandedKey];
+      var bounceOnExpand = !!SERIES_BOUNCE[expandedKey];
+      var bounceOnCollapse = !!SERIES_COLLAPSE[expandedKey];
+      delete SERIES_BOUNCE[expandedKey];
+      delete SERIES_COLLAPSE[expandedKey];
+      var onlyInLibrary = Object.prototype.hasOwnProperty.call(SERIES_ONLY_LIBRARY, expandedKey)
+        ? SERIES_ONLY_LIBRARY[expandedKey] : true;
+      if (expanded && item.group.seriesKey) ensureSeriesCatalog(item.group.seriesKey);
+      catalog = item.group.seriesKey && SERIES_CATALOG[item.group.seriesKey];
+      var seriesLibrary = seriesEntries(item.group.seriesKey, item.group.name), matchedIds = Object.create(null);
+      var catalogRows = catalog ? catalog.map(function (book) {
+        var tracked = findLibraryBook(book);
+        if (tracked) matchedIds[tracked.id] = true;
+        return { book: book, tracked: tracked };
+      }) : [];
+      var unlisted = seriesLibrary.filter(function (book) { return !matchedIds[book.id]; });
+      var totalBooks = catalog ? catalog.length + unlisted.length : seriesLibrary.length;
+      var inLibraryCount = catalogRows.filter(function (row) { return !!row.tracked; }).length + unlisted.length;
+      var booksHtml = '';
+      if (expanded) {
+        if (catalog) {
+          var visibleCatalogRows = onlyInLibrary ? catalogRows.filter(function (row) { return !!row.tracked; }) : catalogRows;
+          booksHtml = visibleCatalogRows.map(function (row) { return seriesBookTile(row.book, row.tracked); }).join('') +
+            releaseOrder(unlisted, catalog).map(function (book) { return seriesBookTile(book, book); }).join('');
+        } else {
+          booksHtml = releaseOrder(seriesLibrary, catalog).map(function (book) { return seriesBookTile(book, book); }).join('');
+        }
+      }
+      var shelfLabel = shelf === 'series' ? 'library' : shelf === 'read' ? 'Read' : shelf === 'reading' ? 'Reading' : 'To Read';
+      var statusText = !expanded
+        ? groupBooks[0].author || ''
+        : onlyInLibrary
+          ? (seriesShelf ? inLibraryCount : groupBooks.length) + ' in ' + shelfLabel
+          : catalog ? totalBooks + ' total' : 'Loading series…';
+      var notice = '';
+      if (expanded && !item.group.seriesKey) {
+        notice = '<p class="bk-series-notice">Full series list is unavailable for this entry.</p>';
+      } else if (expanded && item.group.seriesKey && SERIES_ERRORS[item.group.seriesKey]) {
+        notice = '<button type="button" class="bk-series-notice bk-series-retry" data-series-retry="' + esc(item.group.seriesKey) + '">Couldn’t refresh the full series. Tap to retry.</button>';
+      } else if (expanded && item.group.seriesKey && !catalog) {
+        notice = '<p class="bk-series-notice">Loading all books in this series…</p>';
+      } else if (expanded && catalog && !catalog.length) {
+        notice = '<p class="bk-series-notice">Open Library has no books listed for this series.</p>';
+      }
+      var libraryOnlyControl = expanded && item.group.seriesKey
+        ? '<button type="button" class="bk-series-library-only" data-series-library-only data-series-key="' +
+          esc(expandedKey) + '" aria-label="Only in library" title="Only in library" aria-pressed="' + onlyInLibrary + '">' +
+          (onlyInLibrary ? '[]' : '[\\]') + '</button>'
+        : '';
+      var coverCount = !expanded ? null : onlyInLibrary ? inLibraryCount : catalog ? totalBooks : null;
+      var posterBook = Object.assign({}, groupBooks[0], { poster: item.group.seriesPoster || groupBooks[0].poster });
+      var seriesToggleAttrs = 'data-series-toggle data-series-key="' + esc(expandedKey) + '" data-series-id="' +
+        esc(item.group.seriesKey) + '" data-series-name="' + esc(item.group.name) + '" aria-expanded="' + expanded + '"';
+      var seriesToggleLabel = esc((expanded ? 'Collapse ' : 'Expand ') + item.group.name);
+      return '<section class="bk-series-group' + (expanded ? ' is-expanded' : '') +
+        (bounceOnExpand ? ' is-expanding' : '') + (bounceOnCollapse ? ' is-collapsing' : '') + '">' +
+        '<div class="bk-series-card-wrap"><div class="bk-series-cover-controls">' +
+        '<button type="button" class="bk-tile bk-series-card" ' + seriesToggleAttrs + ' aria-label="' + seriesToggleLabel + '">' +
+        cov(posterBook, (coverCount == null ? '' : '<span class="bk-series-cover-count">' + coverCount + '</span>') +
+          '<span class="bk-series-expand-indicator" aria-hidden="true">' + (expanded ? '&lt;' : '&gt;') + '</span>') +
+        '</button>' + libraryOnlyControl + '</div><button type="button" class="bk-tile bk-series-title-toggle" ' +
+        seriesToggleAttrs + ' aria-label="' + seriesToggleLabel + '"><p class="bk-t">' + esc(item.group.name) +
+        '</p><p class="bk-a">' + esc(statusText) + '</p></button></div><div class="bk-series-books">' +
+        booksHtml + notice + '</div></section>';
+    }).join('') || '<p class="bk-empty">' + (q ? 'No matches.' : shelf === 'series'
+      ? 'No series yet. Assign a series from a book’s details.' : 'Nothing on this shelf yet. Tap “Add Book”.') + '</p>';
     $('bk-view').querySelectorAll('[data-view]').forEach(function (button) {
       var active = button.dataset.view === viewMode;
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', String(active));
     });
+    if (focusedSeriesKey) {
+      var cards = grid.querySelectorAll('[data-series-toggle]');
+      for (var i = 0; i < cards.length; i++) {
+        if (cards[i].dataset.seriesKey === focusedSeriesKey) {
+          cards[i].focus();
+          break;
+        }
+      }
+    }
+    if (focusedSeriesFilterKey) {
+      var filters = grid.querySelectorAll('[data-series-library-only]');
+      for (var j = 0; j < filters.length; j++) {
+        if (filters[j].dataset.seriesKey === focusedSeriesFilterKey) {
+          filters[j].focus();
+          break;
+        }
+      }
+    }
   }
 
   /* ---------- stats ---------- */
@@ -225,7 +581,7 @@
       '<div class="viz-pair bk-distribution"><div><p class="section-title">Ratings' + (rn ? '<span class="bk-badge bk-dist-average">Average ★ ' + (rs / rn).toFixed(2) + '</span>' : '') + '</p>' + (rn ? cols(rc, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) : '<p class="viz-empty">No rated books in this period.</p>') + '</div>' +
       '<div><p class="section-title">Page counts' + (pn ? '<span class="bk-badge bk-dist-average">Average ' + Math.round(ps / pn) + ' pages</span>' : '') + '</p>' + (pn ? cols(pb, ['100', '200', '300', '400', '500', '600', '1000', '1000+'], 'bk-pages') : '<p class="viz-empty">No page counts in this period.</p>') + '</div></div>' +
       (as.length ? '<p class="section-title">Most read authors</p><div class="viz-card">' + as.map(function (x) {
-        var top = x.bs.slice().sort(function (p, q) { return (q.bookRating || 0) - (p.bookRating || 0); }).slice(0, 4);
+        var top = x.bs.slice().sort(function (p, q) { return (q.bookRating || 0) - (p.bookRating || 0); }).slice(0, window.innerWidth >= 900 ? 7 : 4);
         return '<div class="bk-au"><div class="bk-au-i"><p class="bk-serif">' + esc(x.n) + '</p><p class="text-sm text-muted">' + x.bs.length + ' read' + (x.r.length ? ' · ★ ' + x.avg.toFixed(1) + ' avg' : '') + '</p></div>' +
           '<div class="bk-au-c">' + top.map(function (b) { return '<div class="bk-mini">' + cov(b) + '</div>'; }).join('') + '</div><div class="bk-au-s">' + spark(x.r) + '</div></div>';
       }).join('') + '</div>' : '');
@@ -279,17 +635,184 @@
     if (rt) rows.push(['Reading time', rt]);
     var rereads = rereadData(b).count;
     if (b.bookStatus === 'read') rows.push(['Re-read', rereads + ' time' + (rereads === 1 ? '' : 's')]);
+    var hasSeries = !!(b.seriesName || b.seriesKey);
+    var seriesLabel = b.seriesName || (hasSeries ? 'Series metadata found' : 'Not assigned');
+    if (Number(b.seriesNumber)) seriesLabel += ' · Book ' + Number(b.seriesNumber);
+    var nextBook = nextInSeries(b);
     var chips = ['<span class="bk-chip">' + ST[b.bookStatus] + '</span>'];
     if (b.pages) chips.push('<span class="bk-chip">' + Number(b.pages) + ' pages</span>');
     chips.push('<span class="bk-chip">' + (b.fiction === false ? 'Non-fiction' : 'Fiction') + '</span>');
     (b.genres || []).slice(0, 3).forEach(function (g) { chips.push('<span class="bk-chip">' + esc(g) + '</span>'); });
     var ov = modal('<div class="modal-box bk-sheet bk-detail-modal"><button class="bk-detail-close" id="bd-x" type="button" aria-label="Close details">&times;</button><div class="bk-det"><div class="bk-det-c">' + cov(b) + '</div><div class="bk-det-i"><h2 class="bk-serif">' + esc(b.title) + '</h2><p class="text-sm text-muted" style="margin-bottom:10px">' + esc(b.author) + '</p><div class="bk-chips">' + chips.join('') + '</div></div></div>' +
       (rows.length ? '<div class="detail-card">' + rows.map(function (r) { return '<div class="detail-row"><span class="detail-label">' + r[0] + '</span><span class="detail-value">' + esc(r[1]) + '</span></div>'; }).join('') + '</div>' : '') +
+      '<div class="detail-card bk-detail-series"><div class="detail-row"><span class="detail-label">Series</span><span class="detail-value">' + esc(seriesLabel) + '</span></div>' +
+      '<button class="btn btn-ghost" id="bd-series-find" type="button">' + (hasSeries ? 'Search / change series' : 'Find series') + '</button></div>' +
+      '<div class="bk-series-picker" id="bd-series-picker" style="display:none">' +
+      '<p class="text-sm text-muted">Search Open Library records and choose a result with the right series. If it is not listed, enter the series name manually.</p>' +
+      '<label class="label" for="bd-series-q">Search series</label><input id="bd-series-q" class="input-field" maxlength="100" placeholder="e.g. Sherlock Holmes" value="' + esc(b.seriesName || '') + '">' +
+      '<p class="text-sm text-muted bk-series-search-status" id="bd-series-status" aria-live="polite"></p><div class="bk-series-search-results" id="bd-series-results"></div>' +
+      '<label class="label" for="bd-series-name">Series name</label><input id="bd-series-name" class="input-field" maxlength="100" value="' + esc(b.seriesName || '') + '">' +
+      '<label class="label" for="bd-series-number">Book number (optional)</label><input id="bd-series-number" type="number" min="0.1" step="0.1" class="input-field" value="' + (Number(b.seriesNumber) || '') + '">' +
+      '<div class="modal-actions"><button class="btn btn-danger" id="bd-series-remove" type="button"' + (hasSeries ? '' : ' style="display:none"') + '>Remove series</button><button class="btn btn-ghost" id="bd-series-cancel" type="button">Cancel</button><button class="btn btn-primary" id="bd-series-save" type="button">Save series</button></div></div>' +
+      (b.bookStatus === 'read' && nextBook ? '<div class="detail-card bk-next-series"><span><b>Next in series</b><small>' + esc(nextBook.title) + '</small></span><button type="button" class="btn btn-ghost" id="bd-next">Open</button></div>' : '') +
       (hasReview ? '<div class="bk-quote">' + esc(b.review.trim()) + '</div>' : '<p class="bk-desc" id="bd-d"></p>') +
       (b.bookStatus === 'read' ? '<button class="btn btn-ghost bk-reread" id="bd-reread" type="button">↻ Mark as re-read</button>' : '') +
       '<div class="modal-actions bk-detail-actions"><button class="btn btn-danger" id="bd-del">Delete</button><button class="btn btn-primary" id="bd-e">Edit</button></div></div>');
     ov.querySelector('#bd-x').onclick = function () { ov.remove(); };
     ov.querySelector('#bd-e').onclick = function () { ov.remove(); editor(b); };
+    var nextButton = ov.querySelector('#bd-next');
+    if (nextButton) nextButton.onclick = function () { ov.remove(); detail(nextBook); };
+    var seriesPicker = ov.querySelector('#bd-series-picker');
+    var seriesQuery = ov.querySelector('#bd-series-q');
+    var seriesNameInput = ov.querySelector('#bd-series-name');
+    var seriesNumberInput = ov.querySelector('#bd-series-number');
+    var seriesStatus = ov.querySelector('#bd-series-status');
+    var seriesResults = ov.querySelector('#bd-series-results');
+    var seriesSaveButton = ov.querySelector('#bd-series-save');
+    var selectedSeries = null, seriesCandidates = [], seriesSearchToken = 0, seriesSearchTimer = null;
+    function renderSeriesCandidates() {
+      seriesResults.innerHTML = seriesCandidates.map(function (candidate, index) {
+        var selected = selectedSeries && selectedSeries.seriesName.toLowerCase() === candidate.seriesName.toLowerCase() &&
+          selectedSeries.seriesKey === candidate.seriesKey;
+        return '<button class="bk-series-result' + (selected ? ' is-selected' : '') + '" type="button" data-series-index="' + index +
+          '" aria-pressed="' + !!selected + '"><span><strong>' + esc(candidate.seriesName) + '</strong><small>' +
+          esc(candidate.source) + '</small></span><span>Use</span></button>';
+      }).join('');
+    }
+    function addSeriesCandidate(item, source) {
+      var name = String(item.seriesName || '').trim();
+      if (!name) return;
+      var key = item.seriesKey || 'series-name:' + name;
+      var candidate = { seriesName: name, seriesKey: key, source: source };
+      var existingIndex = seriesCandidates.map(function (entry) {
+        return entry.seriesName.toLowerCase();
+      }).indexOf(name.toLowerCase());
+      if (existingIndex < 0) {
+        seriesCandidates.push(candidate);
+      } else {
+        var existingKey = seriesCandidates[existingIndex].seriesKey;
+        var priority = function (value) {
+          return /^character:/i.test(value || '') ? 3 : /^OL\d+L$/.test(value || '') ? 2 :
+            /^subject:/i.test(value || '') ? 1 : 0;
+        };
+        if (priority(key) > priority(existingKey)) {
+          seriesCandidates[existingIndex] = candidate;
+          if (selectedSeries && selectedSeries.seriesName.toLowerCase() === name.toLowerCase() &&
+              selectedSeries.seriesKey === existingKey) selectedSeries = candidate;
+        }
+      }
+    }
+    function searchSeries(value) {
+      clearTimeout(seriesSearchTimer);
+      var term = value.trim(), request = ++seriesSearchToken;
+      seriesCandidates = [];
+      if (term.length < 2) {
+        seriesStatus.textContent = 'Enter at least 2 characters to search.';
+        renderSeriesCandidates();
+        return;
+      }
+      BOOKS.filter(function (book) {
+        return (book.seriesName || '').toLowerCase().indexOf(term.toLowerCase()) > -1;
+      }).forEach(function (book) {
+        addSeriesCandidate(book, 'In your library');
+      });
+      seriesStatus.textContent = 'Searching Open Library…';
+      renderSeriesCandidates();
+      seriesSearchTimer = setTimeout(function () {
+        AppOL.search(term, { limit: 30 }).then(function (matches) {
+          if (request !== seriesSearchToken || !ov.isConnected) return;
+          matches.forEach(function (match) {
+            addSeriesCandidate(match, [match.title, match.author].filter(Boolean).join(' · '));
+          });
+          seriesStatus.textContent = seriesCandidates.length
+            ? 'Choose a series, or enter its name below.'
+            : 'No series metadata found. Enter the series name manually below.';
+          renderSeriesCandidates();
+        }).catch(function () {
+          if (request !== seriesSearchToken || !ov.isConnected) return;
+          seriesStatus.textContent = seriesCandidates.length
+            ? 'Open Library search failed; showing matching library series.'
+            : 'Open Library search failed. You can still enter the series name manually.';
+          renderSeriesCandidates();
+        });
+      }, 250);
+    }
+    ov.querySelector('#bd-series-find').onclick = function () {
+      seriesPicker.style.display = 'block';
+      searchSeries(seriesQuery.value);
+      seriesQuery.focus();
+    };
+    seriesQuery.oninput = function () { searchSeries(this.value); };
+    seriesNameInput.oninput = function () {
+      if (selectedSeries && selectedSeries.seriesName.toLowerCase() !== this.value.trim().toLowerCase()) {
+        selectedSeries = null;
+        renderSeriesCandidates();
+      }
+    };
+    seriesResults.onclick = function (event) {
+      var button = event.target.closest('[data-series-index]');
+      if (!button) return;
+      selectedSeries = seriesCandidates[Number(button.dataset.seriesIndex)] || null;
+      if (!selectedSeries) return;
+      var sameSeries = String(b.seriesName || '').trim().toLowerCase() === selectedSeries.seriesName.toLowerCase();
+      seriesNameInput.value = selectedSeries.seriesName;
+      if (!sameSeries) seriesNumberInput.value = '';
+      seriesStatus.textContent = 'Selected ' + selectedSeries.seriesName + '.';
+      renderSeriesCandidates();
+    };
+    ov.querySelector('#bd-series-cancel').onclick = function () { seriesPicker.style.display = 'none'; };
+    function updateSeries(patch, message) {
+      seriesSaveButton.disabled = true;
+      var removeButton = ov.querySelector('#bd-series-remove');
+      if (removeButton) removeButton.disabled = true;
+      AppDB.updateEntry(uid, b.id, patch).then(function () {
+        Object.assign(b, patch);
+        var updated = BOOKS.filter(function (book) { return book.id === b.id; })[0] || b;
+        Object.assign(updated, patch);
+        ov.remove();
+        render();
+        AppUtils.showToast(message);
+        detail(updated);
+      }).catch(function () {
+        seriesSaveButton.disabled = false;
+        if (removeButton) removeButton.disabled = false;
+        AppUtils.showToast('Failed to update this book’s series.');
+      });
+    }
+    seriesSaveButton.onclick = function () {
+      var name = seriesNameInput.value.trim(), numberText = seriesNumberInput.value.trim();
+      if (!name) return AppUtils.showToast('Enter or choose a series name.');
+      if (numberText && (!Number.isFinite(Number(numberText)) || Number(numberText) <= 0)) {
+        return AppUtils.showToast('Enter a valid book number.');
+      }
+      var candidate = selectedSeries && selectedSeries.seriesName.toLowerCase() === name.toLowerCase()
+        ? selectedSeries : null;
+      if (!candidate) {
+        var existing = BOOKS.filter(function (book) {
+          return (book.seriesName || '').trim().toLowerCase() === name.toLowerCase();
+        })[0];
+        if (existing) candidate = { seriesKey: existing.seriesKey, seriesName: name };
+      }
+      var seriesKey = candidate && candidate.seriesKey || 'series-name:' + name;
+      var sameSeries = String(b.seriesName || '').trim().toLowerCase() === name.toLowerCase();
+      var number = numberText ? Number(numberText) : sameSeries ? Number(b.seriesNumber) || null : null;
+      updateSeries({
+        seriesKey: seriesKey,
+        seriesName: name,
+        seriesNumber: number,
+        seriesPosition: numberText || (sameSeries ? b.seriesPosition || null : null),
+        seriesPoster: seriesPosterFor(seriesKey, name) || null,
+        seriesMetadataChecked: true,
+        seriesMetadataVersion: 3
+      }, 'Series updated ✓');
+    };
+    var removeSeriesButton = ov.querySelector('#bd-series-remove');
+    if (removeSeriesButton) removeSeriesButton.onclick = function () {
+      updateSeries({
+        seriesKey: null, seriesName: null, seriesNumber: null, seriesPosition: null, seriesPoster: null,
+        seriesMetadataChecked: true, seriesMetadataVersion: 3
+      }, 'Series removed');
+    };
     ov.querySelector('#bd-del').onclick = function () {
       if (!confirm('Delete this book?')) return;
       this.disabled = true;
@@ -341,6 +864,7 @@
         });
         DESC_PENDING[b.id] = request;
       }
+
       request.then(function (text) {
         delete DESC_PENDING[b.id];
         if (document.body.contains(desc)) desc.textContent = text || 'No description available.';
@@ -350,6 +874,115 @@
         AppUtils.showToast('Failed to load or save book description.');
       });
     }
+  }
+
+  function nextInSeries(book) {
+    var name = (book.seriesName || '').trim().toLowerCase();
+    if (!name) return null;
+    return BOOKS.filter(function (candidate) {
+      if (candidate.id === book.id || (candidate.seriesName || '').trim().toLowerCase() !== name || candidate.bookStatus === 'read') return false;
+      return !Number(book.seriesNumber) || Number(candidate.seriesNumber) > Number(book.seriesNumber);
+    }).sort(function (a, b) {
+      var an = Number(a.seriesNumber) || Number.MAX_SAFE_INTEGER;
+      var bn = Number(b.seriesNumber) || Number.MAX_SAFE_INTEGER;
+      return an - bn || (a.title || '').localeCompare(b.title || '');
+    })[0] || null;
+  }
+
+  function openBookQuickActions(book) {
+    var ov = modal('<div class="modal-box"><p class="modal-title">Quick actions</p><p class="modal-entry-title">' +
+      esc(book.title) + '</p><p class="label">Change status</p>' +
+      '<div class="bk-quick-status">' +
+      '<button class="btn btn-ghost" type="button" data-status="want">Want to Read</button>' +
+      '<button class="btn btn-ghost" type="button" data-status="reading">Reading</button>' +
+      '<button class="btn btn-ghost" type="button" data-status="read">Read</button></div>' +
+      '<div class="modal-actions"><button class="btn btn-ghost" id="bq-edit">Edit details</button><button class="btn btn-ghost" id="bq-close">Close</button></div></div>');
+    ov.querySelectorAll('[data-status]').forEach(function (button) {
+      button.disabled = button.dataset.status === book.bookStatus;
+      button.onclick = function () {
+        var status = button.dataset.status, date = ymd(), update = { bookStatus: status };
+        if (status === 'want') update.startDate = null;
+        if (status === 'reading' && !book.startDate) update.startDate = date;
+        if (status === 'read') {
+          update.finishDate = book.finishDate || date;
+          update.finishMonth = +update.finishDate.slice(5, 7);
+          update.finishYear = +update.finishDate.slice(0, 4);
+        }
+        button.disabled = true;
+        AppDB.updateEntry(uid, book.id, update).then(function () {
+          ov.remove();
+          if (shelf !== 'series') shelf = status;
+          AppUtils.showToast('Status changed to ' + ST[status] + ' ✓');
+          return load().then(function () {
+            var updated = BOOKS.filter(function (candidate) { return candidate.id === book.id; })[0];
+            if (status === 'read' && updated && nextInSeries(updated)) detail(updated);
+          });
+        }).catch(function (error) {
+          console.error('Could not update book status.', error);
+          button.disabled = false;
+          AppUtils.showToast('Failed to change status.');
+        });
+      };
+    });
+    ov.querySelector('#bq-edit').onclick = function () { ov.remove(); editor(book); };
+    ov.querySelector('#bq-close').onclick = function () { ov.remove(); };
+  }
+
+  function saveSeriesPoster(seriesKey, seriesName, poster) {
+    var entries = seriesEntries(seriesKey, seriesName);
+    if (!entries.length) return Promise.reject(new Error('No books found for this series.'));
+    var chunks = [];
+    for (var i = 0; i < entries.length; i += 400) chunks.push(entries.slice(i, i + 400));
+    return chunks.reduce(function (chain, chunk) {
+      return chain.then(function () {
+        var batch = db.batch();
+        chunk.forEach(function (book) {
+          batch.update(col().doc(book.id), { seriesPoster: poster });
+        });
+        return batch.commit();
+      });
+    }, Promise.resolve()).then(function () {
+      entries.forEach(function (book) { book.seriesPoster = poster; });
+    });
+  }
+
+  function openSeriesQuickActions(seriesKey, seriesName) {
+    var hasPoster = !!seriesPosterFor(seriesKey, seriesName);
+    var ov = modal('<div class="modal-box"><p class="modal-title">Series poster</p><p class="modal-entry-title">' +
+      esc(seriesName) + '</p><button class="btn btn-primary" type="button" id="bqs-upload">Upload custom image</button>' +
+      '<input type="file" id="bqs-file" accept="image/*" hidden>' +
+      (hasPoster ? '<button class="btn btn-ghost" type="button" id="bqs-remove">Remove custom image</button>' : '') +
+      '<div class="modal-actions"><button class="btn btn-ghost" type="button" id="bqs-close">Close</button></div></div>');
+    var upload = ov.querySelector('#bqs-upload'), fileInput = ov.querySelector('#bqs-file');
+    var remove = ov.querySelector('#bqs-remove');
+    function save(poster) {
+      upload.disabled = true;
+      if (remove) remove.disabled = true;
+      saveSeriesPoster(seriesKey, seriesName, poster).then(function () {
+        ov.remove();
+        AppUtils.showToast(poster ? 'Series poster updated ✓' : 'Custom series poster removed.');
+        render();
+      }).catch(function (error) {
+        console.error('Could not update series poster.', error);
+        upload.disabled = false;
+        if (remove) remove.disabled = false;
+        AppUtils.showToast('Failed to save the series poster.');
+      });
+    }
+    upload.onclick = function () { fileInput.click(); };
+    fileInput.onchange = function () {
+      var file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      if (!/^image\//.test(file.type)) return AppUtils.showToast('Choose an image file.');
+      if (file.size > 12 * 1024 * 1024) return AppUtils.showToast('Choose an image smaller than 12 MB.');
+      upload.disabled = true;
+      shrink(file, save, function () {
+        upload.disabled = false;
+        AppUtils.showToast('Could not load the selected image.');
+      });
+    };
+    if (remove) remove.onclick = function () { save(null); };
+    ov.querySelector('#bqs-close').onclick = function () { ov.remove(); };
   }
 
   var wrapStyle = 'share', wTok = 0;
@@ -483,9 +1116,9 @@
           var y = 895 + index * 105;
           ctx.fillStyle = 'rgba(255,255,255,.055)'; AppUtils.roundRectPath(ctx, 70, y, 940, 64, 16); ctx.fill();
           ctx.fillStyle = '#4ade80'; ctx.font = '800 28px Inter, sans-serif'; ctx.fillText(String(index + 1).padStart(2, '0'), 92, y + 42);
-          ctx.fillStyle = '#fff'; ctx.font = '600 27px Inter, sans-serif'; ctx.fillText(fit(book.title, 660), 155, y + 40);
+          ctx.fillStyle = '#fff'; ctx.font = '600 27px Inter, sans-serif'; ctx.fillText(fit(book.title, 570), 155, y + 40);
           ctx.textAlign = 'right'; ctx.fillStyle = '#c9c5bb'; ctx.font = '500 22px Inter, sans-serif';
-          ctx.fillText(book.bookRating ? book.bookRating + '/10' : '', 980, y + 40); ctx.textAlign = 'left';
+          ctx.fillText((book.bookRating ? book.bookRating + '/10' : '') + (book.pages ? '  ·  ' + Number(book.pages).toLocaleString() + ' pages' : ''), 980, y + 40); ctx.textAlign = 'left';
         });
         ctx.fillStyle = '#777'; ctx.font = '500 22px Inter, sans-serif'; ctx.fillText('Made with Playlog', 72, 1320);
         showWrappedPreview($('bk-wrap-canvas'), canvas);
@@ -510,7 +1143,7 @@
     var rated = reads.filter(function (b) { return b.bookRating; });
     var top = (rated.length ? rated : reads).slice().sort(function (a, b) {
       return (b.bookRating || 0) - (a.bookRating || 0) || (b.pages || 0) - (a.pages || 0);
-    }).slice(0, aes ? 5 : 3);
+    }).slice(0, aes ? 5 : 4);
 
     var W = 1080, H = 1920, canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
@@ -531,7 +1164,7 @@
     Promise.all(['800 60px Inter', '700 34px Inter', '500 26px Inter', '600 20px Inter'].map(function (f) {
       return document.fonts.load(f).catch(function () {});
     })).then(function () {
-      return Promise.all(top.slice(0, aes ? 1 : 3).map(function (b) { return wImg(b.poster); }));
+      return Promise.all(top.slice(0, aes ? 1 : 4).map(function (b) { return wImg(b.poster); }));
     }).then(function (imgs) {
       if (tok !== wTok) return;
       ctx.textAlign = 'left';
@@ -563,10 +1196,18 @@
         ctx.fillStyle = C.ink; ctx.font = '800 28px Inter, sans-serif'; ctx.fillText('PLAYLOG', 60, 80);
         var y0 = 1130;
         ctx.fillStyle = C.mute; ctx.font = '500 26px Inter, sans-serif';
-        ctx.fillText('Top Books', 80, y0); ctx.fillText('Top Authors', 580, y0);
+        ctx.fillText('Top Books', 80, y0); ctx.save(); ctx.textAlign = 'right'; ctx.fillText('Rating  ·  Pages', 1000, y0); ctx.restore();
         ctx.fillStyle = C.text; ctx.font = '700 34px Inter, sans-serif';
-        top.forEach(function (b, i) { ctx.fillText((i + 1) + '  ' + trunc(b.title, 380), 80, y0 + 60 + i * 58); });
-        authors.slice(0, 5).forEach(function (a, i) { ctx.fillText((i + 1) + '  ' + trunc(a, 380), 580, y0 + 60 + i * 58); });
+        top.forEach(function (b, i) {
+          var ry = y0 + 60 + i * 58, pgs = b.pages ? Number(b.pages).toLocaleString() + 'p' : '—';
+          ctx.font = '700 34px Inter, sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = C.text;
+          ctx.fillText((i + 1) + '  ' + trunc(b.title, 640), 80, ry);
+          ctx.textAlign = 'right';
+          ctx.fillStyle = C.mute; ctx.fillText(pgs, 1000, ry);
+          ctx.fillStyle = C.text; ctx.font = '800 34px Inter, sans-serif'; ctx.fillText(b.bookRating ? String(b.bookRating) : '—', 820, ry);
+          ctx.textAlign = 'left'; ctx.font = '700 34px Inter, sans-serif';
+        });
+        
         var sy = 1530;
         ctx.fillStyle = C.mute; ctx.font = '500 26px Inter, sans-serif';
         ctx.fillText('Pages Read', 80, sy); ctx.fillText('Avg Rating', 580, sy);
@@ -606,17 +1247,17 @@
         vg2.addColorStop(0, 'rgba(11,11,13,0)'); vg2.addColorStop(1, 'rgba(11,11,13,0.6)');
         ctx.fillStyle = vg2; ctx.fillRect(0, 1100, W, H - 1100);
         ctx.fillStyle = accent; ctx.font = '800 30px Inter, sans-serif';
-        ctx.fillText('BOOKS WRAPPED · ' + P.label.toUpperCase(), 60, 80);
+        ctx.fillText('BOOKS WRAPPED · ' + P.label.toUpperCase(), 60, heroH + 72);
         ctx.fillRect(60, heroH + 20, 90, 8);
         ctx.fillStyle = '#ffffff'; ctx.font = '800 130px Inter, sans-serif';
-        ctx.fillText(String(reads.length), 58, heroH + 175);
+        ctx.fillText(String(reads.length), 58, heroH + 200);
         ctx.fillStyle = '#bbbbbb'; ctx.font = '500 34px Inter, sans-serif';
-        ctx.fillText('books read' + (P.re ? ' · ' + P.re + ' re-read' + (P.re > 1 ? 's' : '') : ''), 62, heroH + 215);
+        ctx.fillText('books read' + (P.re ? ' · ' + P.re + ' re-read' + (P.re > 1 ? 's' : '') : ''), 62, heroH + 240);
 
-        var cards = [[pages ? pages.toLocaleString() : '—', 'Pages Read'], [avg ? avg.toFixed(1) + '/10' : '—', 'Avg Rating'], [authors[0] || '—', 'Top Author']];
-        var gap = 20, cw = (W - 120 - gap * 2) / 3, sy2 = heroH + 260;
+        var cards = [[pages ? pages.toLocaleString() : '—', 'Pages Read'], [avg ? avg.toFixed(1) + '/10' : '—', 'Avg Rating'], [authors[0] || '—', 'Top Author'], [pages ? Math.round(pages / reads.length).toLocaleString() : '—', 'Avg Length'], [pages ? Math.max.apply(null, reads.map(function (b) { return Number(b.pages) || 0; })).toLocaleString() : '—', 'Longest Book'], [String(authors.length), 'Authors']];
+        var gap = 20, cw = (W - 120 - gap * 2) / 3, sy2 = heroH + 275;
         cards.forEach(function (s, i) {
-          var x = 60 + i * (cw + gap), y = sy2, val = String(s[0]);
+          var x = 60 + (i % 3) * (cw + gap), y = sy2 + Math.floor(i / 3) * 160, val = String(s[0]);
           ctx.fillStyle = 'rgba(255,255,255,0.05)'; AppUtils.roundRectPath(ctx, x, y, cw, 140, 20); ctx.fill();
           ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1.5; AppUtils.roundRectPath(ctx, x, y, cw, 140, 20); ctx.stroke();
           ctx.fillStyle = accent;
@@ -626,19 +1267,24 @@
           ctx.fillText(s[1].toUpperCase(), x + 22, y + 122);
         });
 
-        var ly = 1090;
+        var ly = 1250;
         ctx.fillStyle = accent; ctx.font = '800 28px Inter, sans-serif'; ctx.fillText('TOP ' + top.length, 60, ly);
         top.forEach(function (b, i) {
-          var y = ly + 25 + i * 150;
+          var y = ly + 25 + i * 140;
           glass(ctx, 60, y, W - 120, 130, 20, 0.08);
           ctx.save(); AppUtils.roundRectPath(ctx, 72, y + 10, 73, 110, 10); ctx.clip();
           if (imgs[i]) cover(imgs[i], 72, y + 10, 73, 110); else { ctx.fillStyle = '#1e1e1e'; ctx.fillRect(72, y + 10, 73, 110); }
           ctx.restore();
           ctx.fillStyle = accent; ctx.font = '800 54px Inter, sans-serif'; ctx.fillText(String(i + 1), 170, y + 82);
           ctx.fillStyle = '#ffffff'; ctx.font = '700 34px Inter, sans-serif';
-          ctx.fillText(trunc(b.title, W - 330), 240, y + 58);
+          ctx.fillText(trunc(b.title, 500), 240, y + 58);
           ctx.fillStyle = '#cccccc'; ctx.font = '500 26px Inter, sans-serif';
-          ctx.fillText(trunc((b.bookRating ? '★ ' + b.bookRating + '/10' : 'Unrated') + ' · ' + (b.author || '').toUpperCase(), W - 330), 240, y + 100);
+          ctx.fillText(trunc((b.author || '').toUpperCase(), 500), 240, y + 100);
+          var pgs = b.pages ? Number(b.pages).toLocaleString() + 'p' : '';
+          ctx.save(); ctx.textAlign = 'right';
+          ctx.font = '700 34px Inter, sans-serif'; ctx.fillStyle = '#ffffff'; ctx.fillText(pgs, W - 90, y + 84);
+          ctx.fillStyle = accent; ctx.font = '800 60px Inter, sans-serif'; ctx.fillText(b.bookRating ? String(b.bookRating) : '—', W - 90 - 160, y + 84);
+          ctx.restore();
         });
 
         ctx.fillStyle = '#666666'; ctx.font = '500 24px Inter, sans-serif'; ctx.fillText('Generated with Playlog', 60, H - 40);
@@ -741,6 +1387,8 @@
       '<label class="label" style="margin-top:10px">Author</label><input id="be-a" class="input-field" maxlength="100" value="' + esc(s.author) + '"></div></div>' +
       '<div class="bk-ed-r"><div><label class="label">Pages</label><input id="be-p" type="number" min="1" max="20000" class="input-field" value="' + (Number(s.pages) || '') + '"></div>' +
       '<div><label class="label">Type</label><select id="be-f" class="input-field"><option value="1"' + (s.fiction !== false ? ' selected' : '') + '>Fiction</option><option value="0"' + (s.fiction === false ? ' selected' : '') + '>Non-fiction</option></select></div></div>' +
+      '<div class="bk-ed-r"><div><label class="label">Series (optional)</label><input id="be-series" class="input-field" maxlength="100" placeholder="e.g. Harry Potter" value="' + esc(s.seriesName || '') + '"></div>' +
+      '<div><label class="label">Book number</label><input id="be-series-number" type="number" min="0" step="0.1" class="input-field" value="' + (Number(s.seriesNumber) || '') + '"></div></div>' +
       '<label class="btn btn-ghost bk-sm" for="be-file" style="margin:12px 0">🖼 Upload cover</label><input type="file" id="be-file" accept="image/*" hidden>' +
       '<label class="label">Shelf</label><div class="toggle-pair" id="be-st" style="grid-template-columns:1fr 1fr 1fr"><button class="toggle-btn" data-v="want">Want to Read</button><button class="toggle-btn" data-v="reading">Reading</button><button class="toggle-btn" data-v="read">Read</button></div>' +
       '<div id="be-sw"><label class="label">Started (optional)</label><input type="date" id="be-s" class="input-field" max="' + ymd() + '" value="' + esc(s.startDate || '') + '" style="margin-bottom:12px"></div>' +
@@ -773,9 +1421,24 @@
         if (!fd || fd > ymd()) return AppUtils.showToast('Pick a valid finish date.');
         if (sd && sd > fd) return AppUtils.showToast('Start date is after finish date.');
       }
+      var seriesNameValue = q('#be-series').value.trim(), sameSeries = seriesNameValue.toLowerCase() === String(s.seriesName || '').trim().toLowerCase();
+      var seriesKeyValue = sameSeries ? s.seriesKey || null : null;
       var d = { type: 'book', title: title, author: q('#be-a').value.trim(), poster: s.poster || null,
         pages: Math.min(20000, parseInt(q('#be-p').value) || 0) || null, fiction: q('#be-f').value === '1',
-        genres: s.genres || [], olKey: s.olKey || null, bookStatus: st, playlistId: null, startDate: st === 'want' ? null : (sd || null) };
+        genres: s.genres || [], olKey: s.olKey || null, bookStatus: st, playlistId: null, startDate: st === 'want' ? null : (sd || null),
+        releaseYear: Number(s.releaseYear) || null,
+        seriesName: seriesNameValue || null, seriesKey: seriesKeyValue,
+        seriesPoster: seriesPosterFor(seriesKeyValue, seriesNameValue) || (sameSeries ? s.seriesPoster || null : null),
+        seriesPosition: q('#be-series-number').value.trim() ||
+          (q('#be-series').value.trim().toLowerCase() === String(s.seriesName || '').trim().toLowerCase() && !Number(s.seriesNumber)
+            ? s.seriesPosition || null : null),
+        seriesNumber: q('#be-series').value.trim()
+          ? (q('#be-series-number').value.trim()
+            ? Math.max(0, parseFloat(q('#be-series-number').value) || 0) || null
+            : Number(s.seriesNumber) || null)
+          : null,
+        seriesMetadataChecked: !!s.olKey,
+        seriesMetadataVersion: Number(s.seriesMetadataVersion) || (s.id ? 0 : 3) };
       if (st === 'read') {
         d.bookRating = rating; d.review = q('#be-v').value.trim() || null; d.finishDate = fd;
         d.finishMonth = +fd.slice(5, 7); d.finishYear = +fd.slice(0, 4);
@@ -794,8 +1457,11 @@
         ov.remove();
         AppUtils.showToast(ratingFetchFailed ? 'Saved; Open Library rating could not be fetched.' :
           shouldFetchRating && !d.openLibraryRating ? 'Saved; Open Library has no rating for this book.' : 'Saved ✓');
-        if (d.bookStatus === 'want' || d.bookStatus === 'read') shelf = d.bookStatus;
-        return load();
+        if (shelf !== 'series') shelf = d.bookStatus;
+        return load().then(function () {
+          var updated = BOOKS.filter(function (book) { return book.id === s.id; })[0];
+          if (st === 'read' && originalStatus !== 'read' && updated && nextInSeries(updated)) detail(updated);
+        });
       }).catch(function () { q('#be-ok').disabled = false; AppUtils.showToast('Failed to save.'); });
     };
     sync();
@@ -902,7 +1568,7 @@
           AppUtils.showToast(failedRatings
             ? 'Added ' + selected.length + ' books; ratings could not be fetched for ' + failedRatings + '.'
             : 'Added ' + selected.length + ' book' + (selected.length === 1 ? '' : 's') + ' ✓');
-          if (st === 'want' || st === 'read') shelf = st;
+          if (shelf !== 'series' && (st === 'want' || st === 'read')) shelf = st;
           load();
         } catch (e) {
           ok.disabled = false;
@@ -917,8 +1583,88 @@
   /* ---------- wiring ---------- */
   document.addEventListener('click', function (e) {
     var t = e.target.closest('.bk-tile[data-id], .bk-now-item[data-id]');
-    if (t) { var b = BOOKS.filter(function (x) { return x.id === t.dataset.id; })[0]; if (b) detail(b); }
+    if (t) {
+      if (suppressBookTileClick) { e.preventDefault(); e.stopPropagation(); suppressBookTileClick = false; clearTimeout(suppressBookTileTimer); return; }
+      var b = BOOKS.filter(function (x) { return x.id === t.dataset.id; })[0]; if (b) detail(b);
+    }
   });
+  $('bk-grid').addEventListener('click', function (e) {
+    if (suppressSeriesTileClick && e.target.closest('[data-series-toggle]')) {
+      e.preventDefault();
+      e.stopPropagation();
+      suppressSeriesTileClick = false;
+      clearTimeout(suppressSeriesTileTimer);
+      return;
+    }
+    var libraryOnly = e.target.closest('[data-series-library-only]');
+    if (libraryOnly) {
+      var seriesKey = libraryOnly.dataset.seriesKey;
+      SERIES_ONLY_LIBRARY[seriesKey] = libraryOnly.getAttribute('aria-pressed') !== 'true';
+      lib();
+      return;
+    }
+    var retry = e.target.closest('[data-series-retry]');
+    if (retry) {
+      delete SERIES_ERRORS[retry.dataset.seriesRetry];
+      ensureSeriesCatalog(retry.dataset.seriesRetry);
+      return;
+    }
+    var toggle = e.target.closest('[data-series-toggle]');
+    if (!toggle) return;
+    var key = toggle.dataset.seriesKey, expanded = toggle.getAttribute('aria-expanded') !== 'true';
+    SERIES_EXPANDED[key] = expanded;
+    if (expanded) {
+      SERIES_BOUNCE[key] = true;
+      delete SERIES_COLLAPSE[key];
+    } else {
+      SERIES_COLLAPSE[key] = true;
+      delete SERIES_BOUNCE[key];
+    }
+    if (expanded) ensureSeriesCatalog(toggle.dataset.seriesId);
+    lib();
+  });
+  $('bk-grid').addEventListener('pointerdown', function (e) {
+    if (suppressSeriesTileClick) {
+      suppressSeriesTileClick = false;
+      clearTimeout(suppressSeriesTileTimer);
+    }
+    if (suppressBookTileClick) {
+      suppressBookTileClick = false;
+      clearTimeout(suppressBookTileTimer);
+    }
+    var seriesCard = e.target.closest('.bk-series-card[data-series-toggle], .bk-series-title-toggle[data-series-toggle]');
+    var tileButton = e.target.closest('.bk-tile[data-id]');
+    if ((!tileButton && !seriesCard) || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    var target = tileButton || seriesCard, x = e.clientX, y = e.clientY;
+    var book = tileButton && BOOKS.filter(function (item) { return item.id === tileButton.dataset.id; })[0];
+    var timer = setTimeout(function () {
+      if (seriesCard) {
+        suppressSeriesTileClick = true;
+        clearTimeout(suppressSeriesTileTimer);
+        suppressSeriesTileTimer = setTimeout(function () { suppressSeriesTileClick = false; }, 800);
+        openSeriesQuickActions(seriesCard.dataset.seriesId, seriesCard.dataset.seriesName);
+      } else {
+        if (!book) return;
+        suppressBookTileClick = true;
+        clearTimeout(suppressBookTileTimer);
+        suppressBookTileTimer = setTimeout(function () { suppressBookTileClick = false; }, 800);
+        openBookQuickActions(book);
+      }
+      if (navigator.vibrate) navigator.vibrate(15);
+    }, 450);
+    function cancel(event) {
+      if (event.type === 'pointermove' && Math.hypot(event.clientX - x, event.clientY - y) <= 10) return;
+      clearTimeout(timer);
+      target.removeEventListener('pointermove', cancel);
+      target.removeEventListener('pointerup', cancel);
+      target.removeEventListener('pointercancel', cancel);
+    }
+    target.addEventListener('pointermove', cancel);
+    target.addEventListener('pointerup', cancel);
+    target.addEventListener('pointercancel', cancel);
+    target.addEventListener('pointerleave', cancel);
+  });
+  $('bk-grid').addEventListener('contextmenu', function (e) { if (e.target.closest('.bk-tile')) e.preventDefault(); });
   $('bk-folders').addEventListener('click', function (e) {
     var t = e.target.closest('.bk-folder-card[data-v]');
     if (t) { shelf = t.dataset.v; folders(); lib(); }

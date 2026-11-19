@@ -25,32 +25,18 @@ if (!state.playlistId && !forcedTypeParam) window.location.href = '/home.html';
 AppAuth.requireAuth(function(user) {
   state.uid = user.uid;
   state.existingEntries = [];
-  AppDB.getAllEntries(user.uid).then(function(entries) {
-    state.existingEntries = entries;
+  Promise.all([AppDB.getAllEntries(user.uid), AppDB.getPlaylists(user.uid)]).then(function (results) {
+    state.existingEntries = results[0];
+    state.existingPlaylists = results[1];
+    initPage();
+  }).catch(function (err) {
+    console.error('Could not load existing entries for duplicate checks.', err);
+    AppUtils.showToast('Could not load your existing entries.');
   });
-  initPage();
 });
 
-function rewatchGate(r, seasonNum) {
-  var ex = state.existingEntries.filter(function (e) {
-    return r.type === 'series'
-      ? e.type === 'series' && e.tmdbId === r.tmdbId && e.season === seasonNum
-      : e.type === 'movie' && e.tmdbId === r.tmdbId;
-  })[0];
-  if (!ex) return false;
-  AppFlow.rewatch(r.title).then(function (v) {
-    if (v === 'new') return showStep3();
-    if (v !== 'yes') return;
-    AppDB.updateEntry(state.uid, ex.id, { rewatchCount: (ex.rewatchCount || 0) + 1 }).then(function () {
-      sessionStorage.setItem('pl-back', '/home.html');
-      window.location.replace('/playlist.html?id=' + ex.playlistId);
-    }).catch(function () { AppUtils.showToast('Failed. Try again.'); });
-  });
-  return true;
-}
-
 function findDuplicate(r, seasonNum) {
-  return state.existingEntries.some(function(e) {
+  return state.existingEntries.filter(function(e) {
     if (r.type === 'game') {
       var title = String(r.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       if (e.type !== 'game') return false;
@@ -61,7 +47,31 @@ function findDuplicate(r, seasonNum) {
     }
     if (r.type === 'series') return e.type === 'series' && e.tmdbId === r.tmdbId && e.season === seasonNum;
     return e.type === 'movie' && e.tmdbId === r.tmdbId;
+  })[0] || null;
+}
+
+function duplicatePlaylistName(entry) {
+  var playlist = (state.existingPlaylists || []).filter(function (p) { return p.id === entry.playlistId; })[0];
+  return playlist ? playlist.name : 'a playlist';
+}
+
+function handleDuplicate(entry, title) {
+  if (!entry) return false;
+  if (entry.type === 'game') {
+    AppUtils.showToast('Already added in ' + duplicatePlaylistName(entry) + '.');
+    return true;
+  }
+  AppFlow.rewatch(title, entry.yearWatched).then(function (answer) {
+    if (answer !== 'yes') return;
+    AppDB.updateEntry(state.uid, entry.id, { rewatchCount: (Number(entry.rewatchCount) || 0) + 1 }).then(function () {
+      sessionStorage.setItem('pl-back', '/home.html');
+      window.location.replace('/playlist.html?id=' + encodeURIComponent(entry.playlistId));
+    }).catch(function (err) {
+      console.error('Could not update rewatch count.', err);
+      AppUtils.showToast('Failed. Try again.');
+    });
   });
+  return true;
 }
 
 function initPage() {
@@ -533,16 +543,17 @@ function renderResults(results) {
     item.className = 'result-item';
     var posterUrl = AppUtils.getPosterUrl(r.poster);
     var typeLabel = r.type === 'movie' ? 'Movie' : r.type === 'series' ? 'Series' : 'Game';
-    var isDup = r.type !== 'series' && findDuplicate(r);
+    var duplicate = r.type !== 'series' && findDuplicate(r);
     item.innerHTML = (
       '<img class="result-thumb" src="' + (posterUrl || '') + '" alt="' + AppUtils.esc(r.title) + '" onerror="this.style.background=\'#2a2a2a\'">' +
       '<div class="result-info">' +
         '<p class="result-title">' + AppUtils.esc(r.title) + '</p>' +
         '<p class="result-meta">' + (r.releaseYear || '—') + ' · ' + typeLabel +
-          (isDup ? ' · <span style="color:var(--accent)">✓ Already added</span>' : '') + '</p>' +
+          (duplicate ? ' · <span style="color:var(--accent)">✓ Already added in ' + AppUtils.esc(duplicatePlaylistName(duplicate)) + '</span>' : '') + '</p>' +
       '</div>'
     );
     item.addEventListener('click', function() {
+      if (duplicate && handleDuplicate(duplicate, r.title)) return;
       state.selectedResult = r;
       state.selectedSeason = null;
       state.selectedMonth = null;
@@ -550,7 +561,6 @@ function renderResults(results) {
       state.selectedGameRating = null;
       state.selectedStatus = null;
       state.selectedCategory = null;
-      if (r.type === 'movie' && rewatchGate(r)) return;
       if (r.type === 'series') {
         loadSeasons(r.tmdbId);
       } else {
@@ -575,18 +585,18 @@ function loadSeasons(tmdbId) {
       var item = document.createElement('div');
       item.className = 'result-item';
       var posterUrl = AppUtils.getPosterUrl(s.poster, 154);
-      var isDup = findDuplicate(state.selectedResult, s.seasonNumber);
+      var duplicate = findDuplicate(state.selectedResult, s.seasonNumber);
       item.innerHTML = (
         '<img class="result-thumb" src="' + (posterUrl || '') + '" alt="' + AppUtils.esc(s.seasonName) + '" onerror="this.style.background=\'#2a2a2a\'">' +
         '<div class="result-info">' +
           '<p class="result-title">' + AppUtils.esc(s.seasonName) + '</p>' +
           '<p class="result-meta">' + s.episodeCount + ' episodes' + (s.airYear ? ' · ' + s.airYear : '') +
-            (isDup ? ' · <span style="color:var(--accent)">✓ Already added</span>' : '') + '</p>' +
+            (duplicate ? ' · <span style="color:var(--accent)">✓ Already added in ' + AppUtils.esc(duplicatePlaylistName(duplicate)) + '</span>' : '') + '</p>' +
         '</div>'
       );
       item.addEventListener('click', function() {
+        if (duplicate && handleDuplicate(duplicate, state.selectedResult.title + ' · ' + s.seasonName)) return;
         state.selectedSeason = s;
-        if (rewatchGate(state.selectedResult, s.seasonNumber)) return;
         showStep3();
       });
       list.appendChild(item);

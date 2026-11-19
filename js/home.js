@@ -3,6 +3,7 @@ var ALL_ENTRIES = [];
 var ALL_PLAYLISTS = [];
 var ACTIVE_YEAR = 'all';
 var COVERS = {};
+var homeSearchQuery = '';
 setTimeout(function () { AppUtils.booksPill(); }, 0);
 sessionStorage.removeItem('pl-back');
 var _tp = new URLSearchParams(window.location.search).get('tab');
@@ -283,6 +284,30 @@ function renderHome() {
   });
 }
 
+function renderGlobalSearch() {
+  var results = document.getElementById('home-search-results');
+  if (!results) return;
+  var query = homeSearchQuery;
+  if (ACTIVE_TAB !== 'media' || !query || !document.getElementById('home-global-search').classList.contains('is-open')) {
+    results.hidden = true;
+    results.innerHTML = '';
+    return;
+  }
+  var playlistNames = {};
+  ALL_PLAYLISTS.forEach(function (playlist) { playlistNames[playlist.id] = playlist.name; });
+  var matches = ALL_ENTRIES.filter(function (entry) {
+    return entry.type !== 'game' && (entry.title || '').toLowerCase().indexOf(query) !== -1;
+  }).slice(0, 8);
+  results.innerHTML = matches.map(function (entry) {
+    var type = entry.type === 'series' ? 'Series' : 'Movie';
+    var meta = [type, entry.yearWatched || entry.releaseYear, playlistNames[entry.playlistId] || 'Playlist'].filter(Boolean).join(' · ');
+    return '<a class="home-search-result" href="/entry.html?id=' + encodeURIComponent(entry.id) + '">' +
+      '<span class="home-search-result-title">' + AppUtils.esc(entry.title) + '</span>' +
+      '<span class="home-search-result-meta">' + AppUtils.esc(meta) + '</span></a>';
+  }).join('') || '<p class="home-search-empty">No matches across your playlists.</p>';
+  results.hidden = false;
+}
+
 function applyYearFilter() {
   renderHome();
 
@@ -445,7 +470,45 @@ function applyYearFilter() {
   function updateFabVisibility() {
     document.getElementById('fab-create').style.display = 'none';
     document.getElementById('fab-add-game').style.display = 'flex';
+    var search = document.getElementById('home-global-search');
+    if (search) {
+      search.style.display = ACTIVE_TAB === 'media' ? '' : 'none';
+      if (ACTIVE_TAB !== 'media') setHomeSearchOpen(false);
+    }
+    renderGlobalSearch();
   }
+
+  function setHomeSearchOpen(open) {
+    var search = document.getElementById('home-global-search');
+    var toggle = document.getElementById('home-search-toggle');
+    if (!search || !toggle) return;
+    search.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    var input = document.getElementById('home-search');
+    input.disabled = !open;
+    if (!open) {
+      homeSearchQuery = '';
+      input.value = '';
+      renderGlobalSearch();
+    } else {
+      input.focus();
+    }
+  }
+
+  document.getElementById('home-search-toggle').addEventListener('click', function () {
+    setHomeSearchOpen(!document.getElementById('home-global-search').classList.contains('is-open'));
+  });
+  document.getElementById('home-search').addEventListener('input', function () {
+    homeSearchQuery = this.value.trim().toLowerCase();
+    renderGlobalSearch();
+  });
+  document.getElementById('home-search').addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') setHomeSearchOpen(false);
+  });
+  document.addEventListener('click', function (e) {
+    var search = document.getElementById('home-global-search');
+    if (search.classList.contains('is-open') && !search.contains(e.target)) setHomeSearchOpen(false);
+  });
 
   document.getElementById('fab-add-game').addEventListener('click', function() {
     if (ACTIVE_TAB === 'games') { window.location.href = '/add.html?type=game'; return; }
@@ -743,7 +806,7 @@ function applyYearFilter() {
   ).addEventListener('click', function() {
 
     window.location.href =
-      '/stats.html';
+      '/stats.html?tab=' + ACTIVE_TAB;
 
   });
     var activePlaylist = null;
