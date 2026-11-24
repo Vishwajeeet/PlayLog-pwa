@@ -652,29 +652,32 @@ function applyYearFilter() {
 
   (function () {
     var bar = document.getElementById('type-pills');
+    if (!bar) return;
     var lastY = window.scrollY;
     var threshold = 8;
+    var ticking = false;
+
     window.addEventListener('scroll', function () {
-      if (window.innerWidth > 700) {
-        bar.classList.remove('is-hidden');
-        lastY = window.scrollY;
-        return;
-      }
-      if (document.querySelector('.modal-overlay.open')) {
-        lastY = window.scrollY;
-        return;
-      }
-      var y = window.scrollY;
-      if (y < 80) {
-        bar.classList.remove('is-hidden');
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(function () {
+        if (window.innerWidth > 700) {
+          bar.classList.remove('is-hidden');
+          lastY = window.scrollY;
+          ticking = false;
+          return;
+        }
+        var y = window.scrollY;
+        if (y < 80) {
+          bar.classList.remove('is-hidden');
+        } else if (y < lastY - threshold) {
+          bar.classList.remove('is-hidden');
+        } else if (y > lastY + threshold && y > 120) {
+          bar.classList.add('is-hidden');
+        }
         lastY = y;
-      } else if (y < lastY - threshold) {
-        bar.classList.remove('is-hidden');
-        lastY = y;
-      } else if (y > lastY + threshold && y > 120) {
-        bar.classList.add('is-hidden');
-        lastY = y;
-      }
+        ticking = false;
+      });
     }, { passive: true });
   })();
 

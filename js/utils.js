@@ -70,6 +70,7 @@ window.AppUtils = {
   },
 
   shareCanvas: function(canvas, fileName, title) {
+    AppUtils.haptic(20);
     if (!navigator.share) {
       return Promise.reject(new Error('Native sharing is unavailable in this browser. Use Download Card instead.'));
     }
@@ -242,23 +243,59 @@ window.AppUtils = {
     return facts[Math.floor(Math.random() * facts.length)];
   },
 
-  hapticRating: function () {
+  haptic: function (duration) {
     try {
       if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-        navigator.vibrate(22);
+        navigator.vibrate(duration || 18);
       }
     } catch (e) {}
+  },
+
+  hapticRating: function () {
+    this.haptic(22);
   }
 
 };
 
-// Mobile tactile haptic feedback strictly for rating taps across all fields & screens
+// Mobile tactile haptic feedback strictly restricted to:
+// 1. Back button (.back-btn, #btn-back, [data-action="back"])
+// 2. Ratings (.num-rating-btn, .emoji-btn, [data-rating], etc.)
+// 3. Top logo (.brand-bar, #brand-bar, .page-header .page-title, h1.page-title)
+// 4. Share button (#btn-share, .btn-share, #btn-share-playlist, #btn-share-entry, #bk-wrap-share, [data-action="share"])
+// 5. Start and pause timers (#timer-start, #timer-stop, #home-timer-chip, .timer-play-btn, .timer-toggle)
 if (typeof document !== 'undefined') {
   document.addEventListener('click', function (e) {
     var t = e.target;
-    if (!t) return;
-    if (t.closest && t.closest('.num-rating-btn, .emoji-btn, .rating-btn, [data-rating], #rewatch-rating, #number-rating-row button, #be-r button, #aw-rate button, #ed-r button, #edit-complete-rating-row button')) {
-      AppUtils.hapticRating();
+    if (!t || !t.closest) return;
+
+    // 1. Back button
+    if (t.closest('.back-btn, #btn-back, .btn-back, [data-action="back"]')) {
+      AppUtils.haptic(16);
+      return;
+    }
+
+    // 2. Ratings
+    if (t.closest('.num-rating-btn, .emoji-btn, .rating-btn, [data-rating], #number-rating-row button, #be-r button, #aw-rate button, #ed-r button, #edit-complete-rating-row button')) {
+      AppUtils.haptic(22);
+      return;
+    }
+
+    // 3. Top logo
+    if (t.closest('.brand-bar, #brand-bar, .page-header .page-title, h1.page-title')) {
+      AppUtils.haptic(18);
+      return;
+    }
+
+    // 4. Share button
+    if (t.closest('#btn-share, .btn-share, #btn-share-playlist, #btn-share-entry, #bk-wrap-share, #share-playlist-btn, #btn-share-stats, #btn-export-wrapped, .share-btn, .btn-share-playlist, [data-action="share"]')) {
+      AppUtils.haptic(20);
+      return;
+    }
+
+    // 5. Start and pause timers
+    if (t.closest('#timer-start, #timer-stop, #home-timer-chip, .timer-play-btn, .timer-toggle')) {
+      AppUtils.haptic(24);
+      return;
     }
   }, { passive: true });
 }

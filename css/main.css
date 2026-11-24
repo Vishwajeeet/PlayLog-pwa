@@ -1536,7 +1536,7 @@ html[data-theme="light"] .wrapped-period-controls select option { background: #f
 }
 /* ===== FINAL POLISH ===== */
 img { content-visibility: auto; }
-.card, .playlist-card, .stat-box { will-change: transform; }
+.card:hover, .playlist-card:hover, .stat-box:hover { will-change: transform; }
 * { -webkit-tap-highlight-color: transparent; }
 .btn, .fab, .type-pill, .chip, .month-chip, .year-chip { -webkit-user-select: none; user-select: none; }
 .brand-bar {
