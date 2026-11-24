@@ -4,6 +4,57 @@ var ALL_PLAYLISTS = [];
 var ACTIVE_YEAR = 'all';
 var COVERS = {};
 var homeSearchQuery = '';
+var HOME_TIMER_SUMMARY = [];
+var HOME_TIMER_UID = null;
+
+function renderHomeTimerChip() {
+  var chip = document.getElementById('home-timer-chip');
+  if (!chip) return;
+  var now = Date.now();
+  var active = HOME_TIMER_SUMMARY.filter(function (timer) {
+    return timer && timer.startedAt && now - timer.startedAt < 4 * 60 * 60 * 1000;
+  });
+  if (ACTIVE_TAB !== 'games' || !HOME_TIMER_UID || !active.length) {
+    chip.hidden = true;
+    return;
+  }
+  if (active.length > 1) {
+    chip.textContent = '▶ ' + active.length + ' playing';
+  } else {
+    var seconds = Math.floor((now - active[0].startedAt) / 1000);
+    var time = Math.floor(seconds / 3600) + ':' +
+      ('0' + Math.floor(seconds % 3600 / 60)).slice(-2) + ':' +
+      ('0' + seconds % 60).slice(-2);
+    chip.textContent = '▶ ' + active[0].title + ' ' + time;
+  }
+  chip.hidden = false;
+}
+
+function setHomeTimerSummary(uid, summary) {
+  if (!HOME_TIMER_UID || HOME_TIMER_UID !== uid) return;
+  HOME_TIMER_SUMMARY = Array.isArray(summary) ? summary : [];
+  renderHomeTimerChip();
+}
+
+window.addEventListener('playlog:prefs', function (event) {
+  if (event.detail) setHomeTimerSummary(HOME_TIMER_UID, event.detail.timersActive);
+});
+window.addEventListener('storage', function (event) {
+  if (event.key !== 'pl-timers-active') return;
+  if (!event.newValue) {
+    setHomeTimerSummary(HOME_TIMER_UID, []);
+    return;
+  }
+  try {
+    var sharedTimers = JSON.parse(event.newValue);
+    if (sharedTimers && sharedTimers.uid === HOME_TIMER_UID) setHomeTimerSummary(HOME_TIMER_UID, sharedTimers.timers);
+  } catch (e) {}
+});
+try {
+  var homeTimerCache = JSON.parse(localStorage.getItem('pl-timers-active') || 'null');
+  if (homeTimerCache && Array.isArray(homeTimerCache.timers)) HOME_TIMER_SUMMARY = homeTimerCache.timers;
+} catch (e) {}
+
 setTimeout(function () { AppUtils.booksPill(); }, 0);
 sessionStorage.removeItem('pl-back');
 var _tp = new URLSearchParams(window.location.search).get('tab');
@@ -13,6 +64,17 @@ var ACTIVE_TAB = (_tp || _dp) === 'games' ? 'games' : 'media';
 AppAuth.requireAuth(function(user) {
 
   var uid = user.uid;
+  HOME_TIMER_UID = uid;
+  try {
+    var cachedTimers = JSON.parse(localStorage.getItem('pl-timers-active') || 'null');
+    HOME_TIMER_SUMMARY = cachedTimers && cachedTimers.uid === uid && Array.isArray(cachedTimers.timers) ? cachedTimers.timers : [];
+  } catch (e) { HOME_TIMER_SUMMARY = []; }
+  if (window.PlaylogPrefs && Array.isArray(window.PlaylogPrefs.timersActive)) {
+    HOME_TIMER_SUMMARY = window.PlaylogPrefs.timersActive;
+  }
+  renderHomeTimerChip();
+  setInterval(renderHomeTimerChip, 1000);
+  window.addEventListener('pageshow', renderHomeTimerChip);
 
   var grid =
     document.getElementById('playlists-grid');
@@ -188,6 +250,8 @@ AppAuth.requireAuth(function(user) {
 
   entries.forEach(function(e) {
 
+    if ((e.type === 'game') !== (ACTIVE_TAB === 'games')) return;
+
     if (
       e.yearWatched &&
       years.indexOf(e.yearWatched) === -1
@@ -206,6 +270,7 @@ AppAuth.requireAuth(function(user) {
   });
 
   years.unshift('all');
+  if (years.indexOf(ACTIVE_YEAR) === -1) ACTIVE_YEAR = 'all';
 
   years.forEach(function(year) {
 
@@ -545,11 +610,13 @@ function applyYearFilter() {
     btn.classList.add('active');
     if (btn.dataset.tab === 'books') { window.location.href = '/books.html'; return; }
     ACTIVE_TAB = btn.dataset.tab === 'games' ? 'games' : 'media';
+    renderHomeTimerChip();
     localStorage.setItem('pl-last-tab', ACTIVE_TAB);
     var url = new URL(window.location.href);
     url.searchParams.set('tab', ACTIVE_TAB);
     window.history.replaceState({}, '', url);
     updateFabVisibility();
+    renderYearFilters(ALL_ENTRIES);
     applyYearFilter();
   });
 

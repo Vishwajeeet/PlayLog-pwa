@@ -38,8 +38,8 @@ window.AppBackup = {
     return e;
   },
   build: function (uid) {
-    return Promise.all([AppBackup._col(uid, 'playlists'), AppBackup._col(uid, 'entries'), AppBackup._col(uid, 'settings'), AppBackup._col(uid, 'covers')]).then(function (r) {
-      return { app: 'playlog', version: 1, createdAt: new Date().toISOString(), playlists: r[0], entries: r[1], settings: r[2], covers: r[3] };
+    return Promise.all([AppBackup._col(uid, 'playlists'), AppBackup._col(uid, 'entries'), AppBackup._col(uid, 'settings'), AppBackup._col(uid, 'covers'), AppBackup._col(uid, 'timers')]).then(function (r) {
+      return { app: 'playlog', version: 1, createdAt: new Date().toISOString(), playlists: r[0], entries: r[1], settings: r[2], covers: r[3], timers: r[4] };
     });
   },
   download: function (uid) {
@@ -142,16 +142,25 @@ window.AppBackup = {
   restore: function (uid, b, mode) {
     if (!b || b.app !== 'playlog') return Promise.reject(new Error('bad file'));
     var ops = [];
-    ['playlists', 'entries', 'settings', 'covers'].forEach(function (c) {
+    ['playlists', 'entries', 'settings', 'covers', 'timers'].forEach(function (c) {
       (b[c] || []).forEach(function (d) {
         var dd = AppBackup._de(d.data);
         if (c === 'entries') AppBackup._clean(dd);
+        if (c === 'settings' && d.id === 'prefs') delete dd.timersActive;
+        if (c === 'timers' && dd.startedAt != null) {
+          var startedAt = Number(dd.startedAt), now = Date.now(), end = Math.min(now, startedAt + 4 * 60 * 60 * 1000);
+          if (end - startedAt >= 30000) {
+            dd.sessions = Array.isArray(dd.sessions) ? dd.sessions.slice() : [];
+            dd.sessions.push({ s: startedAt, e: end, auto: end - startedAt >= 4 * 60 * 60 * 1000, adj: false });
+          }
+          dd.startedAt = null;
+        }
 
         ops.push([db.collection('users').doc(uid).collection(c).doc(d.id), dd]);
       });
     });
     var p = Promise.resolve();
-    if (mode === 'replace') ['entries', 'playlists', 'covers'].forEach(function (c) {
+    if (mode === 'replace') ['entries', 'playlists', 'covers', 'timers'].forEach(function (c) {
       p = p.then(function () { return db.collection('users').doc(uid).collection(c).get(); }).then(function (snap) {
         var out = Promise.resolve();
 
@@ -168,6 +177,33 @@ window.AppBackup = {
         return batch.commit();
       });
     })(ops.slice(i, i + 300));
-    return p;
+    return p.then(function () {
+      var timers = db.collection('users').doc(uid).collection('timers');
+      return timers.get().then(function (snap) {
+        return Promise.all(snap.docs.map(function (doc) {
+          return db.runTransaction(function (tx) {
+            return tx.get(doc.ref).then(function (current) {
+              if (!current.exists) return;
+              var data = current.data();
+              if (data.startedAt == null) return;
+              var start = Number(data.startedAt);
+              if (!isFinite(start)) return;
+              var end = Math.min(Date.now(), start + 4 * 60 * 60 * 1000);
+              if (end - start >= 30000) {
+                var sessions = Array.isArray(data.sessions) ? data.sessions.slice() : [];
+                sessions.push({ s: start, e: end, auto: end - start >= 4 * 60 * 60 * 1000, adj: false });
+                data.sessions = sessions;
+              }
+              data.startedAt = null;
+              tx.set(doc.ref, data, { merge: false });
+            });
+          });
+        }));
+      }).then(function () {
+        try { localStorage.removeItem('pl-timers-active'); } catch (e) {}
+        return db.collection('users').doc(uid).collection('settings').doc('prefs')
+          .set({ timersActive: firebase.firestore.FieldValue.delete() }, { merge: true });
+      });
+    });
   }
 };

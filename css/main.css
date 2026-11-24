@@ -762,6 +762,21 @@ select#game-year-select option {
   flex: 1;
 }
 
+#share-playlist-modal .modal-box,
+#share-modal .modal-box {
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+#share-playlist-canvas-wrap canvas,
+#share-canvas-wrap canvas {
+  width: auto !important;
+  max-width: 100%;
+  max-height: 55vh;
+  display: block;
+  margin: 0 auto;
+}
+
 /* PLAYLIST CARD */
 .playlist-card {
   background: var(--bg-card);

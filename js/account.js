@@ -3,6 +3,13 @@
   var settings = !!$('settings-root');
   var user, ref, prefs = {};
 
+  function publishPrefs() {
+    window.PlaylogPrefs = Object.assign({}, prefs);
+    if (typeof CustomEvent !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('playlog:prefs', { detail: Object.assign({}, prefs) }));
+    }
+  }
+
   function paint() {
     var src = prefs.avatar || user.photoURL;
     var ini = (user.displayName || user.email || '?').charAt(0).toUpperCase();
@@ -40,6 +47,7 @@
 
   function save(data) {
     Object.assign(prefs, data);
+    publishPrefs();
     return ref.set(data, { merge: true }).catch(function () { AppUtils.showToast('Failed to save.'); });
   }
 
@@ -60,6 +68,7 @@
     paint(); marks();
     ref.get().then(function (d) {
       prefs = d.exists ? d.data() : {};
+      publishPrefs();
       if (prefs.tab) localStorage.setItem('pl-tab-pref', prefs.tab);
       if (prefs.layout && !localStorage.getItem('mb-layout')) localStorage.setItem('mb-layout', prefs.layout);
       if (prefs.theme) localStorage.setItem('pl-theme', prefs.theme);

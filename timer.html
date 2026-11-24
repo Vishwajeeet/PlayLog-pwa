@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>Playtime Tracker — Playlog</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/timer.css">
+</head>
+<body class="timer-page">
+  <div class="app-container">
+    <main class="page">
+      <div class="brand-bar" id="brand-bar"><span>Playlog</span></div>
+      <header class="page-header">
+        <button class="back-btn" id="timer-back" type="button" aria-label="Go back">←</button>
+        <h1 class="page-title">Playtime Tracker</h1>
+        <div style="width:40px"></div>
+      </header>
+      <section class="timer-intro">
+        <p>Track sessions independently. Time is added to a game only when you mark it completed.</p>
+        <label class="timer-search-label" for="timer-search">Search your games</label>
+        <input id="timer-search" class="input-field" type="search" placeholder="Find a game…" autocomplete="off">
+      </section>
+      <div class="timer-layout">
+        <section class="timer-list-wrap" aria-label="Games">
+          <div id="timer-list" class="timer-list"></div>
+          <div id="timer-empty" class="timer-empty" hidden></div>
+          <div id="timer-igdb" class="timer-igdb" hidden></div>
+        </section>
+        <section id="timer-detail" class="timer-detail" aria-label="Game timer">
+          <button type="button" class="timer-detail-close" id="timer-detail-close" aria-label="Close game details">×</button>
+          <div id="timer-detail-content"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="toast"></div>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/firebase-init.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/firestore.js"></script>
+  <script src="/js/flow.js"></script>
+  <script src="/js/igdb.js"></script>
+  <script src="/js/timer.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+  </script>
+</body>
+</html>

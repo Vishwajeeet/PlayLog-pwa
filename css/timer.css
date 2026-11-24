@@ -1,0 +1,100 @@
+.timer-page .page{max-width:1120px;padding-bottom:calc(30px + env(safe-area-inset-bottom,0px))}
+.timer-page .page-header{display:flex;align-items:center;justify-content:space-between}
+.timer-settings-link{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:14px;color:var(--text-muted);text-decoration:none;font-size:21px}
+.timer-settings-link:hover{background:var(--bg-card-2);color:var(--text-primary)}
+.timer-intro{display:grid;gap:14px;margin:12px 0 20px;color:var(--text-muted);font-size:13px}
+.timer-search-label{font-size:12px;font-weight:600}
+.timer-intro .input-field{width:100%;min-height:48px}
+.timer-layout{display:grid;gap:18px}
+.timer-list{display:grid;gap:10px}
+.timer-list-card{display:flex;align-items:center;gap:12px;min-height:76px;padding:10px;border:1px solid rgba(255,255,255,.09);border-radius:18px;background:linear-gradient(145deg,color-mix(in srgb,var(--bg-card) 86%,var(--accent) 14%),var(--bg-card));color:var(--text-primary);font:inherit;text-align:left;cursor:pointer}
+.timer-list-card.selected{border-color:color-mix(in srgb,var(--accent) 65%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 25%,transparent)}
+.timer-list-card.running{order:-1}
+.timer-list-poster{width:42px;height:58px;flex:0 0 42px;border-radius:9px;object-fit:cover;background:var(--bg-card-2)}
+.timer-list-info{flex:1;min-width:0}
+.timer-list-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700}
+.timer-list-time{display:block;margin-top:4px;color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
+.timer-list-card.running .timer-list-time{color:var(--accent);font-size:17px;font-weight:800}
+.timer-live-dot{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 50%,transparent);animation:timer-pulse 1.5s infinite}
+@keyframes timer-pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.timer-empty{padding:22px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:var(--bg-card);color:var(--text-muted);font-size:13px;line-height:1.55}
+.timer-empty[hidden],.timer-igdb[hidden]{display:none}
+.timer-detail{position:relative;display:none}
+.timer-detail.is-open{display:block;position:fixed;inset:auto 0 0;z-index:120;max-height:min(86vh,760px);overflow-y:auto;padding:26px 18px calc(22px + env(safe-area-inset-bottom,0px));border:1px solid rgba(255,255,255,.12);border-bottom:0;border-radius:26px 26px 0 0;background:color-mix(in srgb,var(--bg-primary) 92%,var(--bg-card));box-shadow:0 -16px 50px rgba(0,0,0,.4)}
+.timer-detail.is-open::before{content:'';position:fixed;inset:0;z-index:-1;background:rgba(0,0,0,.46);pointer-events:none}
+.timer-detail-close{position:absolute;top:10px;right:12px;z-index:2;width:44px;height:44px;border:0;border-radius:50%;background:var(--bg-card-2);color:var(--text-primary);font-size:25px;cursor:pointer}
+.timer-game-head{display:flex;align-items:center;gap:14px;padding-right:42px}
+.timer-detail-poster{width:74px;height:104px;flex:0 0 74px;border-radius:14px;object-fit:cover;background:var(--bg-card-2)}
+.timer-game-name{font-size:20px;line-height:1.2;font-weight:800}
+.timer-game-status{margin-top:6px;color:var(--text-muted);font-size:12px}
+.timer-clock-card{display:flex;align-items:center;justify-content:center;gap:18px;margin:18px 0;padding:16px;border:1px solid rgba(255,255,255,.09);border-radius:22px;background:linear-gradient(145deg,color-mix(in srgb,var(--bg-card) 82%,var(--accent) 18%),var(--bg-card))}
+.timer-ring{width:106px;height:106px;flex:0 0 106px;transform:rotate(-90deg)}
+.timer-ring circle{fill:none;stroke-width:7}
+.timer-ring .ring-track{stroke:color-mix(in srgb,var(--text-muted) 24%,transparent)}
+.timer-ring .ring-value{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:276.46;transition:stroke-dashoffset .4s}
+.timer-clock-copy{min-width:0}
+.timer-clock{display:block;font-size:clamp(24px,8vw,36px);font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.timer-clock-label{display:block;margin-top:3px;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.timer-game-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.timer-game-actions .btn{min-height:48px}
+.timer-game-actions .timer-complete{grid-column:1/-1}
+.timer-section-title{margin:18px 0 9px;font-size:13px;font-weight:700}
+.timer-sessions{display:grid;gap:8px}
+.timer-session{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:11px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:var(--bg-card)}
+.timer-session-copy{min-width:0}
+.timer-session-date{font-size:12px;font-weight:600}
+.timer-session-duration{display:block;margin-top:4px;color:var(--text-muted);font-size:12px;font-variant-numeric:tabular-nums}
+.timer-session-badges{display:flex;gap:5px;margin-top:5px}
+.timer-badge{padding:3px 7px;border-radius:999px;background:var(--accent-dim);color:var(--accent);font-size:10px;font-weight:700}
+.timer-session-actions{display:flex;gap:4px}
+.timer-session-actions button,.timer-detail-tools button{min-width:44px;min-height:44px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:var(--bg-card-2);color:var(--text-primary);font:600 12px Inter,sans-serif;cursor:pointer}
+.timer-detail-tools{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.timer-hint{margin:12px 0;padding:13px;border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);border-radius:14px;color:var(--text-muted);font-size:13px;line-height:1.5}
+.timer-hint a{color:var(--accent);font-weight:700}
+.timer-igdb{margin-top:14px;display:grid;gap:8px}
+.timer-igdb button{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:8px;border:1px solid rgba(255,255,255,.1);border-radius:14px;background:var(--bg-card);color:var(--text-primary);text-align:left;cursor:pointer}
+.timer-igdb img{width:34px;height:46px;object-fit:cover;border-radius:6px;background:var(--bg-card-2)}
+.timer-dialog .modal-box{max-height:88vh;overflow-y:auto}
+.timer-dialog .input-field{min-height:48px;margin:6px 0 14px}
+.timer-dialog .label{display:block}
+.timer-dialog .modal-actions .btn{min-height:44px}
+.timer-dialog-note{margin:-7px 0 12px;color:var(--text-muted);font-size:12px}
+html[data-theme="light"] .timer-list-card,html[data-theme="light"] .timer-clock-card{border-color:rgba(0,0,0,.1)}
+html[data-theme="light"] .timer-session,html[data-theme="light"] .timer-detail.is-open{border-color:rgba(0,0,0,.1)}
+html[data-theme="light"] .timer-session-actions button,html[data-theme="light"] .timer-detail-tools button{border-color:rgba(0,0,0,.1)}
+@media(min-width:700px){.timer-intro{grid-template-columns:1fr minmax(240px,340px);align-items:center}.timer-list{grid-template-columns:1fr 1fr}}
+@media(min-width:900px){.timer-layout{grid-template-columns:minmax(290px,.78fr) minmax(0,1.22fr);align-items:start}.timer-list{grid-template-columns:1fr}.timer-detail,.timer-detail.is-open{display:block;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow:auto;padding:20px;border:1px solid rgba(255,255,255,.1);border-radius:22px;background:color-mix(in srgb,var(--bg-primary) 88%,var(--bg-card));box-shadow:0 14px 40px rgba(0,0,0,.18)}.timer-detail-close{display:none}.timer-detail.is-open::before{display:none}.timer-ring{width:120px;height:120px;flex-basis:120px}.timer-clock-card{justify-content:flex-start}}
+@media(max-width:899px){.timer-list-wrap{min-height:150px}.timer-detail:not(.is-open){display:none}}
+
+/* Poster grid list */
+.timer-page .timer-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.timer-page .timer-list-card{position:relative;display:block;min-height:0;aspect-ratio:2/3;padding:0;overflow:hidden;border-radius:16px;background:var(--bg-card-2)}
+.timer-card-art{position:absolute;inset:0}
+.timer-card-art img{display:block;width:100%;height:100%;object-fit:cover}
+.timer-card-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 42%,rgba(0,0,0,.9))}
+.timer-card-info{position:absolute;left:0;right:0;bottom:0;padding:10px 11px 11px}
+.timer-page .timer-card-info .timer-list-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;color:#fff;font-size:13px;line-height:1.25}
+.timer-card-info .timer-list-time{color:rgba(255,255,255,.78);font-size:12px}
+.timer-list-card.running .timer-card-info .timer-list-time{color:var(--accent);font-size:15px}
+.timer-card-chip{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;font-size:10px;font-weight:700;text-transform:capitalize}
+.timer-page .timer-live-dot{position:absolute;top:10px;right:10px}
+@media(min-width:700px) and (max-width:899px){.timer-page .timer-list{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* Polish */
+.timer-page .timer-intro{display:block;margin:6px 0 18px}
+.timer-page .timer-intro p{margin:0 0 12px;line-height:1.5}
+.timer-search-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.timer-page .timer-intro .input-field{display:block;width:100%;max-width:none;min-height:50px;margin:0;border-radius:14px}
+.timer-page .timer-layout{gap:20px}
+.timer-page .timer-game-actions{grid-template-columns:1fr;gap:10px;margin:0 0 22px}
+.timer-page .timer-game-actions .btn{width:100%;min-height:50px;border-radius:14px;font-size:15px}
+.timer-game-status{display:inline-block;padding:4px 11px;border-radius:999px;background:var(--accent-dim);color:var(--accent);font-size:11px;font-weight:700;text-transform:capitalize}
+.timer-page .timer-clock-card{justify-content:center;gap:20px;margin:18px 0 16px;padding:18px}
+.timer-clock-copy{display:flex;flex-direction:column;gap:4px}
+.timer-clock-sub{color:var(--accent);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.timer-detail-tools button{font-size:13px}
+.timer-detail .timer-empty{padding:56px 12px;border:0;background:none;text-align:center}
+.timer-detail.is-open::before{-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.timer-detail.is-open::after{content:'';position:absolute;top:8px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:4px;background:rgba(255,255,255,.22)}
+@media(max-width:899px){.timer-detail.is-open{max-width:560px;margin:0 auto}}
+@media(min-width:900px){.timer-detail.is-open::after{display:none}.timer-detail{min-height:260px}}

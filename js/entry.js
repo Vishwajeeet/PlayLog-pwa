@@ -59,6 +59,11 @@ AppAuth.requireAuth(function (user) {
       '</button>' +
       '<button class="btn btn-ghost" id="btn-edit">✏️ Edit Details</button>' +
       '<button class="btn btn-ghost" id="btn-move">↔ Move to Playlist</button>';
+    if (isGame && e.completionStatus === 'playing') {
+      actionHTML = '<a class="btn btn-primary" href="/timer.html?game=' + encodeURIComponent(entryId) + '">Open timer</a>' + actionHTML;
+    } else if (isGame && (e.completionStatus === 'wishlist' || e.completionStatus === 'dropped')) {
+      actionHTML = '<button class="btn btn-primary" id="btn-start-tracking">Start tracking</button>' + actionHTML;
+    }
 
     document.getElementById('entry-content').innerHTML = (
       '<div class="entry-detail-layout">' +
@@ -93,6 +98,24 @@ AppAuth.requireAuth(function (user) {
         openMoveModal(e);
       });
     }
+    var trackingButton = document.getElementById('btn-start-tracking');
+    if (trackingButton) trackingButton.addEventListener('click', function () {
+      if (!window.confirm('Move to Currently Playing and start timer?')) return;
+      var now = new Date();
+      AppDB.getOrCreatePlaylist(uid, 'Currently Playing', 'game').then(function (playlistId) {
+        return AppDB.updateEntry(uid, entryId, {
+          playlistId: playlistId,
+          completionStatus: 'playing',
+          monthWatched: now.getMonth() + 1,
+          yearWatched: now.getFullYear()
+        });
+      }).then(function () {
+        window.location.href = '/timer.html?game=' + encodeURIComponent(entryId) + '&start=1';
+      }).catch(function (err) {
+        console.error('Could not move game to Currently Playing.', err);
+        AppUtils.showToast('Could not start tracking. Try again.');
+      });
+    });
 
     document.getElementById('btn-delete').addEventListener('click', function () {
       document.getElementById('delete-modal').classList.add('open');

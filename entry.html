@@ -91,6 +91,7 @@
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
     }
+    window.addEventListener('pageshow', function (e) { if (e.persisted) window.location.reload(); });
   </script>
     <script>
     var brandBar = document.getElementById('brand-bar');
