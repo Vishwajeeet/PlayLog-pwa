@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/entry.css">
+  <link rel="stylesheet" href="/css/timer.css">
 </head>
 
 <body>
@@ -39,6 +40,10 @@
           </div>
         </div>
       </div>
+      <section id="entry-timer-widget" class="timer-detail entry-timer-widget" aria-label="Game timer" hidden>
+        <button type="button" class="timer-detail-close" id="timer-detail-close" aria-label="Close game details">×</button>
+        <div id="timer-detail-content"></div>
+      </section>
 
     </main>
   </div>
@@ -87,6 +92,7 @@
   <script src="/js/flow.js"></script>
   <script src="/js/backup.js"></script>
   <script src="/js/entry.js"></script>
+  <script src="/js/timer.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');

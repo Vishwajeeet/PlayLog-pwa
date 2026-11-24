@@ -111,6 +111,164 @@
   border: 1px solid rgba(255, 255, 255, .1);
 }
 
+.entry-timer-widget.timer-detail,
+.entry-timer-widget.timer-detail.is-open {
+  display: block;
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+  margin: 0 0 16px;
+  padding: clamp(16px, 2.2vw, 24px);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, .1));
+  border-radius: 22px;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--bg-card) 94%, var(--accent) 6%), var(--bg-card) 58%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .14);
+}
+
+.entry-timer-widget[hidden] {
+  display: none !important;
+}
+
+#btn-open-timer[hidden] {
+  display: none !important;
+}
+
+.entry-timer-widget .timer-detail-close,
+#entry-timer-widget.timer-detail.is-open::before,
+#entry-timer-widget.timer-detail.is-open::after {
+  display: none;
+}
+
+.entry-timer-widget + .entry-actions {
+  margin-top: 0;
+}
+
+.entry-timer-widget .timer-game-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.entry-timer-widget .timer-game-actions .btn {
+  width: 100%;
+  min-height: 50px;
+  border-radius: 13px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.entry-timer-widget .timer-game-actions .timer-complete {
+  grid-column: auto;
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: color-mix(in srgb, var(--bg-card-2) 84%, transparent);
+}
+
+.entry-timer-widget .timer-game-actions .btn:hover,
+.entry-timer-widget .timer-detail-tools button:hover,
+.entry-timer-widget .timer-session-actions button:hover {
+  transform: translateY(-1px);
+}
+
+.entry-timer-widget .timer-game-actions .btn:focus-visible,
+.entry-timer-widget .timer-detail-tools button:focus-visible,
+.entry-timer-widget .timer-session-actions button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.entry-timer-widget .timer-game-head {
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-right: 0;
+}
+
+.entry-timer-widget .timer-detail-poster {
+  width: 68px;
+  height: 96px;
+  flex-basis: 68px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, .2);
+}
+
+.entry-timer-widget .timer-game-name {
+  font-size: clamp(18px, 2vw, 21px);
+  letter-spacing: -.025em;
+}
+
+.entry-timer-widget .timer-clock-card {
+  justify-content: flex-start;
+  gap: 20px;
+  min-height: 128px;
+  margin: 0 0 16px;
+  padding: 18px 20px;
+  border-color: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, .09));
+  border-radius: 18px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--accent) 12%, var(--bg-card-2)), var(--bg-card) 78%);
+}
+
+.entry-timer-widget .timer-ring {
+  width: 88px;
+  height: 88px;
+  flex-basis: 88px;
+}
+
+.entry-timer-widget .timer-clock {
+  font-size: clamp(28px, 3vw, 36px);
+  line-height: 1;
+}
+
+.entry-timer-widget .timer-clock-label {
+  margin-top: 6px;
+}
+
+.entry-timer-widget .timer-clock-sub {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.entry-timer-widget .timer-section-title {
+  margin: 20px 0 10px;
+  font-size: 13px;
+  letter-spacing: .01em;
+}
+
+.entry-timer-widget .timer-session {
+  padding: 12px 14px;
+  border-radius: 14px;
+  transition: border-color .16s ease, background .16s ease;
+}
+
+.entry-timer-widget .timer-session-actions button,
+.entry-timer-widget .timer-detail-tools button {
+  min-height: 46px;
+  border-radius: 12px;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+
+html[data-theme="light"] .entry-timer-widget {
+  border-color: color-mix(in srgb, var(--accent) 24%, rgba(0, 0, 0, .1));
+  box-shadow: 0 12px 28px rgba(30, 25, 10, .08);
+}
+
+html[data-theme="light"] .entry-timer-widget .timer-game-actions .timer-complete {
+  border-color: rgba(0, 0, 0, .12);
+}
+
+@media (max-width: 640px) {
+  .entry-timer-widget .timer-game-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .entry-timer-widget .timer-game-actions .timer-complete {
+    grid-column: 1;
+  }
+}
+
 .entry-loading {
   align-items: start;
 }
@@ -199,6 +357,10 @@ html[data-theme="light"] .detail-row {
 
   .detail-card,
   .entry-actions {
+    grid-column: 1 / -1;
+  }
+
+  .entry-timer-widget {
     grid-column: 1 / -1;
   }
 

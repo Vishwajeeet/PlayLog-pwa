@@ -233,6 +233,7 @@ function timerMutateSessions(entry, mutate) {
 }
 
 function renderTimerList() {
+  if (document.getElementById('entry-timer-widget')) return;
   var list = document.getElementById('timer-list');
   var empty = document.getElementById('timer-empty');
   var search = String(timerState.query || '').toLowerCase().trim();
@@ -282,16 +283,29 @@ function renderIGDBOffer(query, count) {
 }
 
 function renderTimerDetail() {
-  var panel = document.getElementById('timer-detail');
+  var embedded = document.getElementById('entry-timer-widget');
+  var panel = embedded || document.getElementById('timer-detail');
   var content = document.getElementById('timer-detail-content');
   var entry = timerEntry(timerState.selectedId);
   if (!entry) {
+    if (embedded) panel.hidden = true;
     content.innerHTML = '<div class="timer-empty">Select a game to see its timer and sessions.</div>';
     panel.classList.remove('is-open');
     return;
   }
   var data = timerState.timers[entry.id] || timerData(null, entry);
   var running = data.startedAt != null && Date.now() - data.startedAt < TIMER_CAP_MS;
+  if (embedded) {
+    var hasTimer = data.startedAt != null || data.sessions.length > 0;
+    panel.hidden = !hasTimer;
+    var openTimerLink = document.getElementById('btn-open-timer');
+    if (openTimerLink) openTimerLink.hidden = hasTimer;
+    if (!hasTimer) {
+      panel.classList.remove('is-open');
+      return;
+    }
+  }
+  if (embedded) panel.hidden = false;
   var total = timerElapsed(data, Date.now());
   var sessionMs = running ? Math.min(Math.max(0, Date.now() - data.startedAt), TIMER_CAP_MS) : 0;
   var pct = sessionMs / TIMER_CAP_MS;
@@ -348,6 +362,7 @@ function renderTimerDetail() {
 }
 
 function timerTick() {
+  var embedded = !!document.getElementById('entry-timer-widget');
   var now = Date.now(), active = timerState.entries.filter(function (entry) {
     var data = timerState.timers[entry.id];
     return data && data.startedAt != null && now - data.startedAt < TIMER_CAP_MS;
@@ -384,6 +399,7 @@ function timerTick() {
       if (sub) sub.textContent = live ? 'Session ' + timerFormat(sMs) : 'Timer stopped';
     }
   }
+  if (embedded) return;
   if (active.length) {
     var titleEntry = current && active.filter(function (entry) { return entry.id === current.id; })[0] || active[0];
     document.title = timerFormat(timerElapsed(timerState.timers[titleEntry.id], now)) + ' — ' + titleEntry.title + ' · Playlog';
@@ -720,6 +736,25 @@ function timerManualAdd() {
 
 function timerInit(user) {
   timerState.uid = user.uid;
+  if (document.getElementById('entry-timer-widget')) {
+    var entryId = timerParams.get('id');
+    window.addEventListener('playlog:entry-rendered', renderTimerDetail);
+    AppDB.getAllEntries(user.uid).then(function (entries) {
+      var entry = entries.filter(function (item) { return item.id === entryId && item.type === 'game'; })[0];
+      if (!entry) return;
+      timerState.libraryEntries = [entry];
+      timerState.entries = [entry];
+      timerState.selectedId = entry.id;
+      return timerRefresh();
+    }).catch(function (err) {
+      console.error('Could not initialize entry timer.', err);
+      AppUtils.showToast('Could not load this game timer. Check your connection.');
+    });
+    setInterval(timerTick, 1000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) timerRefresh().catch(function () {}); });
+    window.addEventListener('pageshow', function () { timerRefresh().catch(function () {}); });
+    return;
+  }
   document.getElementById('brand-bar').onclick = function () { window.location.href = '/home.html'; };
   document.getElementById('timer-back').onclick = function () {
     if (window.history.length > 1) window.history.back();

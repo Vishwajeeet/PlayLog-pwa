@@ -60,7 +60,7 @@ AppAuth.requireAuth(function (user) {
       '<button class="btn btn-ghost" id="btn-edit">✏️ Edit Details</button>' +
       '<button class="btn btn-ghost" id="btn-move">↔ Move to Playlist</button>';
     if (isGame && e.completionStatus === 'playing') {
-      actionHTML = '<a class="btn btn-primary" href="/timer.html?game=' + encodeURIComponent(entryId) + '">Open timer</a>' + actionHTML;
+      actionHTML = '<a class="btn btn-primary" id="btn-open-timer" href="/timer.html?game=' + encodeURIComponent(entryId) + '">Open timer</a>' + actionHTML;
     } else if (isGame && (e.completionStatus === 'wishlist' || e.completionStatus === 'dropped')) {
       actionHTML = '<button class="btn btn-primary" id="btn-start-tracking">Start tracking</button>' + actionHTML;
     }
@@ -82,6 +82,11 @@ AppAuth.requireAuth(function (user) {
         '</div>' +
       '</div>'
     );
+    if (isGame) {
+      var entryInfo = document.querySelector('.entry-detail-info');
+      entryInfo.insertBefore(document.getElementById('entry-timer-widget'), entryInfo.querySelector('.entry-actions'));
+      window.dispatchEvent(new Event('playlog:entry-rendered'));
+    }
 
     if (isMediaWishlist) {
       document.getElementById('btn-mark-watched').addEventListener('click', function () {
