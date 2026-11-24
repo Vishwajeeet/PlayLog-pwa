@@ -240,6 +240,25 @@ window.AppUtils = {
         + (thisMonth !== 1 ? 's' : '')
     ];
     return facts[Math.floor(Math.random() * facts.length)];
+  },
+
+  hapticRating: function () {
+    try {
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate(22);
+      }
+    } catch (e) {}
   }
 
 };
+
+// Mobile tactile haptic feedback strictly for rating taps across all fields & screens
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t) return;
+    if (t.closest && t.closest('.num-rating-btn, .emoji-btn, .rating-btn, [data-rating], #rewatch-rating, #number-rating-row button, #be-r button, #aw-rate button, #ed-r button, #edit-complete-rating-row button')) {
+      AppUtils.hapticRating();
+    }
+  }, { passive: true });
+}

@@ -48,9 +48,45 @@ AppAuth.requireAuth(function (user) {
     var rowsHTML = rows.map(function (r) {
       return '<div class="detail-row"><span class="detail-label">' + r[0] + '</span><span class="detail-value">' + AppUtils.esc(r[1]) + '</span></div>';
     }).join('');
+
+    // Re-watch / Re-play diary timeline
+    var rewatchesHTML = '';
+    var rewatches = Array.isArray(e.rewatches) ? e.rewatches : [];
+    if (rewatches.length > 0) {
+      rewatchesHTML = '<div class="detail-card rewatch-diary-card" style="margin-top:14px;padding:14px 16px">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">' +
+          '<b style="font-size:14px;color:var(--text-primary)">' + (isGame ? '🎮 Playthrough Diary' : '🔁 Re-watch Diary') + ' (' + rewatches.length + ')</b>' +
+          '<button type="button" class="btn btn-ghost" id="btn-add-rewatch-card" style="font-size:12px;padding:4px 10px;width:auto">+ Add</button>' +
+        '</div>' +
+        '<div class="rewatch-timeline" style="display:flex;flex-direction:column;gap:10px">';
+
+      rewatches.forEach(function (rw, idx) {
+        var ordinal = (idx + 2);
+        var ordSuffix = ordinal === 2 ? 'nd' : ordinal === 3 ? 'rd' : 'th';
+        var label = ordinal + ordSuffix + (isGame ? ' Playthrough' : ' Watch');
+        var ratingBadge = rw.rating ? '<span class="badge" style="position:static;padding:2px 8px;font-size:11px;background:var(--accent);color:#000;font-weight:700">★ ' + rw.rating + '</span>' : '';
+
+        rewatchesHTML += (
+          '<div class="rewatch-item" data-rw-id="' + rw.id + '" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px">' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' +
+                '<strong style="font-size:13px;color:var(--text-primary)">' + label + '</strong>' +
+                (rw.date ? '<span style="font-size:11.5px;color:var(--text-muted)">' + rw.date + '</span>' : '') +
+                ratingBadge +
+              '</div>' +
+              (rw.notes ? '<p style="font-size:12px;color:var(--text-muted);margin:0;line-height:1.4">"' + AppUtils.esc(rw.notes) + '"</p>' : '') +
+            '</div>' +
+            '<button type="button" class="btn-delete-rewatch" data-rw-id="' + rw.id + '" style="background:none;border:none;color:var(--text-muted);font-size:16px;cursor:pointer;padding:2px 6px" title="Delete log">×</button>' +
+          '</div>'
+        );
+      });
+      rewatchesHTML += '</div></div>';
+    }
+
     var actionHTML = isMediaWishlist
       ? '<button class="btn btn-primary" id="btn-mark-watched">✓ Mark as Watched</button>'
-      : '<button class="btn btn-ghost" id="btn-share">' +
+      : '<button class="btn btn-ghost" id="btn-open-rewatch">' + (isGame ? '🔁 Log Re-play' : '🔁 Log Re-watch') + '</button>' +
+        '<button class="btn btn-ghost" id="btn-share">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px">' +
           '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"></path>' +
           '<polyline points="16 6 12 2 8 6"></polyline>' +
@@ -65,10 +101,17 @@ AppAuth.requireAuth(function (user) {
       actionHTML = '<button class="btn btn-primary" id="btn-start-tracking">Start tracking</button>' + actionHTML;
     }
 
+    // Set cinematic hero backdrop
+    var backdropEl = document.getElementById('entry-backdrop');
+    if (backdropEl) {
+      var bgImg = e.backdrop || posterUrl;
+      if (bgImg) backdropEl.style.backgroundImage = 'url("' + bgImg + '")';
+    }
+
     document.getElementById('entry-content').innerHTML = (
       '<div class="entry-detail-layout">' +
         '<div class="detail-hero">' +
-          (posterUrl ? '<img class="detail-poster" src="' + posterUrl + '" alt="' + AppUtils.esc(e.title) + '">' : '<div class="entry-poster-placeholder">' + (isGame ? '' : '🎬') + '</div>') +
+          (posterUrl ? '<img class="detail-poster" src="' + posterUrl + '" alt="' + AppUtils.esc(e.title) + '" title="Tap to zoom">' : '<div class="entry-poster-placeholder">' + (isGame ? '' : '🎬') + '</div>') +
         '</div>' +
         '<div class="entry-detail-info">' +
           '<div class="entry-heading">' +
@@ -76,6 +119,7 @@ AppAuth.requireAuth(function (user) {
             '<p class="entry-type">' + (isGame ? 'Game' : e.type === 'series' ? 'Series' : 'Movie') + (e.releaseYear ? ' <span>·</span> ' + e.releaseYear : '') + '</p>' +
           '</div>' +
           '<div class="detail-card">' + rowsHTML + '</div>' +
+          rewatchesHTML +
           '<div class="entry-actions">' + actionHTML +
             '<button class="btn btn-danger" id="btn-delete">Delete Entry</button>' +
           '</div>' +
@@ -103,6 +147,105 @@ AppAuth.requireAuth(function (user) {
         openMoveModal(e);
       });
     }
+
+    // Lightbox Poster Zoom
+    var posterImg = document.querySelector('.detail-poster');
+    if (posterImg && posterUrl) {
+      posterImg.addEventListener('click', function () {
+        var lb = document.getElementById('lightbox-modal');
+        var lbImg = document.getElementById('lightbox-img');
+        if (lb && lbImg) {
+          lbImg.src = posterUrl;
+          lb.classList.add('open');
+        }
+      });
+    }
+
+    // Re-watch / Re-play Dialog Logic
+    function openRewatchDialog() {
+      var rwModal = document.getElementById('rewatch-modal');
+      var rwTitle = document.getElementById('rewatch-modal-title');
+      var rwRatingLabel = document.getElementById('rewatch-rating-label');
+      var rwDate = document.getElementById('rewatch-date');
+      var rwRating = document.getElementById('rewatch-rating');
+      var rwNotes = document.getElementById('rewatch-notes');
+
+      if (rwTitle) rwTitle.textContent = isGame ? 'Log Re-play' : 'Log Re-watch';
+      if (rwRatingLabel) rwRatingLabel.textContent = isGame ? 'Rating (1–10, Optional)' : 'Rating (1–5, Optional)';
+      if (rwDate) rwDate.value = new Date().toISOString().split('T')[0];
+      if (rwRating) rwRating.value = '';
+      if (rwNotes) rwNotes.value = '';
+
+      if (rwModal) rwModal.classList.add('open');
+    }
+
+    var btnOpenRw = document.getElementById('btn-open-rewatch');
+    if (btnOpenRw) btnOpenRw.addEventListener('click', openRewatchDialog);
+    var btnAddRwCard = document.getElementById('btn-add-rewatch-card');
+    if (btnAddRwCard) btnAddRwCard.addEventListener('click', openRewatchDialog);
+
+    var btnCancelRw = document.getElementById('btn-cancel-rewatch');
+    if (btnCancelRw) {
+      btnCancelRw.onclick = function () {
+        document.getElementById('rewatch-modal').classList.remove('open');
+      };
+    }
+
+    var btnSaveRw = document.getElementById('btn-save-rewatch');
+    if (btnSaveRw) {
+      btnSaveRw.onclick = function () {
+        var rwDateVal = document.getElementById('rewatch-date').value;
+        var rwRatingVal = document.getElementById('rewatch-rating').value;
+        var rwNotesVal = document.getElementById('rewatch-notes').value.trim();
+
+        var newRwItem = {
+          id: 'rw_' + Date.now(),
+          date: rwDateVal || new Date().toISOString().split('T')[0],
+          rating: rwRatingVal ? Number(rwRatingVal) : null,
+          notes: rwNotesVal
+        };
+
+        var currentRewatches = Array.isArray(e.rewatches) ? e.rewatches.slice() : [];
+        currentRewatches.push(newRwItem);
+
+        docRef.update({
+          rewatches: currentRewatches,
+          rewatchCount: currentRewatches.length,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () {
+          e.rewatches = currentRewatches;
+          e.rewatchCount = currentRewatches.length;
+          document.getElementById('rewatch-modal').classList.remove('open');
+          render(e);
+          AppUtils.showToast((isGame ? 'Re-play' : 'Re-watch') + ' logged ✓');
+        }).catch(function (err) {
+          console.error(err);
+          AppUtils.showToast('Failed to save log.');
+        });
+      };
+    }
+
+    // Delete individual rewatch
+    document.querySelectorAll('.btn-delete-rewatch').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var rwId = btn.dataset.rwId;
+        if (!rwId) return;
+        if (!window.confirm('Delete this diary log?')) return;
+
+        var updatedRewatches = (e.rewatches || []).filter(function (rw) { return rw.id !== rwId; });
+        docRef.update({
+          rewatches: updatedRewatches,
+          rewatchCount: updatedRewatches.length,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () {
+          e.rewatches = updatedRewatches;
+          e.rewatchCount = updatedRewatches.length;
+          render(e);
+          AppUtils.showToast('Log removed');
+        });
+      });
+    });
     var trackingButton = document.getElementById('btn-start-tracking');
     if (trackingButton) trackingButton.addEventListener('click', function () {
       if (!window.confirm('Move to Currently Playing and start timer?')) return;
@@ -289,6 +432,7 @@ AppAuth.requireAuth(function (user) {
       b.textContent = G ? n : AppUtils.ratingToEmoji(n);
       if (n === rating) b.classList.add('selected');
       b.onclick = function () {
+        AppUtils.hapticRating();
         row.querySelectorAll('.selected').forEach(function (x) { x.classList.remove('selected'); });
         b.classList.add('selected'); rating = n;
       };
@@ -349,6 +493,13 @@ AppAuth.requireAuth(function (user) {
   document.getElementById('btn-cancel-move').addEventListener('click', function () {
     document.getElementById('move-modal').classList.remove('open');
   });
+
+  var lbClose = document.getElementById('btn-close-lightbox');
+  var lbModal = document.getElementById('lightbox-modal');
+  if (lbClose && lbModal) {
+    lbClose.addEventListener('click', function () { lbModal.classList.remove('open'); });
+    lbModal.addEventListener('click', function (ev) { if (ev.target === lbModal) lbModal.classList.remove('open'); });
+  }
 
   document.getElementById('btn-back').addEventListener('click', function () {
     window.history.back();

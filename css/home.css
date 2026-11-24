@@ -1,7 +1,7 @@
 body::before{content:'';position:fixed;inset:0;z-index:-2;background:var(--amb,none) center top/cover;filter:blur(70px) saturate(1.5);opacity:.28;transform:scale(1.3);transition:opacity .6s}
 body::after{content:'';position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(13,13,13,.15),#0d0d0d 75%)}
 
-.page-header{position:sticky;top:0;z-index:30;margin:0 -20px 8px;padding:14px 20px;background:rgba(13,13,13,.6);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06)}
+.page-header{position:relative;margin:0 -20px 8px;padding:14px 20px;background:transparent!important;border:none!important;box-shadow:none!important}
 .page-title{background:linear-gradient(135deg,#fff 30%,#c9a84c);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.02em;font-weight:800}
 .stats-pill-btn{background:rgba(201,168,76,.12);backdrop-filter:blur(8px)}
 
@@ -95,10 +95,10 @@ div.mini-poster{opacity:0}
 #media-actions #btn-import-media{width:auto;padding:0 14px;font-size:13px;white-space:nowrap}
 @media(max-width:420px){#media-actions{gap:6px}#media-actions .pl-chip{max-width:min(100%,230px)}#media-actions #btn-import-media{padding:0 10px}}
 .recent-badge{position:absolute;top:6px;right:6px;z-index:2;padding:3px 7px;border-radius:6px;font:700 10px Inter,sans-serif;background:rgba(99,102,241,.92);color:#fff}
-.recent-item:hover{transform:translateY(-4px) scale(1.03)}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .recent-item:hover{transform:translateY(-4px) scale(1.03)}
 
-.page-header{background:none!important;border:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-.page-header::before{content:'';position:absolute;inset:0 -20px -16px;z-index:-1;pointer-events:none;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);-webkit-mask-image:linear-gradient(#000 60%,transparent);mask-image:linear-gradient(#000 60%,transparent)}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .page-header{background:none!important;border:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .page-header::before{content:'';position:absolute;inset:0 -20px -16px;z-index:-1;pointer-events:none;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);-webkit-mask-image:linear-gradient(#000 60%,transparent);mask-image:linear-gradient(#000 60%,transparent)}
 
 .badge-tr.badge-rating-big{background:linear-gradient(135deg,rgba(167,139,250,.55),rgba(124,58,237,.35))!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.28);box-shadow:0 4px 16px rgba(124,58,237,.45),inset 0 1px 0 rgba(255,255,255,.25);text-shadow:0 1px 6px rgba(0,0,0,.5);border-radius:10px;min-width:32px;text-align:center}
 
@@ -136,18 +136,18 @@ body{background:radial-gradient(900px 500px at 12% -10%,rgba(201,168,76,.13),tra
 .btn-ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px)}
 .btn-primary{background:linear-gradient(135deg,#efd16d,#c9a84c)}
 .login-shell{padding:36px 28px;border-radius:24px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-*,*::before,*::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-.fab{animation:none!important}
-body{background:#0d0d0d!important}
-body::before{filter:none!important;transform:none!important;opacity:.32}
-body::after{background:linear-gradient(180deg,rgba(13,13,13,.1),#0d0d0d 70%),radial-gradient(800px 400px at 10% -10%,rgba(201,168,76,.1),transparent),radial-gradient(600px 400px at 100% 0,rgba(124,58,237,.09),transparent)}
-.playlist-card::before{filter:none!important;transform:none!important;inset:0;opacity:.6}
-.page-header{position:static!important;background:none!important;border:none!important}
-.page-header::before{display:none}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) *,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) *::before,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) *::after{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .fab{animation:none!important}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) body{background:#0d0d0d!important}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) body::before{filter:none!important;transform:none!important;opacity:.32}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) body::after{background:linear-gradient(180deg,rgba(13,13,13,.1),#0d0d0d 70%),radial-gradient(800px 400px at 10% -10%,rgba(201,168,76,.1),transparent),radial-gradient(600px 400px at 100% 0,rgba(124,58,237,.09),transparent)}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .playlist-card::before{filter:none!important;transform:none!important;inset:0;opacity:.6}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .page-header{position:static!important;background:none!important;border:none!important}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .page-header::before{display:none}
 .modal-overlay{background:rgba(0,0,0,.72)}
 .modal-box{background:#1a1a1a}
-.input-field,.result-item,.preview-row,.detail-card,.viz-card,.viz-hero div,.leaderboard-row,.btn-ghost,.login-shell{background:rgba(255,255,255,.06)}
-.recent-item span{opacity:1!important}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .input-field,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .result-item,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .preview-row,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .detail-card,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .viz-card,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .viz-hero div,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .leaderboard-row,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .btn-ghost,html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .login-shell{background:rgba(255,255,255,.06)}
+html:is([data-visual-theme="classic"], [data-visual-theme="glass"]) .recent-item span{opacity:1!important}
 
 .type-pills{max-width:360px;margin-left:auto;margin-right:auto}
 

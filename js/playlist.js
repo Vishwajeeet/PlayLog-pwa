@@ -68,11 +68,13 @@ AppAuth.requireAuth(function (user) {
           return;
         }
 
+        var playlistData = playlistDoc.data() || {};
+
         currentName =
-          playlistDoc.data().name;
+          playlistData.name;
 
         currentPlaylistType =
-          playlistDoc.data().type || 'media';
+          playlistData.type || 'media';
 
         var filterRowWrap = document.getElementById('filter-row-wrap');
         var filterRow = document.getElementById('type-filter');
@@ -212,7 +214,19 @@ AppAuth.requireAuth(function (user) {
     layoutMode = layoutMode === 'flat' ? 'grouped' : 'flat';
     localStorage.setItem('mb-layout', layoutMode);
     this.textContent = layoutMode === 'flat' ? '▦' : '☰';
-    renderEntries(getFilteredEntries());
+    var container = document.getElementById('entries-container');
+    if (container) {
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(6px)';
+      setTimeout(function () {
+        renderEntries(getFilteredEntries());
+        container.style.transition = 'opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+      }, 100);
+    } else {
+      renderEntries(getFilteredEntries());
+    }
   });
   document.getElementById('btn-layout-toggle').textContent = layoutMode === 'flat' ? '▦' : '☰';
 
@@ -354,23 +368,33 @@ AppAuth.requireAuth(function (user) {
         '.empty-state-text'
       );
 
-      if (currentFilter === 'movie') {
-
-        emptyText.textContent =
-          'No 🎬 movies in this playlist yet.';
-
-      } else if (currentFilter === 'series') {
-
-        emptyText.textContent =
-          'No 📺 series in this playlist yet.';
-
-      } else {
-
-        emptyText.textContent =
-          'Nothing here yet.';
-
-      }
-
+      var theme = document.documentElement.getAttribute('data-visual-theme') || 'library';
+      var emptyIcon = empty.querySelector('.empty-state-icon');
+      var themeEmpties = {
+        winter: {
+          icon: '❄️',
+          text: 'No ' + (currentFilter === 'movie' ? 'movies' : currentFilter === 'series' ? 'series' : 'titles') + ' here yet. Brew some hot cocoa and start a story.'
+        },
+        wizarding: {
+          icon: '📜',
+          text: 'The archive is silent. No ' + (currentFilter === 'movie' ? 'enchanted reels' : 'chronicles') + ' recorded yet.'
+        },
+        library: {
+          icon: '📚',
+          text: 'This shelf awaits its first volume.'
+        },
+        glass: {
+          icon: currentFilter === 'movie' ? '🎬' : currentFilter === 'series' ? '📺' : '📂',
+          text: 'Nothing here yet.'
+        },
+        classic: {
+          icon: currentFilter === 'movie' ? '🎬' : currentFilter === 'series' ? '📺' : '📂',
+          text: 'Nothing here yet.'
+        }
+      };
+      var tData = themeEmpties[theme] || themeEmpties.library;
+      if (emptyIcon) emptyIcon.textContent = tData.icon;
+      emptyText.textContent = tData.text;
       return;
     }
 
@@ -696,7 +720,7 @@ AppAuth.requireAuth(function (user) {
       btn.textContent = emoji;
 
       btn.addEventListener('click', function () {
-
+        AppUtils.hapticRating();
         row.querySelectorAll('.emoji-btn')
           .forEach(function (b) {
             b.classList.remove('selected');
@@ -738,7 +762,7 @@ AppAuth.requireAuth(function (user) {
         btn.textContent = num;
 
         btn.addEventListener('click', function () {
-
+          AppUtils.hapticRating();
           row.querySelectorAll('.num-rating-btn')
             .forEach(function (b) {
               b.classList.remove('selected');
@@ -1456,6 +1480,7 @@ AppAuth.requireAuth(function (user) {
         if (num === selectedRating) btn.classList.add('selected');
         btn.textContent = num;
         btn.addEventListener('click', function () {
+          AppUtils.hapticRating();
           row.querySelectorAll('.num-rating-btn').forEach(function (b) { b.classList.remove('selected'); });
           btn.classList.add('selected');
           row.dataset.selected = num;

@@ -16,7 +16,7 @@
   --max-width: 1120px;
 }
 
-.viz-m{--vz:#c9a84c}.viz-g{--vz:#7c3aed}
+.viz-m{--vz:var(--viz-media-accent, #c9a84c)}.viz-g{--vz:var(--viz-games-accent, #7c3aed)}
 #media-stats-strip,#games-stats-strip{display:none!important}
 .viz-hero{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
 .viz-hero div{background:var(--bg-card);border-radius:12px;padding:16px}
@@ -143,6 +143,9 @@ button {
   justify-content: space-between;
   padding: 16px 0;
   margin-bottom: 4px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .back-btn {

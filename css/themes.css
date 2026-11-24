@@ -1,0 +1,1134 @@
+/**
+ * Playlog Design System & Theme Engine
+ * Themes:
+ *  - Classic (Preserved original UI)
+ *  - Soft Library (Warm, Apple-minimal editorial serif - default)
+ *  - Cozy Winter (Frosted midnight navy & glowing amber)
+ *  - Wizarding World (Burgundy obsidian & gilded parchment)
+ */
+
+/* ==========================================================================
+   1. DESIGN TOKENS & DISPLAY FONT RULES
+   ========================================================================== */
+
+:root {
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  --card-hover-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  --glass-surface: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-blur: 16px;
+  --header-glass: rgba(13, 13, 13, 0.75);
+}
+
+/* Typography bindings across the app */
+.page-title,
+.login-heading,
+.brand-bar span,
+.bk-serif,
+.modal-title,
+.playlist-card-name,
+.preview-title,
+.detail-title {
+  font-family: var(--font-display);
+}
+
+.stat-number {
+  font-family: var(--font-display);
+  font-feature-settings: 'tnum' on, 'lnum' on;
+}
+
+/* ==========================================================================
+   2. THEME DEFINITIONS
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   THEME A: CLASSIC (Original Playlog - 100% Unaltered)
+   -------------------------------------------------------------------------- */
+html[data-visual-theme="classic"], html[data-visual-theme="glass"] {
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --bg-primary: #0d0d0d;
+  --bg-card: #1a1a1a;
+  --bg-card-2: #222222;
+  --text-primary: #f0f0f0;
+  --text-muted: #888888;
+  --radius-card: 12px;
+  --radius-btn: 8px;
+  --viz-media-accent: #c9a84c;
+  --viz-media-secondary: #8a7434;
+  --viz-games-accent: #7c3aed;
+  --viz-games-secondary: #5b21b6;
+}
+
+/* --------------------------------------------------------------------------
+   THEME B: SOFT LIBRARY (Default - Warm Minimal Editorial Serif)
+   -------------------------------------------------------------------------- */
+html[data-visual-theme="library"],
+html:not([data-visual-theme]) {
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --bg-primary: #0e0e0e;
+  --bg-card: #181816;
+  --bg-card-2: #22211e;
+  --text-primary: #f5f0e6;
+  --text-muted: #9e968b;
+  --radius-card: 18px;
+  --radius-btn: 12px;
+  --card-border: rgba(245, 230, 205, 0.08);
+  --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --card-hover-shadow: 0 16px 36px rgba(0, 0, 0, 0.65), 0 0 10px color-mix(in srgb, var(--accent) 10%, transparent);
+  --glass-surface: rgba(245, 240, 230, 0.045);
+  --glass-border: rgba(245, 240, 230, 0.09);
+  --header-glass: rgba(14, 14, 14, 0.82);
+  --viz-media-accent: #d4af37;
+  --viz-media-secondary: #854d0e;
+  --viz-games-accent: #8b5cf6;
+  --viz-games-secondary: #6d28d9;
+}
+
+html[data-visual-theme="library"] body,
+html:not([data-visual-theme]) body {
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(900px 500px at 15% -10%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 70%),
+    radial-gradient(700px 450px at 95% 5%, rgba(180, 145, 90, 0.08), transparent 60%),
+    radial-gradient(1000px 700px at 50% 100%, rgba(20, 20, 18, 0.8), transparent);
+  background-attachment: fixed;
+}
+
+/* Light Mode Variant for Library */
+html[data-theme="light"][data-visual-theme="library"],
+html[data-theme="light"]:not([data-visual-theme]) {
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --bg-primary: #f6f3eb;
+  --bg-card: #ffffff;
+  --bg-card-2: #ece6d8;
+  --text-primary: #282420;
+  --text-muted: #7d756b;
+  --radius-card: 18px;
+  --radius-btn: 12px;
+  --card-border: rgba(40, 36, 32, 0.07);
+  --card-shadow: 0 6px 20px rgba(70, 60, 45, 0.06), inset 0 1px 0 #fff;
+  --card-hover-shadow: 0 14px 32px rgba(70, 60, 45, 0.12);
+  --glass-surface: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(40, 36, 32, 0.08);
+  --header-glass: rgba(246, 243, 235, 0.88);
+  --viz-media-accent: #b48a28;
+  --viz-media-secondary: #78350f;
+  --viz-games-accent: #7c3aed;
+  --viz-games-secondary: #5b21b6;
+}
+
+html[data-theme="light"][data-visual-theme="library"] body,
+html[data-theme="light"]:not([data-visual-theme]) body {
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(900px 500px at 15% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+    radial-gradient(700px 450px at 95% 5%, rgba(210, 190, 160, 0.25), transparent 60%);
+}
+
+/* Warm Champagne/Gold Leaf Sweep across Headings & Logo */
+html[data-visual-theme="library"] :is(.page-title, .brand-bar span, .modal-title),
+html:not([data-visual-theme]) :is(.page-title, .brand-bar span, .modal-title) {
+  font-family: 'Fraunces', Georgia, serif !important;
+  background: linear-gradient(135deg, #ffffff 15%, #f6e6c2 42%, #d4af37 72%, #ffffff 98%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 2px 10px rgba(212, 175, 55, 0.16);
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+html[data-theme="light"][data-visual-theme="library"] :is(.page-title, .brand-bar span, .modal-title),
+html[data-theme="light"]:not([data-visual-theme]) :is(.page-title, .brand-bar span, .modal-title) {
+  background: linear-gradient(135deg, #2b2216 10%, #7d5718 55%, #2b2216 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+
+/* --------------------------------------------------------------------------
+   THEME C: COZY WINTER (Frosted Arctic Aurora & Glowing Hearth)
+   -------------------------------------------------------------------------- */
+html[data-visual-theme="winter"] {
+  --font-display: 'DM Serif Display', 'Georgia', serif;
+  --bg-primary: #070c16;
+  --bg-card: rgba(16, 26, 42, 0.72);
+  --bg-card-2: rgba(24, 38, 60, 0.8);
+  --text-primary: #edf5ff;
+  --text-muted: #8ea5c4;
+  --radius-card: 20px;
+  --radius-btn: 12px;
+  --card-border: rgba(180, 225, 255, 0.18);
+  --card-shadow: 0 10px 32px rgba(2, 6, 16, 0.7), inset 0 1px 1.5px rgba(255, 255, 255, 0.22);
+  --card-hover-shadow: 0 18px 40px rgba(2, 6, 16, 0.85), 0 0 12px rgba(120, 195, 255, 0.15);
+  --glass-surface: rgba(160, 215, 255, 0.06);
+  --glass-border: rgba(180, 225, 255, 0.22);
+  --header-glass: rgba(7, 12, 22, 0.85);
+  --viz-media-accent: #38bdf8;
+  --viz-media-secondary: #0284c7;
+  --viz-games-accent: #34d399;
+  --viz-games-secondary: #059669;
+}
+
+html[data-visual-theme="winter"] body {
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(1100px 650px at 15% -15%, rgba(64, 180, 255, 0.25), transparent 70%),
+    radial-gradient(900px 550px at 85% 10%, rgba(56, 217, 169, 0.16), transparent 60%),
+    radial-gradient(800px 500px at 50% -20%, rgba(168, 85, 247, 0.14), transparent 65%),
+    radial-gradient(1000px 700px at 50% 100%, #0d1522 60%, transparent);
+  background-attachment: fixed;
+}
+
+html[data-visual-theme="winter"] .card,
+html[data-visual-theme="winter"] .playlist-card,
+html[data-visual-theme="winter"] .set-group {
+  background: #0f1827 !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+html[data-visual-theme="winter"] .stat-strip,
+html[data-visual-theme="winter"] .modal-box {
+  background: rgba(14, 23, 38, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+html[data-visual-theme="winter"] :is(.card, .playlist-card, .recent-item):hover {
+  border-color: rgba(180, 225, 255, 0.6) !important;
+  box-shadow: var(--card-hover-shadow) !important;
+}
+
+/* Light Mode Variant for Cozy Winter */
+html[data-theme="light"][data-visual-theme="winter"] {
+  --font-display: 'DM Serif Display', 'Georgia', serif;
+  --bg-primary: #eef4fb;
+  --bg-card: #ffffff;
+  --bg-card-2: #dbe7f5;
+  --text-primary: #111b27;
+  --text-muted: #5e728c;
+  --radius-card: 20px;
+  --radius-btn: 12px;
+  --card-border: rgba(30, 60, 95, 0.08);
+  --card-shadow: 0 6px 22px rgba(20, 45, 75, 0.07), inset 0 1px 0 #fff;
+  --card-hover-shadow: 0 14px 34px rgba(20, 45, 75, 0.13);
+  --glass-surface: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(30, 60, 95, 0.09);
+  --header-glass: rgba(238, 244, 251, 0.88);
+  --viz-media-accent: #0284c7;
+  --viz-media-secondary: #0369a1;
+  --viz-games-accent: #059669;
+  --viz-games-secondary: #047857;
+}
+
+html[data-theme="light"][data-visual-theme="winter"] body {
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(900px 500px at 15% -10%, rgba(170, 210, 255, 0.35), transparent 70%),
+    radial-gradient(700px 450px at 95% 5%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 60%);
+}
+
+/* Crystalline Arctic Aurora Shimmer across Headings & Logo */
+html[data-visual-theme="winter"] :is(.page-title, .brand-bar span, .modal-title) {
+  font-family: 'DM Serif Display', Georgia, serif !important;
+  background: linear-gradient(135deg, #ffffff 15%, #d0efff 40%, #5db2ff 72%, #ffffff 96%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 2px 12px rgba(93, 178, 255, 0.22);
+  letter-spacing: 0.015em;
+  font-weight: 700;
+}
+
+html[data-theme="light"][data-visual-theme="winter"] :is(.page-title, .brand-bar span, .modal-title) {
+  background: linear-gradient(135deg, #0d1e33 10%, #1a62a3 55%, #0d1e33 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* --------------------------------------------------------------------------
+   THEME D: WIZARDING WORLD (Gothic Obsidian & Gilded Grimoire Gold)
+   -------------------------------------------------------------------------- */
+html[data-visual-theme="wizarding"] {
+  --font-display: 'Cinzel Decorative', 'Cinzel', serif;
+  --bg-primary: #070305;
+  --bg-card: rgba(19, 8, 14, 0.85);
+  --bg-card-2: rgba(32, 13, 24, 0.9);
+  --text-primary: #fdf5ea;
+  --text-muted: #b59f96;
+  --radius-card: 16px;
+  --radius-btn: 10px;
+  --card-border: rgba(229, 185, 88, 0.28);
+  --card-shadow: 0 10px 38px rgba(0, 0, 0, 0.85), inset 0 1px 1.5px rgba(255, 235, 170, 0.25);
+  --card-hover-shadow: 0 20px 45px rgba(0, 0, 0, 0.95), 0 0 14px rgba(229, 185, 88, 0.18);
+  --glass-surface: rgba(248, 238, 224, 0.05);
+  --glass-border: rgba(229, 185, 88, 0.3);
+  --header-glass: rgba(7, 3, 5, 0.88);
+  --viz-media-accent: #e5b958;
+  --viz-media-secondary: #b45309;
+  --viz-games-accent: #c084fc;
+  --viz-games-secondary: #7e22ce;
+}
+
+html[data-visual-theme="wizarding"] body {
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(950px 600px at 15% -10%, rgba(165, 25, 45, 0.24), transparent 65%),
+    radial-gradient(800px 520px at 95% 5%, rgba(229, 185, 88, 0.22), transparent 60%),
+    radial-gradient(1100px 750px at 50% 100%, #15080f 80%, transparent);
+  background-attachment: fixed;
+}
+
+html[data-visual-theme="wizarding"] .card,
+html[data-visual-theme="wizarding"] .playlist-card,
+html[data-visual-theme="wizarding"] .set-group {
+  background: #14080e !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+html[data-visual-theme="wizarding"] .stat-strip,
+html[data-visual-theme="wizarding"] .modal-box {
+  background: rgba(19, 8, 14, 0.9) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+html[data-visual-theme="wizarding"] :is(.card, .playlist-card, .recent-item):hover {
+  border-color: rgba(255, 225, 140, 0.8) !important;
+  box-shadow: var(--card-hover-shadow) !important;
+}
+
+/* Molten Gold Leaf Sweep across Headings */
+html[data-visual-theme="wizarding"] :is(.page-title, .brand-bar span, .modal-title) {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif !important;
+  background: linear-gradient(135deg, #ffffff 10%, #ffd978 38%, #d4a742 65%, #ffffff 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 2px 12px rgba(229, 185, 88, 0.22);
+  letter-spacing: 0.035em;
+  font-weight: 800;
+}
+
+html[data-theme="light"][data-visual-theme="wizarding"] :is(.page-title, .brand-bar span, .modal-title) {
+  background: linear-gradient(135deg, #241618 10%, #6e481b 55%, #241618 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.7);
+}
+
+/* Light Mode Variant for Wizarding World (Aged Parchment) */
+html[data-theme="light"][data-visual-theme="wizarding"] {
+  --font-display: 'Cinzel Decorative', 'Cinzel', serif;
+  --bg-primary: #f8f4eb;
+  --bg-card: #ffffff;
+  --bg-card-2: #eee6d6;
+  --text-primary: #241618;
+  --text-muted: #79665f;
+  --radius-card: 16px;
+  --radius-btn: 10px;
+  --card-border: rgba(145, 90, 40, 0.12);
+  --card-shadow: 0 6px 20px rgba(60, 30, 20, 0.07), inset 0 1px 0 #fff;
+  --card-hover-shadow: 0 14px 34px rgba(60, 30, 20, 0.14);
+  --glass-surface: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(145, 90, 40, 0.14);
+  --header-glass: rgba(248, 244, 235, 0.9);
+  --viz-media-accent: #b45309;
+  --viz-media-secondary: #78350f;
+  --viz-games-accent: #9333ea;
+  --viz-games-secondary: #6b21a8;
+}
+
+html[data-theme="light"][data-visual-theme="wizarding"] body {
+  background-color: var(--bg-primary);
+  background-image: 
+    radial-gradient(900px 500px at 15% -10%, rgba(180, 50, 60, 0.1), transparent 70%),
+    radial-gradient(700px 450px at 95% 5%, rgba(212, 168, 67, 0.15), transparent 60%);
+}
+
+/* ==========================================================================
+   3. MODERNIZED SURFACE & COMPONENT POLISH (NON-CLASSIC THEMES)
+   ========================================================================== */
+
+/* Dynamic Ambient Backdrop Projection (Zero filter blur overhead - pure smooth gradient) */
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: radial-gradient(circle 600px at 50% 12%, var(--ambient-art-glow, transparent) 0%, transparent 70%);
+  opacity: 0.7;
+  pointer-events: none;
+  transform: translateZ(0);
+  will-change: opacity;
+  transition: opacity 0.8s ease;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .page-header {
+  position: relative;
+  z-index: 10;
+  margin: 0 -20px 14px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 14px;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .card {
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .card:hover {
+  transform: translateY(-6px) scale(1.015);
+  box-shadow: var(--card-hover-shadow);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--card-border));
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .playlist-card {
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .playlist-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--card-hover-shadow);
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--card-border));
+}
+
+/* High-Impact Stat Strip & Cards */
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .stat-strip {
+  background: linear-gradient(135deg, var(--glass-surface) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: calc(var(--radius-card) + 4px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .stat-box {
+  background: transparent;
+  padding: 16px 12px;
+  border-radius: var(--radius-card);
+  transition: background 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .stat-box:hover {
+  background: color-mix(in srgb, var(--accent) 8%, var(--glass-surface));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .stat-number {
+  font-family: var(--font-display);
+  font-feature-settings: 'tnum' on, 'lnum' on;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  color: var(--accent);
+  text-shadow: 0 1px 4px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+/* Leaderboard Rows & Medallions */
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row {
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row:hover {
+  transform: translateY(-3px) scale(1.01);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--card-border));
+  box-shadow: var(--card-hover-shadow);
+}
+
+/* Rank 1: Gold Medal with Ambient Glow */
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row:nth-child(1) .leaderboard-rank,
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row-top .leaderboard-rank {
+  background: linear-gradient(135deg, #fff275 0%, #ffd700 50%, #d4af37 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.65));
+  font-weight: 900;
+}
+
+/* Rank 2: Silver Medal with Cool Glow */
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row:nth-child(2) .leaderboard-rank {
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(226, 232, 240, 0.5));
+  font-weight: 850;
+}
+
+/* Rank 3: Bronze Medal with Warm Glow */
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row:nth-child(3) .leaderboard-rank {
+  background: linear-gradient(135deg, #fed7aa 0%, #f97316 50%, #b45309 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.45));
+  font-weight: 850;
+}
+
+/* Sleek Leaderboard Progress Track */
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-bar-track {
+  background: rgba(255, 255, 255, 0.08);
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-bar-fill {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, #ffffff), var(--accent));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 999px;
+}
+
+/* Month Filter Chips */
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .month-scroll .chip {
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  font-weight: 600;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .month-scroll .chip:hover {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--glass-border));
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .month-scroll .chip.selected {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 90%, #fff), var(--accent));
+  color: #000;
+  font-weight: 700;
+  border-color: transparent;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* Visualisation Cards */
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .viz-card {
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .viz-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border));
+}
+
+/* Theme-Aware Type Pills (Movies vs Games on Stats & Home) */
+html[data-visual-theme="winter"] .type-pill.active {
+  background: linear-gradient(135deg, #7dd3fc, #0284c7) !important;
+  box-shadow: 0 4px 18px rgba(2, 132, 199, 0.45) !important;
+  color: #041322 !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="winter"] .type-pill[data-tab="games"].active {
+  background: linear-gradient(135deg, #6ee7b7, #059669) !important;
+  box-shadow: 0 4px 18px rgba(5, 150, 105, 0.45) !important;
+  color: #032115 !important;
+  font-weight: 700 !important;
+}
+
+html[data-visual-theme="wizarding"] .type-pill.active {
+  background: linear-gradient(135deg, #fde68a, #d97706) !important;
+  box-shadow: 0 4px 18px rgba(217, 119, 6, 0.45) !important;
+  color: #1a0802 !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="wizarding"] .type-pill[data-tab="games"].active {
+  background: linear-gradient(135deg, #e9d5ff, #9333ea) !important;
+  box-shadow: 0 4px 18px rgba(147, 51, 234, 0.45) !important;
+  color: #160424 !important;
+  font-weight: 700 !important;
+}
+
+html[data-visual-theme="library"] .type-pill.active,
+html:not([data-visual-theme]) .type-pill.active {
+  background: linear-gradient(135deg, #fef08a, #ca8a04) !important;
+  box-shadow: 0 4px 18px rgba(202, 138, 4, 0.35) !important;
+  color: #1c1301 !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="library"] .type-pill[data-tab="games"].active,
+html:not([data-visual-theme]) .type-pill[data-tab="games"].active {
+  background: linear-gradient(135deg, #ddd6fe, #7c3aed) !important;
+  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.38) !important;
+  color: #17082e !important;
+  font-weight: 700 !important;
+}
+
+/* Theme-Aware Leaderboard Fill Bar */
+html[data-visual-theme="winter"] .leaderboard-bar-fill {
+  background: linear-gradient(90deg, #6ee7b7, #34d399) !important;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.45) !important;
+}
+html[data-visual-theme="wizarding"] .leaderboard-bar-fill {
+  background: linear-gradient(90deg, #fde68a, #c084fc) !important;
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.45) !important;
+}
+html[data-visual-theme="library"] .leaderboard-bar-fill,
+html:not([data-visual-theme]) .leaderboard-bar-fill {
+  background: linear-gradient(90deg, #fef08a, #8b5cf6) !important;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4) !important;
+}
+
+/* Theme-Aware Generate Wrapped Button */
+html[data-visual-theme="winter"] #btn-generate {
+  background: linear-gradient(135deg, #38bdf8, #0284c7) !important;
+  color: #031424 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35) !important;
+}
+html[data-visual-theme="wizarding"] #btn-generate {
+  background: linear-gradient(135deg, #ffd700, #d97706) !important;
+  color: #1a0802 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.4) !important;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .modal-overlay {
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.55);
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .input-field {
+  background: var(--glass-surface);
+  border: 1.5px solid var(--glass-border);
+  border-radius: var(--radius-btn);
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .input-field:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.07);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .toggle-pair {
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: calc(var(--radius-btn) + 2px);
+  padding: 4px;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .toggle-btn {
+  border-radius: var(--radius-btn);
+  font-weight: 600;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .fab {
+  border-radius: 999px;
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--accent) 38%, transparent), 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .fab:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--accent) 55%, transparent), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .recent-item {
+  border-radius: calc(var(--radius-card) - 4px);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+}
+
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .set-group,
+html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .set-profile {
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: calc(var(--radius-card) + 6px);
+  box-shadow: var(--card-shadow);
+}
+
+/* ==========================================================================
+   4. THEME PICKER UI COMPONENT (Settings / account.html)
+   ========================================================================== */
+
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+@media (min-width: 500px) {
+  .theme-picker {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 10px;
+  border-radius: 14px;
+  border: 1.5px solid var(--card-border);
+  background: var(--glass-surface);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.22s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.theme-swatch:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--card-border));
+  transform: translateY(-2px);
+}
+
+.theme-swatch.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--glass-surface));
+  box-shadow: 0 0 0 1px var(--accent), 0 6px 16px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.theme-preview-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-preview-dots i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.theme-name {
+  line-height: 1.2;
+}
+
+/* ==========================================================================
+   5. ATMOSPHERIC CANVAS CONTAINER
+   ========================================================================== */
+
+#theme-particles-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* ==========================================================================
+   6. TROPHY HALL & CELEBRATION MODAL STYLES
+   ========================================================================== */
+
+.trophy-hall-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.trophy-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+}
+
+.trophy-summary-text b {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.trophy-summary-text span {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.trophy-summary-prog {
+  flex: 1 1 140px;
+  max-width: 220px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.trophy-summary-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-hover, #efd16d));
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.trophy-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trophy-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.trophy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.trophy-card {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.trophy-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border));
+  box-shadow: var(--card-hover-shadow);
+}
+
+.trophy-card.is-unlocked {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, var(--bg-card)), var(--bg-card));
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--card-border));
+}
+
+.trophy-card.is-locked {
+  opacity: 0.55;
+  filter: grayscale(0.85);
+  background: rgba(255, 255, 255, 0.02);
+  border-style: dashed;
+}
+
+.trophy-card.is-locked:hover {
+  opacity: 0.75;
+  filter: grayscale(0.4);
+}
+
+.trophy-card.is-locked .trophy-icon-wrap {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.trophy-card.is-locked .trophy-name {
+  color: var(--text-muted);
+}
+
+.trophy-hidden-task {
+  font-style: italic;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--text-muted) 80%, transparent);
+  letter-spacing: 0.01em;
+}
+
+.trophy-icon-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.trophy-card.is-unlocked .trophy-icon-wrap {
+  background: color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.05));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.trophy-check-tag {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.trophy-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.trophy-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.trophy-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+
+.trophy-unlocked-status {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.trophy-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trophy-progress-bar {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.trophy-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 99px;
+  transition: width 0.3s ease;
+}
+
+.trophy-progress-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* Home Celebration Modal */
+.trophy-celebration-overlay {
+  z-index: 99999;
+}
+
+.trophy-celebration-box {
+  text-align: center;
+  padding: 34px 24px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, rgba(255, 255, 255, 0.15));
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.trophy-burst-glow {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.trophy-celebration-icon {
+  font-size: 56px;
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: plSpringIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.trophy-celebration-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.trophy-celebration-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.trophy-celebration-desc {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+
+.trophy-more-unlocked {
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.trophy-claim-btn {
+  width: 100%;
+  padding: 12px 20px;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   7. TACTILE SPRING PHYSICS & SKELETON SHIMMER
+   ========================================================================== */
+
+/* Button spring physics on click */
+button:active:not(:disabled),
+.btn:active:not(:disabled),
+.toggle-btn:active,
+.icon-btn:active,
+.stats-pill-btn:active,
+.theme-swatch:active,
+.theatre-chip:active {
+  transform: scale(0.96) !important;
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* Tabular figures for data integrity */
+.stat-number, .stat-value, .badge-rating-big, .trophy-progress-label, .time-val, .stepper input {
+  font-feature-settings: "tnum" on, "lnum" on !important;
+}
+
+/* Lightbox Poster Zoom Modal */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.lightbox-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lightbox-container {
+  position: relative;
+  max-width: 90vw;
+  max-height: 88vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 14px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.15);
+  transform: scale(0.94);
+  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lightbox-overlay.open .lightbox-img {
+  transform: scale(1);
+}
+
+.lightbox-close-btn {
+  position: absolute;
+  top: -46px;
+  right: 0;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+}
+

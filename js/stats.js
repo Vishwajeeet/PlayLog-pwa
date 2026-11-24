@@ -212,7 +212,7 @@ AppAuth.requireAuth(function (user) {
     document.getElementById('media-stats-strip').style.display = isGamesTab ? 'none' : 'grid';
     document.getElementById('games-stats-strip').style.display = isGamesTab ? 'grid' : 'none';
     document.getElementById('top-picks-section').style.display = isGamesTab ? 'none' : 'block';
-    document.getElementById('deep-cuts-section').style.display = isGamesTab ? 'none' : 'block';
+    document.getElementById('deep-cuts-section').style.display = 'block';
     document.getElementById('leaderboard-section').style.display = isGamesTab ? 'block' : 'none';
 
     if (isGamesTab) {
@@ -286,7 +286,25 @@ AppAuth.requireAuth(function (user) {
   }, 150));
 
   function genreDonut(gk, gc, entries, isG, cls) {
-    var pal = ['#c9a84c', '#e07a5f', '#81b29a', '#5aa9e6', '#b388eb'];
+    var activeTheme = document.documentElement.getAttribute('data-visual-theme') || localStorage.getItem('pl-visual-theme') || 'library';
+    var pal;
+    if (activeTheme === 'winter') {
+      pal = isG
+        ? ['#34d399', '#38bdf8', '#818cf8', '#a78bfa', '#f472b6']
+        : ['#38bdf8', '#818cf8', '#34d399', '#60a5fa', '#a78bfa'];
+    } else if (activeTheme === 'wizarding') {
+      pal = isG
+        ? ['#c084fc', '#e5b958', '#f43f5e', '#38bdf8', '#fb923c']
+        : ['#e5b958', '#f87171', '#c084fc', '#fb923c', '#fbbf24'];
+    } else if (activeTheme === 'classic' || activeTheme === 'glass') {
+      pal = isG
+        ? ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ec4899']
+        : ['#c9a84c', '#e07a5f', '#81b29a', '#5aa9e6', '#b388eb'];
+    } else {
+      pal = isG
+        ? ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899']
+        : ['#d4af37', '#e07a5f', '#81b29a', '#5aa9e6', '#b388eb'];
+    }
     var total = 0;
     gk.forEach(function (g) { total += gc[g]; });
     var C = 2 * Math.PI * 70, off = 0, segs = '', leg = '';
@@ -438,10 +456,20 @@ AppAuth.requireAuth(function (user) {
 
     // Split bar
     var cnt = function (f) { return entries.filter(f).length; };
+    var activeTheme = document.documentElement.getAttribute('data-visual-theme') || localStorage.getItem('pl-visual-theme') || 'library';
+    var movieCol = '#c9a84c', seriesCol = '#8a7434';
+    if (activeTheme === 'winter') {
+      movieCol = '#38bdf8'; seriesCol = '#0284c7';
+    } else if (activeTheme === 'wizarding') {
+      movieCol = '#e5b958'; seriesCol = '#b45309';
+    } else if (activeTheme === 'library') {
+      movieCol = '#d4af37'; seriesCol = '#854d0e';
+    }
+
     var parts = isG
       ? [['Completed', 'completed', '#22c55e'], ['Playing', 'playing', '#f59e0b'], ['Dropped', 'dropped', '#ef4444'], ['Wishlist', 'wishlist', '#6366f1']]
           .map(function (p) { return [p[0], p[1] === 'wishlist' ? allEntries.filter(function (e) { return e.type === 'game' && e.completionStatus === 'wishlist'; }).length : cnt(function (e) { return e.completionStatus === p[1]; }), p[2]]; })
-      : [['Movies', cnt(function (e) { return e.type === 'movie'; }), '#c9a84c'], ['Series', cnt(function (e) { return e.type === 'series'; }), '#8a7434']];
+      : [['Movies', cnt(function (e) { return e.type === 'movie'; }), movieCol], ['Series', cnt(function (e) { return e.type === 'series'; }), seriesCol]];
     if (entries.length) {
       html += '<div><p class="section-title">' + (isG ? 'Status' : 'Movies vs Series') + '</p><div class="viz-card"><div class="viz-split">' +
         parts.map(function (p) { return p[1] ? '<i style="flex:' + p[1] + ';background:' + p[2] + '"></i>' : ''; }).join('') +
@@ -1036,7 +1064,33 @@ AppAuth.requireAuth(function (user) {
 
     var deepCuts = [];
 
-    // LONGEST WATCH STREAK
+    if (statsTab === 'games') {
+      var completedGames = entries.filter(function (e) { return e.completionStatus === 'completed'; });
+      var totalHours = entries.reduce(function (sum, e) { return sum + (Number(e.playtime) || 0); }, 0);
+      var ratedGames = entries.filter(function (e) { return Number(e.gameRating); });
+      var avgGameRating = ratedGames.length ? (ratedGames.reduce(function (s, e) { return s + Number(e.gameRating); }, 0) / ratedGames.length) : 0;
+      var topGame = ratedGames.slice().sort(function (a, b) { return (Number(b.gameRating) || 0) - (Number(a.gameRating) || 0); })[0];
+
+      if (totalHours > 0) {
+        deepCuts.push('⏱️ You\'ve invested ' + Math.round(totalHours) + ' total hours in games (' + (totalHours / 24).toFixed(1) + ' full days of play)');
+      }
+      if (completedGames.length > 0) {
+        var avgCompletedHours = totalHours / completedGames.length;
+        deepCuts.push('🏆 Average completed title took ~' + Math.round(avgCompletedHours) + ' hours');
+      }
+      if (topGame) {
+        deepCuts.push('💎 Your highest-rated masterpiece: ' + topGame.title + ' (' + topGame.gameRating + '/10)');
+      }
+      if (avgGameRating >= 8.5) {
+        deepCuts.push('🌟 High standards — your average game score is ' + avgGameRating.toFixed(1) + ' / 10');
+      } else if (avgGameRating > 0 && avgGameRating < 7) {
+        deepCuts.push('🎯 Tough critic — average game score ' + avgGameRating.toFixed(1) + ' / 10');
+      }
+      if (completedGames.length && entries.length) {
+        var compRate = Math.round((completedGames.length / entries.length) * 100);
+        deepCuts.push('🎮 Library completion rate: ' + compRate + '% (' + completedGames.length + ' of ' + entries.length + ')');
+      }
+    } else {
 
     var sortedByMonth = entries.slice()
       .sort(function (a, b) {
@@ -1223,6 +1277,7 @@ AppAuth.requireAuth(function (user) {
       var thBest = thE.filter(function (e) { return e.rating; }).sort(function (a, b) { return b.rating - a.rating; })[0];
       if (thBest) deepCuts.push('🍿 Your best theatre night: ' + thBest.title);
     }
+    }
 
     deepCuts.forEach(function (cut) {
 
@@ -1339,7 +1394,17 @@ AppAuth.requireAuth(function (user) {
       return;
     }
     var renderToken = ++wrappedShareToken;
-    var accent = isGames ? '#b9a2ff' : '#f5d875';
+    var activeTheme = document.documentElement.getAttribute('data-visual-theme') || localStorage.getItem('pl-visual-theme') || 'library';
+    var displayFontFamily = 'Inter, sans-serif';
+    if (activeTheme === 'winter') {
+      displayFontFamily = '"DM Serif Display", Georgia, serif';
+    } else if (activeTheme === 'wizarding') {
+      displayFontFamily = '"Cinzel Decorative", Cinzel, serif';
+    } else if (activeTheme === 'library') {
+      displayFontFamily = '"Fraunces", Georgia, serif';
+    }
+
+    var accent = isGames ? '#b9a2ff' : (activeTheme === 'winter' ? '#64b4ff' : (activeTheme === 'wizarding' ? '#e5b958' : '#f5d875'));
     var period = wrappedYear === 'all' ? 'All Time' : String(wrappedYear);
     if (wrappedMonth) period = AppUtils.monthName(wrappedMonth) + (wrappedYear === 'all' ? '' : ' ' + wrappedYear);
     var wrap = document.getElementById('canvas-wrap');
@@ -1393,6 +1458,7 @@ AppAuth.requireAuth(function (user) {
     }
 
     Promise.all([
+      document.fonts.load('800 64px ' + displayFontFamily).catch(function () {}),
       document.fonts.load('800 64px Inter').catch(function () {}),
       document.fonts.load('600 30px Inter').catch(function () {})
     ])
@@ -1400,10 +1466,35 @@ AppAuth.requireAuth(function (user) {
       .then(function (poster) {
         if (renderToken !== wrappedShareToken) return;
         var background = ctx.createLinearGradient(0, 0, W, H);
-        background.addColorStop(0, isGames ? '#211735' : '#282116');
-        background.addColorStop(.52, '#111317');
-        background.addColorStop(1, '#171426');
+        if (activeTheme === 'winter') {
+          background.addColorStop(0, '#0a1626');
+          background.addColorStop(0.5, '#050a12');
+          background.addColorStop(1, '#020408');
+        } else if (activeTheme === 'wizarding') {
+          background.addColorStop(0, '#1c0a15');
+          background.addColorStop(0.5, '#0e050b');
+          background.addColorStop(1, '#050204');
+        } else {
+          background.addColorStop(0, isGames ? '#211735' : '#282116');
+          background.addColorStop(.52, '#111317');
+          background.addColorStop(1, '#171426');
+        }
         ctx.fillStyle = background; ctx.fillRect(0, 0, W, H);
+
+        // Ambient atmospheric bloom
+        var ambientGlow = ctx.createRadialGradient(240, 180, 20, 240, 180, 600);
+        if (activeTheme === 'winter') {
+          ambientGlow.addColorStop(0, 'rgba(100, 180, 255, 0.22)');
+          ambientGlow.addColorStop(1, 'transparent');
+        } else if (activeTheme === 'wizarding') {
+          ambientGlow.addColorStop(0, 'rgba(229, 185, 88, 0.22)');
+          ambientGlow.addColorStop(1, 'transparent');
+        } else {
+          ambientGlow.addColorStop(0, isGames ? 'rgba(167, 139, 250, 0.2)' : 'rgba(212, 175, 55, 0.2)');
+          ambientGlow.addColorStop(1, 'transparent');
+        }
+        ctx.fillStyle = ambientGlow; ctx.fillRect(0, 0, W, H);
+
         if (poster) {
           ctx.save();
           AppUtils.roundRectPath(ctx, 650, 54, 350, 520, 28); ctx.clip();
@@ -1418,12 +1509,12 @@ AppAuth.requireAuth(function (user) {
 
         ctx.fillStyle = accent; ctx.font = '700 24px Inter, sans-serif';
         ctx.fillText('PLAYLOG  /  ' + (isGames ? 'GAMES' : 'MOVIES') + ' WRAPPED', 72, 90);
-        ctx.fillStyle = '#f6f2e8'; ctx.font = '800 62px Inter, sans-serif';
+        ctx.fillStyle = '#f6f2e8'; ctx.font = '800 62px ' + displayFontFamily;
         ctx.fillText(wrappedYear === 'all'
           ? (isGames ? 'Your gaming story' : 'Your screen story')
           : (isGames ? 'Your year in games' : 'Your year on screen'), 72, 190);
         ctx.fillStyle = '#aaa'; ctx.font = '600 30px Inter, sans-serif'; ctx.fillText(period.toUpperCase(), 74, 242);
-        ctx.fillStyle = accent; ctx.font = '800 142px Inter, sans-serif'; ctx.fillText(entries.length.toLocaleString(), 66, 420);
+        ctx.fillStyle = accent; ctx.font = '800 142px ' + displayFontFamily; ctx.fillText(entries.length.toLocaleString(), 66, 420);
         ctx.fillStyle = '#f6f2e8'; ctx.font = '600 34px Inter, sans-serif';
         ctx.fillText(isGames ? 'games completed' : 'titles in your story', 76, 474);
         ctx.fillStyle = '#bdb8ad'; ctx.font = '500 27px Inter, sans-serif';
@@ -1572,9 +1663,25 @@ AppAuth.requireAuth(function (user) {
     var entries = getWrappedEntries();
     if (!entries.length) { AppUtils.showToast('No entries to generate.'); return; }
     var G = statsTab === 'games';
-    var C = G
-      ? { bg: '#7c5cff', panel: '#1f1f22', ink: '#ffffff', text: '#f2f2f2', mute: '#9a9aa2' }
-      : { bg: '#e0b93a', panel: '#f1efe6', ink: '#151515', text: '#ffffff', mute: '#b8b8c0' };
+    var activeTheme = document.documentElement.getAttribute('data-visual-theme') || localStorage.getItem('pl-visual-theme') || 'library';
+    var C;
+    if (activeTheme === 'winter') {
+      C = G
+        ? { bg: '#10b981', panel: '#0f172a', ink: '#ffffff', text: '#f2f2f2', mute: '#94a3b8' }
+        : { bg: '#0284c7', panel: '#081426', ink: '#ffffff', text: '#f2f2f2', mute: '#93c5fd' };
+    } else if (activeTheme === 'wizarding') {
+      C = G
+        ? { bg: '#9333ea', panel: '#1a0914', ink: '#ffffff', text: '#fdf5ea', mute: '#b59f96' }
+        : { bg: '#d97706', panel: '#1c0a15', ink: '#ffffff', text: '#fdf5ea', mute: '#e5b958' };
+    } else if (activeTheme === 'classic' || activeTheme === 'glass') {
+      C = G
+        ? { bg: '#7c5cff', panel: '#1f1f22', ink: '#ffffff', text: '#f2f2f2', mute: '#9a9aa2' }
+        : { bg: '#e0b93a', panel: '#f1efe6', ink: '#151515', text: '#ffffff', mute: '#b8b8c0' };
+    } else {
+      C = G
+        ? { bg: '#7c3aed', panel: '#1a181d', ink: '#ffffff', text: '#f5f0e6', mute: '#9e968b' }
+        : { bg: '#ca8a04', panel: '#1e1b17', ink: '#ffffff', text: '#f5f0e6', mute: '#d4af37' };
+    }
     var lab = wrappedYear === 'all' ? 'ALL TIME' : String(wrappedYear);
     if (wrappedMonth !== 0) lab = AppUtils.monthShort(wrappedMonth).toUpperCase() + (wrappedYear === 'all' ? ' · ALL TIME' : ' ' + wrappedYear);
 
@@ -1711,7 +1818,17 @@ AppAuth.requireAuth(function (user) {
     var entries = getWrappedEntries();
     if (!entries.length) { AppUtils.showToast('No entries to generate.'); return; }
     var G = statsTab === 'games';
-    var accent = G ? '#a78bfa' : '#f4d15c';
+    var activeTheme = document.documentElement.getAttribute('data-visual-theme') || localStorage.getItem('pl-visual-theme') || 'library';
+    var displayFontFamily = 'Inter, sans-serif';
+    if (activeTheme === 'winter') {
+      displayFontFamily = '"DM Serif Display", Georgia, serif';
+    } else if (activeTheme === 'wizarding') {
+      displayFontFamily = '"Cinzel Decorative", Cinzel, serif';
+    } else if (activeTheme === 'library') {
+      displayFontFamily = '"Fraunces", Georgia, serif';
+    }
+
+    var accent = G ? '#a78bfa' : (activeTheme === 'winter' ? '#64b4ff' : (activeTheme === 'wizarding' ? '#e5b958' : '#f4d15c'));
     var period = wrappedYear === 'all' ? 'All Time' : String(wrappedYear);
     if (wrappedMonth !== 0) period = AppUtils.monthName(wrappedMonth) + (wrappedYear === 'all' ? ' · All Time' : ' ' + wrappedYear);
 
@@ -1757,13 +1874,19 @@ AppAuth.requireAuth(function (user) {
       ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1.5; AppUtils.roundRectPath(ctx, x, y, w, h, 20); ctx.stroke();
       val = String(val);
       ctx.fillStyle = accent;
-      ctx.font = 'bold ' + (val.length > 12 ? 26 : val.length > 9 ? 30 : val.length > 6 ? 36 : 44) + 'px Inter, sans-serif';
+      ctx.font = 'bold ' + (val.length > 12 ? 26 : val.length > 9 ? 30 : val.length > 6 ? 36 : 44) + 'px ' + displayFontFamily;
       ctx.fillText(trunc(val, w - 44), x + 22, y + h - 46);
       ctx.fillStyle = '#999999'; ctx.font = '600 20px Inter, sans-serif';
       ctx.fillText(label.toUpperCase(), x + 22, y + h - 18);
     }
 
-    var fonts = ['800 30px Inter', 'bold 44px Inter', '500 30px Inter', '600 20px Inter'].map(function (f) {
+    var fonts = [
+      '800 64px ' + displayFontFamily,
+      '800 30px Inter',
+      'bold 44px Inter',
+      '500 30px Inter',
+      '600 20px Inter'
+    ].map(function (f) {
       return document.fonts.load(f).catch(function () {});
     });
 
@@ -1808,7 +1931,7 @@ AppAuth.requireAuth(function (user) {
       ctx.fillStyle = accent; ctx.font = '800 30px Inter, sans-serif';
       ctx.fillText((G ? 'GAMES WRAPPED' : 'WRAPPED') + ' · ' + period.toUpperCase(), 60, heroH + 72);
       ctx.fillRect(60, heroH + 20, 90, 8);
-      ctx.fillStyle = '#ffffff'; ctx.font = '800 130px Inter, sans-serif';
+      ctx.fillStyle = '#ffffff'; ctx.font = '800 130px ' + displayFontFamily;
       ctx.fillText(String(entries.length), 58, heroH + 200);
       ctx.fillStyle = '#bbbbbb'; ctx.font = '500 34px Inter, sans-serif';
       var thN = entries.filter(function (e) { return e.theatre; }).length;
@@ -1881,8 +2004,21 @@ AppAuth.requireAuth(function (user) {
     }
 
     var isGames = statsTab === 'games';
-    var accent = isGames ? '#a78bfa' : '#f4d15c';
-    var accentDim = isGames ? 'rgba(124,58,237,0.35)' : 'rgba(201,168,76,0.35)';
+    var activeTheme = document.documentElement.getAttribute('data-visual-theme') || localStorage.getItem('pl-visual-theme') || 'library';
+    var accent, accentDim;
+    if (activeTheme === 'winter') {
+      accent = isGames ? '#34d399' : '#38bdf8';
+      accentDim = isGames ? 'rgba(52, 211, 153, 0.35)' : 'rgba(56, 189, 248, 0.35)';
+    } else if (activeTheme === 'wizarding') {
+      accent = isGames ? '#c084fc' : '#e5b958';
+      accentDim = isGames ? 'rgba(192, 132, 252, 0.35)' : 'rgba(229, 185, 88, 0.35)';
+    } else if (activeTheme === 'classic' || activeTheme === 'glass') {
+      accent = isGames ? '#a78bfa' : '#f4d15c';
+      accentDim = isGames ? 'rgba(124,58,237,0.35)' : 'rgba(201,168,76,0.35)';
+    } else {
+      accent = isGames ? '#8b5cf6' : '#d4af37';
+      accentDim = isGames ? 'rgba(139, 92, 246, 0.35)' : 'rgba(212, 175, 55, 0.35)';
+    }
 
     var periodLabel = wrappedYear === 'all' ? 'All Time' : String(wrappedYear);
     if (wrappedMonth !== 0) periodLabel = AppUtils.monthName(wrappedMonth) + (wrappedYear === 'all' ? ' · All Time' : ' ' + wrappedYear);

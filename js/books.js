@@ -1039,6 +1039,17 @@
   function generateBooksShareCard(P) {
     var reads = P.reads;
     if (!reads.length) return AppUtils.showToast('No finished books to wrap for this period.');
+    var activeTheme = document.documentElement.getAttribute('data-visual-theme') || localStorage.getItem('pl-visual-theme') || 'library';
+    var displayFontFamily = 'Inter, sans-serif';
+    if (activeTheme === 'winter') {
+      displayFontFamily = '"DM Serif Display", Georgia, serif';
+    } else if (activeTheme === 'wizarding') {
+      displayFontFamily = '"Cinzel Decorative", Cinzel, serif';
+    } else if (activeTheme === 'library') {
+      displayFontFamily = '"Fraunces", Georgia, serif';
+    }
+
+    var accentColor = activeTheme === 'winter' ? '#64b4ff' : (activeTheme === 'wizarding' ? '#e5b958' : '#e5c66a');
     var tok = ++wTok, W = 1080, H = 1350, canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     var ctx = canvas.getContext('2d'), pages = 0, ratingTotal = 0, ratingCount = 0;
@@ -1066,6 +1077,7 @@
     }
 
     Promise.all([
+      document.fonts.load('800 64px ' + displayFontFamily).catch(function () {}),
       document.fonts.load('800 64px Inter').catch(function () {}),
       document.fonts.load('600 30px Inter').catch(function () {})
     ])
@@ -1073,25 +1085,54 @@
       .then(function (coverImage) {
         if (tok !== wTok) return;
         var bg = ctx.createLinearGradient(0, 0, W, H);
-        bg.addColorStop(0, '#282116'); bg.addColorStop(.55, '#111317'); bg.addColorStop(1, '#171426');
+        if (activeTheme === 'winter') {
+          bg.addColorStop(0, '#0a1626'); bg.addColorStop(.55, '#060d16'); bg.addColorStop(1, '#03060a');
+        } else if (activeTheme === 'wizarding') {
+          bg.addColorStop(0, '#1c0a15'); bg.addColorStop(.55, '#0e050b'); bg.addColorStop(1, '#050204');
+        } else {
+          bg.addColorStop(0, '#282116'); bg.addColorStop(.55, '#111317'); bg.addColorStop(1, '#171426');
+        }
         ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+        var ambientGlow = ctx.createRadialGradient(240, 180, 20, 240, 180, 580);
+        if (activeTheme === 'winter') {
+          ambientGlow.addColorStop(0, 'rgba(100, 180, 255, 0.22)');
+        } else if (activeTheme === 'wizarding') {
+          ambientGlow.addColorStop(0, 'rgba(229, 185, 88, 0.22)');
+        } else {
+          ambientGlow.addColorStop(0, 'rgba(212, 175, 55, 0.22)');
+        }
+        ambientGlow.addColorStop(1, 'transparent');
+        ctx.fillStyle = ambientGlow; ctx.fillRect(0, 0, W, H);
+
         if (coverImage) {
           ctx.save();
-          AppUtils.roundRectPath(ctx, 650, 54, 350, 520, 28); ctx.clip();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+          ctx.shadowBlur = 32;
+          ctx.shadowOffsetX = -6;
+          ctx.shadowOffsetY = 14;
+          AppUtils.roundRectPath(ctx, 650, 54, 350, 520, 20); ctx.clip();
           var scale = Math.max(350 / coverImage.width, 520 / coverImage.height);
-          ctx.globalAlpha = .8;
+          ctx.globalAlpha = .9;
           ctx.drawImage(coverImage, 650 + (350 - coverImage.width * scale) / 2, 54 + (520 - coverImage.height * scale) / 2, coverImage.width * scale, coverImage.height * scale);
+          
+          // Book spine shadow on left edge
+          var spineShade = ctx.createLinearGradient(650, 0, 680, 0);
+          spineShade.addColorStop(0, 'rgba(0,0,0,0.65)');
+          spineShade.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = spineShade; ctx.fillRect(650, 54, 30, 520);
           ctx.restore();
+
           var shade = ctx.createLinearGradient(500, 0, 1010, 0);
           shade.addColorStop(0, '#151515'); shade.addColorStop(1, 'rgba(15,15,17,.05)');
           ctx.fillStyle = shade; ctx.fillRect(500, 0, 510, 640);
         }
-        ctx.fillStyle = '#e5c66a'; ctx.font = '700 24px Inter, sans-serif';
+        ctx.fillStyle = accentColor; ctx.font = '700 24px Inter, sans-serif';
         ctx.fillText('PLAYLOG  /  BOOKS WRAPPED', 72, 90);
-        ctx.fillStyle = '#f6f2e8'; ctx.font = '800 62px Inter, sans-serif';
+        ctx.fillStyle = '#f6f2e8'; ctx.font = '800 62px ' + displayFontFamily;
         ctx.fillText(P.label === 'All Time' ? 'Your reading story' : 'Your reading recap', 72, 190);
         ctx.fillStyle = '#aaa'; ctx.font = '600 30px Inter, sans-serif'; ctx.fillText(P.label.toUpperCase(), 74, 242);
-        ctx.fillStyle = '#e5c66a'; ctx.font = '800 142px Inter, sans-serif';
+        ctx.fillStyle = accentColor; ctx.font = '800 142px ' + displayFontFamily;
         ctx.fillText(reads.length.toLocaleString(), 66, 420);
         ctx.fillStyle = '#f6f2e8'; ctx.font = '600 34px Inter, sans-serif'; ctx.fillText('books finished', 76, 474);
         ctx.fillStyle = '#bdb8ad'; ctx.font = '500 27px Inter, sans-serif';
@@ -1407,7 +1448,7 @@
     for (var i = 1; i <= 10; i++) (function (n) {
       var bt = document.createElement('button');
       bt.className = 'num-rating-btn' + (n === rating ? ' selected' : ''); bt.textContent = n;
-      bt.onclick = function () { row.querySelectorAll('.selected').forEach(function (x) { x.classList.remove('selected'); }); bt.classList.add('selected'); rating = n; };
+      bt.onclick = function () { AppUtils.hapticRating(); row.querySelectorAll('.selected').forEach(function (x) { x.classList.remove('selected'); }); bt.classList.add('selected'); rating = n; };
       row.appendChild(bt);
     })(i);
     q('#be-st').onclick = function (e) { var t = e.target.closest('.toggle-btn'); if (t) { s.bookStatus = t.dataset.v; sync(); } };

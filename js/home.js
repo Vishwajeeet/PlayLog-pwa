@@ -114,6 +114,25 @@ AppAuth.requireAuth(function(user) {
           if (n) applyYearFilter();
         }).catch(function () {});
 
+        // Check for Milestone Trophies (only pop when newly unlocked)
+        if (window.AppTrophies) {
+          var isInit = localStorage.getItem('pl_trophies_init');
+          if (!isInit) {
+            // First time running trophy engine: baseline already earned trophies to prevent spam
+            var initialEval = AppTrophies.evaluateBadges(entries, []);
+            var initialIds = initialEval.badges.filter(function (b) { return b.unlocked; }).map(function (b) { return b.id; });
+            AppTrophies.setAcknowledged(initialIds);
+            localStorage.setItem('pl_trophies_init', '1');
+          } else {
+            var celebration = AppTrophies.checkNewAchievements(entries, []);
+            if (celebration.hasNew) {
+              AppTrophies.showHomeCelebrationModal(celebration.newBadges, function () {
+                celebration.acknowledgeAll();
+              });
+            }
+          }
+        }
+
         document.querySelector('.type-pill[data-tab="' + ACTIVE_TAB + '"]').classList.add('active');
 
         updateFabVisibility();
@@ -425,13 +444,24 @@ function applyYearFilter() {
     });
 
     if (playlists.length === 0 && ACTIVE_TAB === 'games') {
-
-      document.getElementById(
-        'empty-playlists'
-      ).style.display = 'block';
-
+      var emptyEl = document.getElementById('empty-playlists');
+      if (emptyEl) {
+        var theme = document.documentElement.getAttribute('data-visual-theme') || 'library';
+        var eIcon = emptyEl.querySelector('.empty-state-icon');
+        var eText = emptyEl.querySelector('.empty-state-text');
+        var themeCopy = {
+          winter: { icon: '🎮', text: 'No game playlists yet. Tap + to start your winter backlog.' },
+          wizarding: { icon: '⚔️', text: 'No game archives yet. Tap + to begin your quest.' },
+          library: { icon: '🎲', text: 'No game collections yet. Tap + to create one.' },
+          glass: { icon: '📂', text: 'No playlists yet. Tap + to create one.' },
+        classic: { icon: '📂', text: 'No playlists yet. Tap + to create one.' }
+        };
+        var tc = themeCopy[theme] || themeCopy.library;
+        if (eIcon) eIcon.textContent = tc.icon;
+        if (eText) eText.textContent = tc.text;
+        emptyEl.style.display = 'block';
+      }
       grid.style.display = 'none';
-
       return;
     }
 

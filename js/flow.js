@@ -84,6 +84,7 @@ window.AppFlow = {
           var b = document.createElement('button');
           b.className = 'num-rating-btn'; b.textContent = n;
           b.onclick = function () {
+            AppUtils.hapticRating();
             row.querySelectorAll('.selected').forEach(function (x) { x.classList.remove('selected'); });
             b.classList.add('selected'); rating = n; ok.disabled = false;
           };

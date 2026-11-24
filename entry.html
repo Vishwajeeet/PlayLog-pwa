@@ -13,9 +13,11 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/home.css">
-  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/themes.css">
+  <link rel="stylesheet" href="/css/animations.css">
   <link rel="stylesheet" href="/css/entry.css">
   <link rel="stylesheet" href="/css/timer.css">
+  <script>(function(){var t=localStorage.getItem('pl-visual-theme')||'library';document.documentElement.setAttribute('data-visual-theme',t);})()</script>
 </head>
 
 <body>
@@ -27,6 +29,12 @@
         <button id="btn-back" class="back-btn">←</button>
         <h1 class="page-title">Details</h1>
         <div style="width:40px"></div>
+      </div>
+
+      <!-- Cinematic Hero Backdrop -->
+      <div class="entry-backdrop-wrap" id="entry-backdrop-wrap">
+        <div class="entry-backdrop" id="entry-backdrop"></div>
+        <div class="entry-backdrop-gradient"></div>
       </div>
 
       <div id="entry-content">
@@ -69,6 +77,40 @@
       </div>
     </div>
   </div>
+
+  <!-- Log Re-watch / Re-play Modal -->
+  <div class="modal-overlay" id="rewatch-modal">
+    <div class="modal-box">
+      <p class="modal-title" id="rewatch-modal-title">Log Re-watch</p>
+      <div style="display:flex;flex-direction:column;gap:14px;margin:16px 0">
+        <div>
+          <label class="label" for="rewatch-date">Date Completed</label>
+          <input type="date" id="rewatch-date" class="input-field" style="width:100%">
+        </div>
+        <div>
+          <label class="label" for="rewatch-rating" id="rewatch-rating-label">Rating (Optional)</label>
+          <input type="number" id="rewatch-rating" class="input-field" step="0.5" min="1" max="10" placeholder="e.g. 5" style="width:100%">
+        </div>
+        <div>
+          <label class="label" for="rewatch-notes">Notes &amp; Diary Thoughts</label>
+          <textarea id="rewatch-notes" class="input-field" rows="3" placeholder="e.g. 4K HDR rewatch with friends, incredible third act..." style="width:100%"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btn-cancel-rewatch">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-rewatch">Save Log</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox Poster Zoom Modal -->
+  <div class="lightbox-overlay" id="lightbox-modal">
+    <div class="lightbox-container">
+      <button class="lightbox-close-btn" id="btn-close-lightbox">✕</button>
+      <img class="lightbox-img" id="lightbox-img" src="" alt="Cover zoom">
+    </div>
+  </div>
+
   <!-- Delete Confirm -->
   <div class="modal-overlay" id="delete-modal">
     <div class="modal-box">
@@ -84,6 +126,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="/js/theme-engine.js"></script>
   <script src="/js/config.js"></script>
   <script src="/js/firebase-init.js"></script>
   <script src="/js/auth.js"></script>

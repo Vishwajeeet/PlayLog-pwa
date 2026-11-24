@@ -38,6 +38,9 @@
     var th = localStorage.getItem('pl-theme') || 'dark', ac = localStorage.getItem('pl-accent') || '#c9a84c';
     document.querySelectorAll('#pref-theme .toggle-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.v === th); });
     document.querySelectorAll('#pref-accent button').forEach(function (b) { b.classList.toggle('active', b.dataset.c === ac); });
+    var vt = localStorage.getItem('pl-visual-theme') || 'library';
+    if (vt === 'classic') vt = 'glass';
+    document.querySelectorAll('#pref-visual-theme .theme-swatch').forEach(function (b) { b.classList.toggle('active', b.dataset.vt === vt); });
     var bk = localStorage.getItem('pl-books') === '1';
     document.querySelectorAll('#pref-books .toggle-btn').forEach(function (b) { b.classList.toggle('active', (b.dataset.v === 'on') === bk); });
     var au = prefs.autoBackup || 'off';
@@ -73,11 +76,31 @@
       if (prefs.layout && !localStorage.getItem('mb-layout')) localStorage.setItem('mb-layout', prefs.layout);
       if (prefs.theme) localStorage.setItem('pl-theme', prefs.theme);
       if (prefs.accent) localStorage.setItem('pl-accent', prefs.accent);
+      if (prefs.visualTheme) {
+        localStorage.setItem('pl-visual-theme', prefs.visualTheme);
+        if (window.PlaylogThemeEngine) window.PlaylogThemeEngine.apply(prefs.visualTheme);
+        else document.documentElement.setAttribute('data-visual-theme', prefs.visualTheme);
+      }
       AppTheme.apply();
       if (prefs.books) localStorage.setItem('pl-books', '1'); else localStorage.removeItem('pl-books');
       AppUtils.booksPill();
       AppBackup.auto(user.uid, prefs, save);
       cacheAvatar(); paint(); marks();
+
+      if (window.AppTrophies && $('trophy-preview-text')) {
+        Promise.all([
+          (window.AppDB ? AppDB.getAllEntries(user.uid) : Promise.resolve([])).catch(function () { return []; }),
+          (window.AppDB && AppDB.getBooks ? AppDB.getBooks(user.uid) : Promise.resolve([])).catch(function () { return []; })
+        ]).then(function (results) {
+          var entries = results[0] || [];
+          var books = results[1] || [];
+          var preview = AppTrophies.renderTrophyPreviewHTML(entries, books);
+          var el = $('trophy-preview-text');
+          if (el) el.textContent = preview + ' · Tap to view hall';
+        }).catch(function (err) {
+          console.error('Trophies preview failed', err);
+        });
+      }
     }).catch(function () {});
   });
 
@@ -140,6 +163,17 @@
     var b = e.target.closest('.toggle-btn'); if (!b) return;
     localStorage.setItem('pl-theme', b.dataset.v); AppTheme.apply(); save({ theme: b.dataset.v }); marks();
   });
+  var vtWrap = $('pref-visual-theme');
+  if (vtWrap) {
+    vtWrap.addEventListener('click', function (e) {
+      var b = e.target.closest('.theme-swatch'); if (!b) return;
+      var newTheme = b.dataset.vt;
+      localStorage.setItem('pl-visual-theme', newTheme);
+      if (window.PlaylogThemeEngine) window.PlaylogThemeEngine.apply(newTheme);
+      else document.documentElement.setAttribute('data-visual-theme', newTheme);
+      save({ visualTheme: newTheme }); marks();
+    });
+  }
   $('pref-accent').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b) return;
     localStorage.setItem('pl-accent', b.dataset.c); AppTheme.apply(); save({ accent: b.dataset.c }); marks();

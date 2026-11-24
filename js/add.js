@@ -271,6 +271,7 @@ function buildEmojiRow() {
     btn.className = 'emoji-btn';
     btn.textContent = emoji;
     btn.addEventListener('click', function() {
+      AppUtils.hapticRating();
       row.querySelectorAll('.emoji-btn').forEach(function(b) { b.classList.remove('selected'); });
       btn.classList.add('selected');
       state.selectedRating = i + 1;
@@ -289,6 +290,7 @@ function buildNumberRatingRow() {
       btn.className = 'num-rating-btn';
       btn.textContent = num;
       btn.addEventListener('click', function() {
+        AppUtils.hapticRating();
         row.querySelectorAll('.num-rating-btn').forEach(function(b) { b.classList.remove('selected'); });
         btn.classList.add('selected');
         state.selectedGameRating = num;

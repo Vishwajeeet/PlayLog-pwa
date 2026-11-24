@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>Trophies &amp; Milestones — Playlog</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/assets/icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/home.css">
+  <link rel="stylesheet" href="/css/themes.css">
+  <link rel="stylesheet" href="/css/animations.css">
+  <script>(function(){var t=localStorage.getItem('pl-visual-theme')||'library';document.documentElement.setAttribute('data-visual-theme',t);})()</script>
+</head>
+
+<body class="home-page">
+  <div class="app-container">
+    <main class="page">
+      <div class="brand-bar" id="brand-bar" style="cursor:pointer"><span>Playlog</span></div>
+
+      <header class="page-header">
+        <button class="back-btn" id="btn-back" title="Back">←</button>
+        <h1 class="page-title" style="font-size:22px">Trophies</h1>
+        <div style="width:36px"></div>
+      </header>
+
+      <!-- Category Filter Pills -->
+      <div class="type-pills" id="trophy-category-pills" style="margin-bottom:20px">
+        <button class="type-pill" data-cat="movie" id="pill-cat-movie" style="display:none" type="button">Movies</button>
+        <button class="type-pill" data-cat="game" id="pill-cat-game" style="display:none" type="button">Games</button>
+        <button class="type-pill" data-cat="book" id="pill-cat-book" style="display:none" type="button">Books</button>
+      </div>
+
+      <!-- Trophies Container -->
+      <div id="trophy-content">
+        <div class="skeleton" style="height:140px;border-radius:14px;margin-bottom:16px"></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:12px">
+          <div class="skeleton" style="height:90px;border-radius:14px"></div>
+          <div class="skeleton" style="height:90px;border-radius:14px"></div>
+          <div class="skeleton" style="height:90px;border-radius:14px"></div>
+          <div class="skeleton" style="height:90px;border-radius:14px"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- Firebase Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- App Core -->
+  <script src="/js/theme-engine.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/firebase-init.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/firestore.js"></script>
+  <script src="/js/trophies.js"></script>
+
+  <script>
+    (function () {
+      var currentCat = 'all';
+      var cachedEntries = [];
+      var cachedBooks = [];
+
+      var brandBar = document.getElementById('brand-bar');
+      if (brandBar) brandBar.addEventListener('click', function () { window.location.href = '/home.html'; });
+      var backBtn = document.getElementById('btn-back');
+      if (backBtn) backBtn.addEventListener('click', function () {
+        if (window.history.length > 1) window.history.back();
+        else window.location.href = '/account.html';
+      });
+
+      function render(cat) {
+        var container = document.getElementById('trophy-content');
+        if (!container || !window.AppTrophies) return;
+        container.innerHTML = AppTrophies.renderTrophyHallHTML(cachedEntries, cachedBooks, cat);
+      }
+
+      function setupPills(activeCats) {
+        var moviePill = document.getElementById('pill-cat-movie');
+        var gamePill = document.getElementById('pill-cat-game');
+        var bookPill = document.getElementById('pill-cat-book');
+        var pillsWrap = document.getElementById('trophy-category-pills');
+
+        if (moviePill) moviePill.style.display = activeCats.indexOf('movie') !== -1 ? '' : 'none';
+        if (gamePill) gamePill.style.display = activeCats.indexOf('game') !== -1 ? '' : 'none';
+        if (bookPill) bookPill.style.display = activeCats.indexOf('book') !== -1 ? '' : 'none';
+
+        if (activeCats.length <= 1) {
+          if (pillsWrap) pillsWrap.style.display = 'none';
+        } else {
+          if (pillsWrap) {
+            pillsWrap.style.display = '';
+            pillsWrap.className = 'type-pills' + (activeCats.length >= 3 ? ' has-3' : '');
+          }
+        }
+
+        currentCat = activeCats[0] || 'movie';
+        var initialBtn = document.querySelector('#trophy-category-pills .type-pill[data-cat="' + currentCat + '"]');
+        if (initialBtn) initialBtn.classList.add('active');
+
+        if (pillsWrap) {
+          pillsWrap.addEventListener('click', function (e) {
+            var btn = e.target.closest('.type-pill');
+            if (!btn) return;
+            pillsWrap.querySelectorAll('.type-pill').forEach(function (b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            currentCat = btn.dataset.cat;
+            render(currentCat);
+          });
+        }
+      }
+
+      AppAuth.requireAuth(function (user) {
+        Promise.all([
+          AppDB.getAllEntries(user.uid).catch(function () { return []; }),
+          (AppDB.getBooks ? AppDB.getBooks(user.uid) : Promise.resolve([])).catch(function () { return []; })
+        ]).then(function (results) {
+          cachedEntries = results[0] || [];
+          cachedBooks = results[1] || [];
+
+          var activeCats = AppTrophies.getActiveCategories(cachedEntries, cachedBooks);
+          setupPills(activeCats);
+          render(currentCat);
+        }).catch(function (err) {
+          console.error(err);
+          var container = document.getElementById('trophy-content');
+          if (container) container.innerHTML = '<p class="text-sm text-muted">Failed to load milestones.</p>';
+        });
+      });
+    })();
+  </script>
+</body>
+</html>
