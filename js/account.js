@@ -51,7 +51,8 @@
   function save(data) {
     Object.assign(prefs, data);
     publishPrefs();
-    return ref.set(data, { merge: true }).catch(function () { AppUtils.showToast('Failed to save.'); });
+    var p = (window.AppDB && AppDB.savePrefs) ? AppDB.savePrefs(user.uid, data) : ref.set(data, { merge: true });
+    return p.catch(function () { AppUtils.showToast('Failed to save.'); });
   }
 
   function cacheAvatar() {
@@ -69,8 +70,9 @@
       if (c && c.uid === u.uid) prefs.avatar = c.url;
     } catch (e) {}
     paint(); marks();
-    ref.get().then(function (d) {
-      prefs = d.exists ? d.data() : {};
+    var getPrefs = (window.AppDB && AppDB.getPrefs) ? AppDB.getPrefs(u.uid) : ref.get().then(function (d) { return d.exists ? d.data() : {}; });
+    getPrefs.then(function (loaded) {
+      prefs = loaded || {};
       publishPrefs();
       if (prefs.tab) localStorage.setItem('pl-tab-pref', prefs.tab);
       if (prefs.layout && !localStorage.getItem('mb-layout')) localStorage.setItem('mb-layout', prefs.layout);
@@ -179,7 +181,9 @@
     localStorage.setItem('pl-accent', b.dataset.c); AppTheme.apply(); save({ accent: b.dataset.c }); marks();
   });
   $('btn-refresh').addEventListener('click', function () {
-    localStorage.removeItem('pl-entries'); AppUtils.showToast('Data will reload from the cloud ✓');
+    if (window.AppDB && AppDB.clearCache) AppDB.clearCache();
+    else localStorage.removeItem('pl-entries');
+    AppUtils.showToast('Data will reload from the cloud ✓');
   });
   $('btn-restore').addEventListener('click', function () { $('restore-input').click(); });
   $('restore-input').addEventListener('change', function (e) {

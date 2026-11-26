@@ -93,7 +93,7 @@
       id: 'movie_masterpiece',
       category: 'movie',
       name: 'Five-Star Taste',
-      desc: 'Award 5 or more titles top ratings (4.5–5/5 or 9–10/10).',
+      desc: 'Award 5 or more titles top ratings (5/5 or 9–10/10).',
       icon: '⭐',
       target: 5,
       check: function (entries) {

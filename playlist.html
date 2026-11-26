@@ -44,10 +44,16 @@
 
       </header>
 
-      <button id="btn-share-playlist" class="btn btn-ghost"
-        style="margin-bottom:16px;font-size:13px;padding:8px 14px;width:auto">
-        ↗ Share Playlist
-      </button>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <button id="btn-share-playlist" class="btn btn-ghost"
+          style="font-size:13px;padding:8px 14px;width:auto">
+          ↗ Share Playlist
+        </button>
+        <button id="btn-random-entry" class="btn btn-ghost"
+          style="display:none;font-size:13px;padding:8px 14px;width:auto">
+          🎲 Pick for me
+        </button>
+      </div>
 
       <p class="text-sm text-muted" style="margin-bottom:16px">
         Tap title to rename
@@ -355,6 +361,7 @@
   <script src="/js/backup.js"></script>
   <script src="/js/tmdb.js"></script>
   <script src="/js/igdb.js"></script>
+  <script src="/js/wrapped.js"></script>
 
   <!-- Page script -->
   <script src="/js/playlist.js"></script>

@@ -53,6 +53,16 @@
     ],
     go: { label: 'Explore more', href: '/trophies.html' }
   });
+  RELEASES.push({
+    id: 'new-themes-v2',
+    icon: '🎨',
+    title: 'What\u2019s New',
+    sub: 'Try our new amazing themes.',
+    steps: [
+      ['✨', 'Settings → Appearance', 'Switch themes in dark or light mode.']
+    ],
+    go: { label: 'Try themes', href: '/account.html' }
+  });
   var latest = RELEASES[RELEASES.length - 1];
   var done = false;
 
@@ -60,7 +70,9 @@
   function ref(uid) { return db.collection('users').doc(uid).collection('settings').doc('prefs'); }
   function mark(uid, extra) {
     try { localStorage.setItem(key(uid), latest.id); } catch (e) {}
-    return ref(uid).set(Object.assign({ lastSeenRelease: latest.id }, extra || {}), { merge: true }).catch(function () {});
+    var payload = Object.assign({ lastSeenRelease: latest.id }, extra || {});
+    if (window.AppDB && AppDB.savePrefs) return AppDB.savePrefs(uid, payload).catch(function () {});
+    return ref(uid).set(payload, { merge: true }).catch(function () {});
   }
 
   function show(u) {
@@ -113,8 +125,11 @@
     if (!u || done) return;
     done = true;
     try { if (localStorage.getItem(key(u.uid)) === latest.id) return; } catch (e) {}
-    ref(u.uid).get().then(function (d) {
-      var p = d.exists ? d.data() : {};
+    var getPrefs = (window.AppDB && AppDB.getPrefs)
+      ? AppDB.getPrefs(u.uid)
+      : ref(u.uid).get().then(function (d) { return d.exists ? d.data() : {}; });
+    getPrefs.then(function (p) {
+      p = p || {};
       if (p.lastSeenRelease === latest.id) {
         try { localStorage.setItem(key(u.uid), latest.id); } catch (e) {}
         return;

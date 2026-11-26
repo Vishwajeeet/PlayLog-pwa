@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,8 +15,9 @@
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/themes.css">
   <link rel="stylesheet" href="/css/animations.css">
-  <script>(function(){var t=localStorage.getItem('pl-visual-theme')||'library';document.documentElement.setAttribute('data-visual-theme',t);})()</script>
+  <script>(function () { var t = localStorage.getItem('pl-visual-theme') || 'library'; document.documentElement.setAttribute('data-visual-theme', t); })()</script>
 </head>
+
 <body>
   <div class="app-container">
     <main class="page" id="settings-root">
@@ -67,7 +69,8 @@
           <span>→</span>
         </a>
         <a class="set-row" href="/timer.html">
-          <div class="set-text"><b>Playtime Tracker</b><span>Track game sessions without changing your stats until completion</span></div>
+          <div class="set-text"><b>Playtime Tracker</b><span>Track game sessions without changing your stats until
+              completion</span></div>
           <span>→</span>
         </a>
         <div class="set-row">
@@ -85,20 +88,43 @@
           <div class="set-text"><b>Visual style</b><span>Aesthetic vibe, typography &amp; atmosphere</span></div>
           <div class="theme-picker" id="pref-visual-theme">
             <button class="theme-swatch" data-vt="library" type="button" title="Soft Library (Warm Serif)">
-              <span class="theme-preview-dots"><i style="background:#0e0e0e"></i><i style="background:#c9a84c"></i><i style="background:#1e1e1c"></i></span>
+              <span class="theme-preview-dots"><i style="background:#0e0e0e"></i><i style="background:#c9a84c"></i><i
+                  style="background:#1e1e1c"></i></span>
               <span class="theme-name">Library</span>
             </button>
             <button class="theme-swatch" data-vt="winter" type="button" title="Cozy Winter (Aurora &amp; Frosted Ice)">
-              <span class="theme-preview-dots"><i style="background:#070c16"></i><i style="background:#64b4ff"></i><i style="background:#38d9a9"></i></span>
+              <span class="theme-preview-dots"><i style="background:#070c16"></i><i style="background:#64b4ff"></i><i
+                  style="background:#38d9a9"></i></span>
               <span class="theme-name">Winter</span>
             </button>
-            <button class="theme-swatch" data-vt="wizarding" type="button" title="Wizarding World (Gothic Obsidian &amp; Gilded Gold)">
-              <span class="theme-preview-dots"><i style="background:#070305"></i><i style="background:#e5b958"></i><i style="background:#a5192d"></i></span>
-              <span class="theme-name">Wizarding</span>
+            <button class="theme-swatch" data-vt="wizarding" type="button"
+              title="Harry Potter (Hogwarts, Candlelight &amp; Marauder's Map)">
+              <span class="theme-preview-dots"><i style="background:#740001"></i><i style="background:#eeba30"></i><i
+                  style="background:#1a0a12"></i></span>
+              <span class="theme-name">Harry Potter</span>
             </button>
-            <button class="theme-swatch" data-vt="glass" type="button" title="Glass Playlog">
-              <span class="theme-preview-dots"><i style="background:#0d0d0d"></i><i style="background:#c9a84c"></i><i style="background:#1a1a1a"></i></span>
-              <span class="theme-name">Glass</span>
+            <button class="theme-swatch" data-vt="kyoto" type="button" title="Kyoto Rain (Wet Slate &amp; Bamboo Moss)">
+              <span class="theme-preview-dots"><i style="background:#0b1110"></i><i style="background:#84b89a"></i><i
+                  style="background:#7ea6b8"></i></span>
+              <span class="theme-name">Kyoto Rain</span>
+            </button>
+            <button class="theme-swatch" data-vt="sakura" type="button"
+              title="Midnight Sakura (Plum Night &amp; Blossom Pink)">
+              <span class="theme-preview-dots"><i style="background:#0e0911"></i><i style="background:#e89eb3"></i><i
+                  style="background:#b99ad9"></i></span>
+              <span class="theme-name">Sakura</span>
+            </button>
+            <button class="theme-swatch" data-vt="herbarium" type="button"
+              title="Archival Herbarium (Pressed Linen &amp; Botanical Sage)">
+              <span class="theme-preview-dots"><i style="background:#f3efe4"></i><i style="background:#5e7a52"></i><i
+                  style="background:#a66346"></i></span>
+              <span class="theme-name">Herbarium</span>
+            </button>
+            <button class="theme-swatch" data-vt="glass" type="button"
+              title="Liquid Glass (Frosted Translucent &amp; Specular Rims)">
+              <span class="theme-preview-dots"><i style="background:rgba(255,255,255,0.75)"></i><i
+                  style="background:#7eb8ff"></i><i style="background:#1b2333"></i></span>
+              <span class="theme-name">Liquid Glass</span>
             </button>
           </div>
         </div>
@@ -134,13 +160,16 @@
           </div>
         </div>
         <button class="set-row" id="btn-backup">
-          <div class="set-text"><b>Backup now</b><span id="last-backup">Download everything as a file</span></div><span>↓</span>
+          <div class="set-text"><b>Backup now</b><span id="last-backup">Download everything as a file</span></div>
+          <span>↓</span>
         </button>
         <button class="set-row" id="btn-restore">
-          <div class="set-text"><b>Restore from backup</b><span>Load a backup file into this account</span></div><span>↑</span>
+          <div class="set-text"><b>Restore from backup</b><span>Load a backup file into this account</span></div>
+          <span>↑</span>
         </button>
         <button class="set-row" id="btn-refresh">
-          <div class="set-text"><b>Refresh data</b><span>Reload from the cloud if you edited on another device</span></div><span>⟳</span>
+          <div class="set-text"><b>Refresh data</b><span>Reload from the cloud if you edited on another device</span>
+          </div><span>⟳</span>
         </button>
         <input type="file" id="restore-input" accept=".json,application/json" hidden>
       </div>
@@ -183,4 +212,5 @@
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
   </script>
 </body>
+
 </html>

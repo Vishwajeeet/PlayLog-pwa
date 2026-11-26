@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="/css/home.css">
   <link rel="stylesheet" href="/css/themes.css">
   <link rel="stylesheet" href="/css/animations.css">
+  <link rel="stylesheet" href="/css/books.css">
   <script>(function(){var t=localStorage.getItem('pl-visual-theme')||'library';document.documentElement.setAttribute('data-visual-theme',t);})()</script>
 </head>
 
@@ -260,6 +261,11 @@
 
         <!-- DEEP CUTS -->
 
+        <div id="books-stats-section" style="display:none">
+          <div id="bk-stats"></div>
+          <p class="section-title" style="margin-top:24px">To-Read Shelf</p>
+          <div id="bk-want-stats"></div>
+        </div>
         <div id="deep-cuts-section">
           <p class="section-title" style="margin-top:28px">
             Deep Cuts
@@ -336,6 +342,7 @@
   <script src="/js/firestore.js"></script>
   <script src="/js/tmdb.js"></script>
   <script src="/js/igdb.js"></script>
+  <script src="/js/wrapped.js"></script>
 
   <!-- Page script -->
 

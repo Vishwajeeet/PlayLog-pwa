@@ -45,9 +45,9 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   THEME A: CLASSIC (Original Playlog - 100% Unaltered)
+   THEME A: CLASSIC (Minimal Unstyled Legacy Fallback)
    -------------------------------------------------------------------------- */
-html[data-visual-theme="classic"], html[data-visual-theme="glass"] {
+html[data-visual-theme="classic"] {
   --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --bg-primary: #0d0d0d;
   --bg-card: #1a1a1a;
@@ -56,10 +56,137 @@ html[data-visual-theme="classic"], html[data-visual-theme="glass"] {
   --text-muted: #888888;
   --radius-card: 12px;
   --radius-btn: 8px;
-  --viz-media-accent: #c9a84c;
-  --viz-media-secondary: #8a7434;
-  --viz-games-accent: #7c3aed;
-  --viz-games-secondary: #5b21b6;
+}
+
+/* --------------------------------------------------------------------------
+   THEME A2: LIQUID GLASS (Frosted Specular Optical Glass & Prism Light)
+   -------------------------------------------------------------------------- */
+html[data-visual-theme="glass"] {
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --bg-primary: #070a12;
+  --bg-card: rgba(255, 255, 255, 0.085);
+  --bg-card-2: rgba(255, 255, 255, 0.14);
+  --text-primary: #f5f7fc;
+  --text-muted: #9aa7bd;
+  --radius-card: 24px;
+  --radius-btn: 999px;
+  --card-border: rgba(255, 255, 255, 0.22);
+  --card-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.36), inset 0 -1px 0 rgba(255, 255, 255, 0.07), 0 12px 34px rgba(0, 0, 0, 0.44);
+  --card-hover-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.56), inset 0 -1px 0 rgba(255, 255, 255, 0.14), 0 18px 42px rgba(0, 0, 0, 0.58), 0 0 18px rgba(130, 190, 255, 0.14);
+  --glass-surface: rgba(255, 255, 255, 0.085);
+  --glass-border: rgba(255, 255, 255, 0.24);
+  --header-glass: rgba(10, 14, 24, 0.72);
+  --viz-media-accent: #e5c45e;
+  --viz-media-secondary: #8f7730;
+  --viz-games-accent: #9575f7;
+  --viz-games-secondary: #5d3ec9;
+  --viz-books-accent: #3cd49b;
+  --viz-books-secondary: #0f8a5e;
+}
+
+html[data-visual-theme="glass"] body {
+  background: var(--bg-primary);
+}
+
+html[data-visual-theme="glass"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  transform: translateZ(0);
+  background:
+    radial-gradient(900px 560px at 14% -8%, rgba(86, 152, 255, 0.24), transparent 68%),
+    radial-gradient(760px 500px at 88% 12%, rgba(96, 224, 208, 0.14), transparent 60%),
+    radial-gradient(840px 540px at 78% 78%, rgba(235, 195, 130, 0.11), transparent 65%),
+    radial-gradient(1000px 680px at 15% 92%, rgba(124, 108, 240, 0.13), transparent 68%);
+}
+
+html[data-visual-theme="glass"] :is(.page-title, .brand-bar span, .modal-title) {
+  background: linear-gradient(135deg, #ffffff 15%, #dbeafe 52%, #ffffff 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 2px 14px rgba(180, 215, 255, 0.22);
+  letter-spacing: -0.025em;
+  font-weight: 800;
+}
+
+/* Frosted optical refraction blur & specular sheen on Glass surfaces */
+html[data-visual-theme="glass"] :is(.stat-strip, .set-group, .set-profile, .modal-box, .type-pills, .stats-pill-btn, .toggle-pair, .viz-card, .leaderboard-row, .detail-card, .btn-ghost, .input-field, .theme-swatch, .bk-hero, .bk-stats-banner, .trophy-summary-bar, .fab) {
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border-color: var(--glass-border);
+  box-shadow: var(--card-shadow);
+}
+
+html[data-visual-theme="glass"]:not([data-theme="light"]) .modal-box {
+  background: rgba(18, 24, 36, 0.74);
+}
+html[data-theme="light"][data-visual-theme="glass"] .modal-box {
+  background: rgba(255, 255, 255, 0.84);
+}
+
+html[data-visual-theme="glass"] :is(.btn-primary, .type-pill.active, .stats-pill-btn, .fab) {
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.52), 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+html[data-visual-theme="glass"] :is(.card, .playlist-card) {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.045) 100%);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+}
+
+/* Light Mode Liquid Glass */
+html[data-theme="light"][data-visual-theme="glass"] {
+  --bg-primary: #eaf0f8;
+  --bg-card: rgba(255, 255, 255, 0.60);
+  --bg-card-2: rgba(232, 240, 252, 0.78);
+  --text-primary: #101828;
+  --text-muted: #506078;
+  --card-border: rgba(255, 255, 255, 0.85);
+  --card-shadow: inset 0 1.5px 0 #ffffff, inset 0 -1px 0 rgba(145, 175, 220, 0.22), 0 10px 30px rgba(20, 42, 82, 0.09);
+  --card-hover-shadow: inset 0 1.5px 0 #ffffff, 0 16px 38px rgba(20, 42, 82, 0.16);
+  --glass-surface: rgba(255, 255, 255, 0.58);
+  --glass-border: rgba(255, 255, 255, 0.88);
+  --header-glass: rgba(234, 240, 248, 0.78);
+  --viz-media-accent: #b88b22;
+  --viz-games-accent: #6d3ee0;
+  --viz-books-accent: #138a63;
+}
+
+html[data-theme="light"][data-visual-theme="glass"] body {
+  background: var(--bg-primary);
+}
+
+html[data-theme="light"][data-visual-theme="glass"] body::after {
+  background:
+    radial-gradient(900px 540px at 14% -8%, rgba(102, 174, 255, 0.30), transparent 68%),
+    radial-gradient(760px 480px at 88% 10%, rgba(172, 152, 248, 0.22), transparent 60%),
+    radial-gradient(840px 520px at 78% 82%, rgba(255, 208, 160, 0.22), transparent 65%),
+    radial-gradient(960px 640px at 16% 90%, rgba(92, 208, 198, 0.18), transparent 68%);
+}
+
+html[data-theme="light"][data-visual-theme="glass"] :is(.page-title, .brand-bar span, .modal-title) {
+  background: linear-gradient(135deg, #0f172a 15%, #3b5998 56%, #0f172a 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme="light"][data-visual-theme="glass"] :is(.card, .playlist-card:not(.new-tile)) {
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  box-shadow: var(--card-shadow);
+}
+
+html[data-theme="light"][data-visual-theme="glass"] .playlist-card:not(.new-tile) {
+  background: rgba(20, 28, 42, 0.72);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+html[data-theme="light"][data-visual-theme="glass"] .card {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.48) 100%);
 }
 
 /* --------------------------------------------------------------------------
@@ -85,16 +212,27 @@ html:not([data-visual-theme]) {
   --viz-media-secondary: #854d0e;
   --viz-games-accent: #8b5cf6;
   --viz-games-secondary: #6d28d9;
+  --viz-books-accent: #34b887;
+  --viz-books-secondary: #1f7a58;
 }
 
 html[data-visual-theme="library"] body,
 html:not([data-visual-theme]) body {
-  background-color: var(--bg-primary);
-  background-image: 
+  background: var(--bg-primary);
+}
+
+html[data-visual-theme="library"] body::after,
+html:not([data-visual-theme]) body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  transform: translateZ(0);
+  background:
     radial-gradient(900px 500px at 15% -10%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 70%),
     radial-gradient(700px 450px at 95% 5%, rgba(180, 145, 90, 0.08), transparent 60%),
     radial-gradient(1000px 700px at 50% 100%, rgba(20, 20, 18, 0.8), transparent);
-  background-attachment: fixed;
 }
 
 /* Light Mode Variant for Library */
@@ -118,12 +256,18 @@ html[data-theme="light"]:not([data-visual-theme]) {
   --viz-media-secondary: #78350f;
   --viz-games-accent: #7c3aed;
   --viz-games-secondary: #5b21b6;
+  --viz-books-accent: #1d8a64;
+  --viz-books-secondary: #115e43;
 }
 
 html[data-theme="light"][data-visual-theme="library"] body,
 html[data-theme="light"]:not([data-visual-theme]) body {
-  background-color: var(--bg-primary);
-  background-image: 
+  background: var(--bg-primary);
+}
+
+html[data-theme="light"][data-visual-theme="library"] body::after,
+html[data-theme="light"]:not([data-visual-theme]) body::after {
+  background:
     radial-gradient(900px 500px at 15% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
     radial-gradient(700px 450px at 95% 5%, rgba(210, 190, 160, 0.25), transparent 60%);
 }
@@ -172,36 +316,44 @@ html[data-visual-theme="winter"] {
   --viz-media-secondary: #0284c7;
   --viz-games-accent: #34d399;
   --viz-games-secondary: #059669;
+  --viz-books-accent: #2dd4bf;
+  --viz-books-secondary: #0f766e;
 }
 
 html[data-visual-theme="winter"] body {
-  background-color: var(--bg-primary);
-  background-image: 
+  background: var(--bg-primary);
+}
+
+html[data-visual-theme="winter"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  transform: translateZ(0);
+  background:
     radial-gradient(1100px 650px at 15% -15%, rgba(64, 180, 255, 0.25), transparent 70%),
     radial-gradient(900px 550px at 85% 10%, rgba(56, 217, 169, 0.16), transparent 60%),
     radial-gradient(800px 500px at 50% -20%, rgba(168, 85, 247, 0.14), transparent 65%),
     radial-gradient(1000px 700px at 50% 100%, #0d1522 60%, transparent);
-  background-attachment: fixed;
 }
 
-html[data-visual-theme="winter"] .card,
-html[data-visual-theme="winter"] .playlist-card,
-html[data-visual-theme="winter"] .set-group {
+html[data-visual-theme="winter"]:not([data-theme="light"]) .card,
+html[data-visual-theme="winter"]:not([data-theme="light"]) .playlist-card,
+html[data-visual-theme="winter"]:not([data-theme="light"]) .set-group {
   background: #0f1827 !important;
   border: 1px solid var(--card-border) !important;
   box-shadow: var(--card-shadow) !important;
 }
 
-html[data-visual-theme="winter"] .stat-strip,
-html[data-visual-theme="winter"] .modal-box {
-  background: rgba(14, 23, 38, 0.88) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
+html[data-visual-theme="winter"]:not([data-theme="light"]) .stat-strip,
+html[data-visual-theme="winter"]:not([data-theme="light"]) .modal-box {
+  background: rgba(14, 23, 38, 0.92) !important;
   border: 1px solid var(--card-border) !important;
   box-shadow: var(--card-shadow) !important;
 }
 
-html[data-visual-theme="winter"] :is(.card, .playlist-card, .recent-item):hover {
+html[data-visual-theme="winter"]:not([data-theme="light"]) :is(.card, .playlist-card, .recent-item):hover {
   border-color: rgba(180, 225, 255, 0.6) !important;
   box-shadow: var(--card-hover-shadow) !important;
 }
@@ -209,30 +361,41 @@ html[data-visual-theme="winter"] :is(.card, .playlist-card, .recent-item):hover 
 /* Light Mode Variant for Cozy Winter */
 html[data-theme="light"][data-visual-theme="winter"] {
   --font-display: 'DM Serif Display', 'Georgia', serif;
-  --bg-primary: #eef4fb;
-  --bg-card: #ffffff;
-  --bg-card-2: #dbe7f5;
-  --text-primary: #111b27;
-  --text-muted: #5e728c;
+  --bg-primary: #eaf2fb;
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-2: #d6e6f7;
+  --text-primary: #102033;
+  --text-muted: #516a87;
   --radius-card: 20px;
   --radius-btn: 12px;
-  --card-border: rgba(30, 60, 95, 0.08);
-  --card-shadow: 0 6px 22px rgba(20, 45, 75, 0.07), inset 0 1px 0 #fff;
-  --card-hover-shadow: 0 14px 34px rgba(20, 45, 75, 0.13);
-  --glass-surface: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(30, 60, 95, 0.09);
-  --header-glass: rgba(238, 244, 251, 0.88);
+  --card-border: rgba(36, 98, 165, 0.14);
+  --card-shadow: 0 6px 22px rgba(24, 66, 118, 0.08), inset 0 1px 0 #fff;
+  --card-hover-shadow: 0 14px 34px rgba(24, 66, 118, 0.16);
+  --glass-surface: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(36, 98, 165, 0.16);
+  --header-glass: rgba(234, 242, 251, 0.88);
   --viz-media-accent: #0284c7;
   --viz-media-secondary: #0369a1;
   --viz-games-accent: #059669;
   --viz-games-secondary: #047857;
+  --viz-books-accent: #0f766e;
+  --viz-books-secondary: #115e59;
 }
 
 html[data-theme="light"][data-visual-theme="winter"] body {
-  background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(900px 500px at 15% -10%, rgba(170, 210, 255, 0.35), transparent 70%),
-    radial-gradient(700px 450px at 95% 5%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 60%);
+  background: var(--bg-primary);
+}
+
+html[data-theme="light"][data-visual-theme="winter"] body::after {
+  background:
+    radial-gradient(960px 520px at 15% -10%, rgba(110, 185, 252, 0.34), transparent 70%),
+    radial-gradient(760px 480px at 88% 8%, rgba(56, 189, 178, 0.18), transparent 60%),
+    radial-gradient(900px 600px at 50% 100%, rgba(198, 224, 249, 0.55), transparent 70%);
+}
+
+html[data-theme="light"][data-visual-theme="winter"] :is(.card, .playlist-card:not(.new-tile), .recent-item):hover {
+  border-color: rgba(2, 132, 199, 0.42) !important;
+  box-shadow: var(--card-hover-shadow) !important;
 }
 
 /* Crystalline Arctic Aurora Shimmer across Headings & Logo */
@@ -277,35 +440,43 @@ html[data-visual-theme="wizarding"] {
   --viz-media-secondary: #b45309;
   --viz-games-accent: #c084fc;
   --viz-games-secondary: #7e22ce;
+  --viz-books-accent: #e5a958;
+  --viz-books-secondary: #b45309;
 }
 
 html[data-visual-theme="wizarding"] body {
-  background-color: var(--bg-primary);
-  background-image: 
+  background: var(--bg-primary);
+}
+
+html[data-visual-theme="wizarding"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  transform: translateZ(0);
+  background:
     radial-gradient(950px 600px at 15% -10%, rgba(165, 25, 45, 0.24), transparent 65%),
     radial-gradient(800px 520px at 95% 5%, rgba(229, 185, 88, 0.22), transparent 60%),
     radial-gradient(1100px 750px at 50% 100%, #15080f 80%, transparent);
-  background-attachment: fixed;
 }
 
-html[data-visual-theme="wizarding"] .card,
-html[data-visual-theme="wizarding"] .playlist-card,
-html[data-visual-theme="wizarding"] .set-group {
+html[data-visual-theme="wizarding"]:not([data-theme="light"]) .card,
+html[data-visual-theme="wizarding"]:not([data-theme="light"]) .playlist-card,
+html[data-visual-theme="wizarding"]:not([data-theme="light"]) .set-group {
   background: #14080e !important;
   border: 1px solid var(--card-border) !important;
   box-shadow: var(--card-shadow) !important;
 }
 
-html[data-visual-theme="wizarding"] .stat-strip,
-html[data-visual-theme="wizarding"] .modal-box {
-  background: rgba(19, 8, 14, 0.9) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
+html[data-visual-theme="wizarding"]:not([data-theme="light"]) .stat-strip,
+html[data-visual-theme="wizarding"]:not([data-theme="light"]) .modal-box {
+  background: rgba(19, 8, 14, 0.94) !important;
   border: 1px solid var(--card-border) !important;
   box-shadow: var(--card-shadow) !important;
 }
 
-html[data-visual-theme="wizarding"] :is(.card, .playlist-card, .recent-item):hover {
+html[data-visual-theme="wizarding"]:not([data-theme="light"]) :is(.card, .playlist-card, .recent-item):hover {
   border-color: rgba(255, 225, 140, 0.8) !important;
   box-shadow: var(--card-hover-shadow) !important;
 }
@@ -350,13 +521,406 @@ html[data-theme="light"][data-visual-theme="wizarding"] {
   --viz-media-secondary: #78350f;
   --viz-games-accent: #9333ea;
   --viz-games-secondary: #6b21a8;
+  --viz-books-accent: #b45309;
+  --viz-books-secondary: #78350f;
 }
 
 html[data-theme="light"][data-visual-theme="wizarding"] body {
-  background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(900px 500px at 15% -10%, rgba(180, 50, 60, 0.1), transparent 70%),
-    radial-gradient(700px 450px at 95% 5%, rgba(212, 168, 67, 0.15), transparent 60%);
+  background: var(--bg-primary);
+}
+
+html[data-theme="light"][data-visual-theme="wizarding"] body::after {
+  background:
+    radial-gradient(960px 520px at 15% -10%, rgba(165, 36, 46, 0.14), transparent 70%),
+    radial-gradient(760px 460px at 92% 6%, rgba(204, 152, 52, 0.20), transparent 60%),
+    radial-gradient(1100px 600px at 50% 100%, rgba(132, 92, 52, 0.14), transparent 72%);
+}
+
+/* Harry Potter Gilded Grimoire & Marauder's Map Decorative Stage */
+html[data-visual-theme="wizarding"] :is(.stat-strip, .set-group, .viz-card, .modal-box, .detail-card, .bk-hero, .bk-stats-banner, .trophy-summary-bar) {
+  box-shadow: inset 0 0 0 1px rgba(229, 185, 88, 0.16), var(--card-shadow) !important;
+}
+html[data-theme="light"][data-visual-theme="wizarding"] :is(.stat-strip, .set-group, .viz-card, .modal-box, .detail-card, .bk-hero, .bk-stats-banner, .trophy-summary-bar) {
+  border-color: rgba(138, 42, 34, 0.22) !important;
+  box-shadow: inset 0 0 0 1px rgba(164, 102, 42, 0.14), var(--card-shadow) !important;
+}
+
+.hp-decor-stage {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+  color: rgba(229, 185, 88, 0.42);
+}
+html[data-theme="light"] .hp-decor-stage {
+  color: rgba(110, 32, 28, 0.28);
+}
+
+.hp-castle-horizon {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  transform: translateX(-50%);
+  width: min(1240px, 128vw);
+  height: auto;
+  max-height: 225px;
+  opacity: 0.72;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+html[data-theme="light"] .hp-castle-horizon {
+  opacity: 0.58;
+}
+.hp-castle-horizon .hp-silhouette {
+  fill: rgba(10, 4, 9, 0.92);
+  stroke: rgba(229, 185, 88, 0.28);
+  stroke-width: 1.1;
+}
+html[data-theme="light"] .hp-castle-horizon .hp-silhouette {
+  fill: rgba(94, 42, 32, 0.13);
+  stroke: rgba(104, 34, 28, 0.34);
+}
+.hp-castle-horizon .hp-win {
+  fill: #ffd978;
+  opacity: 0.85;
+  animation: hpWinGlow 4.2s ease-in-out infinite alternate;
+}
+html[data-theme="light"] .hp-castle-horizon .hp-win {
+  fill: rgba(168, 92, 24, 0.45);
+  animation: none;
+}
+@keyframes hpWinGlow {
+  0% { opacity: 0.45; }
+  100% { opacity: 0.95; }
+}
+
+.hp-corner {
+  position: absolute;
+  width: 66px;
+  height: 66px;
+  opacity: 0.46;
+}
+@media (min-width: 700px) {
+  .hp-corner {
+    width: 96px;
+    height: 96px;
+    opacity: 0.54;
+  }
+}
+.hp-corner-tl { top: 8px; left: 8px; }
+.hp-corner-tr { top: 8px; right: 8px; transform: scaleX(-1); }
+.hp-corner-bl { bottom: 8px; left: 8px; transform: scaleY(-1); }
+.hp-corner-br { bottom: 8px; right: 8px; transform: scale(-1); }
+
+.hp-hallows-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: -4px auto 14px;
+  color: rgba(229, 185, 88, 0.62);
+  pointer-events: none;
+}
+html[data-theme="light"] .hp-hallows-divider {
+  color: rgba(122, 34, 32, 0.56);
+}
+.hp-hallows-divider i {
+  flex: 1;
+  max-width: 120px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  opacity: 0.55;
+}
+.hp-hallows-divider svg {
+  width: 24px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   THEME E: KYOTO RAIN (Wet Slate, Bamboo Moss & Washi Mist)
+   -------------------------------------------------------------------------- */
+html[data-visual-theme="kyoto"] {
+  --font-display: 'Cormorant Garamond', 'Georgia', serif;
+  --bg-primary: #0b1110;
+  --bg-card: #121b19;
+  --bg-card-2: #192623;
+  --text-primary: #ecece2;
+  --text-muted: #8b9d93;
+  --radius-card: 18px;
+  --radius-btn: 11px;
+  --card-border: rgba(143, 184, 159, 0.16);
+  --card-shadow: 0 8px 28px rgba(3, 8, 7, 0.55), inset 0 1px 0 rgba(236, 236, 226, 0.06);
+  --card-hover-shadow: 0 16px 36px rgba(3, 8, 7, 0.72), 0 0 12px rgba(132, 184, 154, 0.14);
+  --glass-surface: rgba(236, 236, 226, 0.045);
+  --glass-border: rgba(143, 184, 159, 0.18);
+  --header-glass: rgba(11, 17, 16, 0.84);
+  --viz-media-accent: #84b89a;
+  --viz-media-secondary: #476e5a;
+  --viz-games-accent: #7ea6b8;
+  --viz-games-secondary: #3f6375;
+  --viz-books-accent: #c9a97a;
+  --viz-books-secondary: #7d613b;
+}
+
+html[data-visual-theme="kyoto"] body {
+  background: var(--bg-primary);
+}
+
+html[data-visual-theme="kyoto"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  transform: translateZ(0);
+  background:
+    radial-gradient(960px 580px at 18% -12%, rgba(92, 145, 122, 0.22), transparent 68%),
+    radial-gradient(760px 460px at 88% 8%, rgba(102, 138, 156, 0.15), transparent 62%),
+    radial-gradient(1050px 700px at 50% 100%, rgba(12, 21, 18, 0.85), transparent);
+}
+
+html[data-visual-theme="kyoto"] :is(.page-title, .brand-bar span, .modal-title) {
+  font-family: 'Cormorant Garamond', Georgia, serif !important;
+  background: linear-gradient(135deg, #f4f3ea 15%, #b8d6c4 52%, #f4f3ea 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 2px 10px rgba(132, 184, 154, 0.15);
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+html[data-theme="light"][data-visual-theme="kyoto"] {
+  --font-display: 'Cormorant Garamond', 'Georgia', serif;
+  --bg-primary: #edf2ed;
+  --bg-card: #f8faf7;
+  --bg-card-2: #dee7df;
+  --text-primary: #1b2621;
+  --text-muted: #5a6d62;
+  --radius-card: 18px;
+  --radius-btn: 11px;
+  --card-border: rgba(38, 66, 52, 0.12);
+  --card-shadow: 0 6px 20px rgba(30, 52, 42, 0.06), inset 0 1px 0 #fff;
+  --card-hover-shadow: 0 14px 32px rgba(30, 52, 42, 0.12);
+  --glass-surface: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(38, 66, 52, 0.14);
+  --header-glass: rgba(237, 242, 237, 0.88);
+  --viz-media-accent: #3d7557;
+  --viz-media-secondary: #28523c;
+  --viz-games-accent: #3d6b80;
+  --viz-games-secondary: #284b5c;
+  --viz-books-accent: #8f6538;
+  --viz-books-secondary: #634321;
+}
+
+html[data-theme="light"][data-visual-theme="kyoto"] body {
+  background: var(--bg-primary);
+}
+
+html[data-theme="light"][data-visual-theme="kyoto"] body::after {
+  background:
+    radial-gradient(940px 500px at 18% -10%, rgba(110, 158, 134, 0.24), transparent 70%),
+    radial-gradient(720px 440px at 88% 8%, rgba(115, 152, 170, 0.18), transparent 62%);
+}
+
+html[data-theme="light"][data-visual-theme="kyoto"] :is(.page-title, .brand-bar span, .modal-title) {
+  background: linear-gradient(135deg, #16221c 10%, #37664e 55%, #16221c 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.75);
+}
+
+/* --------------------------------------------------------------------------
+   THEME F: MIDNIGHT SAKURA (Plum Night Sky & Dusty Blossom Pink)
+   -------------------------------------------------------------------------- */
+html[data-visual-theme="sakura"] {
+  --font-display: 'Playfair Display', 'Georgia', serif;
+  --bg-primary: #0e0911;
+  --bg-card: #17101c;
+  --bg-card-2: #221829;
+  --text-primary: #f8edf1;
+  --text-muted: #a6909d;
+  --radius-card: 18px;
+  --radius-btn: 12px;
+  --card-border: rgba(232, 160, 182, 0.17);
+  --card-shadow: 0 8px 30px rgba(6, 2, 10, 0.62), inset 0 1px 0 rgba(255, 232, 240, 0.08);
+  --card-hover-shadow: 0 16px 38px rgba(6, 2, 10, 0.78), 0 0 12px rgba(232, 160, 182, 0.15);
+  --glass-surface: rgba(248, 226, 234, 0.05);
+  --glass-border: rgba(232, 160, 182, 0.18);
+  --header-glass: rgba(14, 9, 17, 0.85);
+  --viz-media-accent: #e89eb3;
+  --viz-media-secondary: #9c4b68;
+  --viz-games-accent: #b99ad9;
+  --viz-games-secondary: #6b4f8c;
+  --viz-books-accent: #e5b996;
+  --viz-books-secondary: #946342;
+}
+
+html[data-visual-theme="sakura"] body {
+  background: var(--bg-primary);
+}
+
+html[data-visual-theme="sakura"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  transform: translateZ(0);
+  background:
+    radial-gradient(960px 580px at 18% -12%, rgba(196, 102, 138, 0.2), transparent 68%),
+    radial-gradient(780px 480px at 88% 8%, rgba(132, 98, 168, 0.16), transparent 62%),
+    radial-gradient(1050px 720px at 50% 100%, rgba(20, 11, 24, 0.86), transparent);
+}
+
+html[data-visual-theme="sakura"] :is(.page-title, .brand-bar span, .modal-title) {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  background: linear-gradient(135deg, #fff5f8 15%, #efb3c5 52%, #fff5f8 96%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 2px 10px rgba(232, 158, 179, 0.18);
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+
+html[data-theme="light"][data-visual-theme="sakura"] {
+  --font-display: 'Playfair Display', 'Georgia', serif;
+  --bg-primary: #fbf2f4;
+  --bg-card: #fffafc;
+  --bg-card-2: #f1dfe4;
+  --text-primary: #2a1720;
+  --text-muted: #785b67;
+  --radius-card: 18px;
+  --radius-btn: 12px;
+  --card-border: rgba(145, 70, 96, 0.12);
+  --card-shadow: 0 6px 20px rgba(72, 30, 48, 0.06), inset 0 1px 0 #fff;
+  --card-hover-shadow: 0 14px 32px rgba(72, 30, 48, 0.13);
+  --glass-surface: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(145, 70, 96, 0.14);
+  --header-glass: rgba(251, 242, 244, 0.88);
+  --viz-media-accent: #ba4c72;
+  --viz-media-secondary: #87304f;
+  --viz-games-accent: #74539c;
+  --viz-games-secondary: #513673;
+  --viz-books-accent: #b06743;
+  --viz-books-secondary: #7a4227;
+}
+
+html[data-theme="light"][data-visual-theme="sakura"] body {
+  background: var(--bg-primary);
+}
+
+html[data-theme="light"][data-visual-theme="sakura"] body::after {
+  background:
+    radial-gradient(960px 520px at 18% -10%, rgba(226, 148, 174, 0.28), transparent 70%),
+    radial-gradient(760px 460px at 88% 8%, rgba(178, 146, 206, 0.18), transparent 62%);
+}
+
+html[data-theme="light"][data-visual-theme="sakura"] :is(.page-title, .brand-bar span, .modal-title) {
+  background: linear-gradient(135deg, #2b1420 10%, #993e5d 55%, #2b1420 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.75);
+}
+
+/* --------------------------------------------------------------------------
+   THEME G: ARCHIVAL HERBARIUM (Pressed Cotton Paper & Botanical Ink)
+   -------------------------------------------------------------------------- */
+html[data-visual-theme="herbarium"] {
+  --font-display: 'Libre Baskerville', 'Georgia', serif;
+  --bg-primary: #131410;
+  --bg-card: #1b1d17;
+  --bg-card-2: #252820;
+  --text-primary: #efeadd;
+  --text-muted: #9b9785;
+  --radius-card: 16px;
+  --radius-btn: 10px;
+  --card-border: rgba(176, 186, 148, 0.15);
+  --card-shadow: 0 8px 26px rgba(8, 9, 6, 0.55), inset 0 1px 0 rgba(239, 234, 221, 0.06);
+  --card-hover-shadow: 0 14px 34px rgba(8, 9, 6, 0.72), 0 0 10px rgba(140, 168, 122, 0.14);
+  --glass-surface: rgba(239, 234, 221, 0.045);
+  --glass-border: rgba(176, 186, 148, 0.17);
+  --header-glass: rgba(19, 20, 16, 0.86);
+  --viz-media-accent: #8ca87a;
+  --viz-media-secondary: #536946;
+  --viz-games-accent: #a68cb5;
+  --viz-games-secondary: #685275;
+  --viz-books-accent: #cc8666;
+  --viz-books-secondary: #874f36;
+}
+
+html[data-visual-theme="herbarium"] body {
+  background: var(--bg-primary);
+}
+
+html[data-visual-theme="herbarium"] body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  transform: translateZ(0);
+  background:
+    radial-gradient(960px 540px at 18% -12%, rgba(126, 148, 102, 0.2), transparent 68%),
+    radial-gradient(760px 460px at 88% 8%, rgba(176, 114, 86, 0.14), transparent 62%),
+    radial-gradient(1000px 700px at 50% 100%, rgba(20, 22, 16, 0.85), transparent);
+}
+
+html[data-visual-theme="herbarium"] :is(.page-title, .brand-bar span, .modal-title) {
+  font-family: 'Libre Baskerville', Georgia, serif !important;
+  background: linear-gradient(135deg, #f5f0e3 15%, #c5d1b6 54%, #f5f0e3 95%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 2px 8px rgba(140, 168, 122, 0.16);
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+html[data-theme="light"][data-visual-theme="herbarium"] {
+  --font-display: 'Libre Baskerville', 'Georgia', serif;
+  --bg-primary: #f3efe4;
+  --bg-card: #fcfaf3;
+  --bg-card-2: #e7e0cf;
+  --text-primary: #26241f;
+  --text-muted: #6d685c;
+  --radius-card: 16px;
+  --radius-btn: 10px;
+  --card-border: rgba(68, 82, 56, 0.14);
+  --card-shadow: 0 5px 18px rgba(58, 52, 38, 0.06), inset 0 1px 0 #fff;
+  --card-hover-shadow: 0 12px 28px rgba(58, 52, 38, 0.12);
+  --glass-surface: rgba(252, 250, 243, 0.86);
+  --glass-border: rgba(68, 82, 56, 0.16);
+  --header-glass: rgba(243, 239, 228, 0.9);
+  --viz-media-accent: #58754d;
+  --viz-media-secondary: #394f31;
+  --viz-games-accent: #7a5e8a;
+  --viz-games-secondary: #513b5e;
+  --viz-books-accent: #a66244;
+  --viz-books-secondary: #733f28;
+}
+
+html[data-theme="light"][data-visual-theme="herbarium"] body {
+  background: var(--bg-primary);
+}
+
+html[data-theme="light"][data-visual-theme="herbarium"] body::after {
+  background:
+    radial-gradient(960px 520px at 16% -10%, rgba(132, 158, 110, 0.24), transparent 70%),
+    radial-gradient(760px 460px at 88% 8%, rgba(186, 126, 94, 0.16), transparent 62%);
+}
+
+html[data-theme="light"][data-visual-theme="herbarium"] :is(.page-title, .brand-bar span, .modal-title) {
+  background: linear-gradient(135deg, #24211b 12%, #526e47 56%, #24211b 94%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.75);
 }
 
 /* ==========================================================================
@@ -364,7 +928,7 @@ html[data-theme="light"][data-visual-theme="wizarding"] body {
    ========================================================================== */
 
 /* Dynamic Ambient Backdrop Projection (Zero filter blur overhead - pure smooth gradient) */
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) body::before {
+html:not([data-visual-theme="classic"]) body::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -377,7 +941,7 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) body::b
   transition: opacity 0.8s ease;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .page-header {
+html:not([data-visual-theme="classic"]) .page-header {
   position: relative;
   z-index: 10;
   margin: 0 -20px 14px;
@@ -390,7 +954,7 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .page-h
   box-shadow: none !important;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .card {
+html:not([data-visual-theme="classic"]) .card {
   background: var(--bg-card);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card);
@@ -398,13 +962,13 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .card {
   transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .card:hover {
+html:not([data-visual-theme="classic"]) .card:hover {
   transform: translateY(-6px) scale(1.015);
   box-shadow: var(--card-hover-shadow);
   border-color: color-mix(in srgb, var(--accent) 45%, var(--card-border));
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .playlist-card {
+html:not([data-visual-theme="classic"]) .playlist-card {
   background: var(--bg-card);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card);
@@ -412,36 +976,34 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .playli
   transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s ease, border-color 0.28s ease;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .playlist-card:hover {
+html:not([data-visual-theme="classic"]) .playlist-card:hover {
   transform: translateY(-5px);
   box-shadow: var(--card-hover-shadow);
   border-color: color-mix(in srgb, var(--accent) 55%, var(--card-border));
 }
 
 /* High-Impact Stat Strip & Cards */
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .stat-strip {
+html:not([data-visual-theme="classic"]) .stat-strip {
   background: linear-gradient(135deg, var(--glass-surface) 0%, rgba(255, 255, 255, 0.02) 100%);
   border: 1px solid var(--glass-border);
   border-radius: calc(var(--radius-card) + 4px);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .stat-box {
+html:not([data-visual-theme="classic"]) .stat-box {
   background: transparent;
   padding: 16px 12px;
   border-radius: var(--radius-card);
   transition: background 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.22s ease;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .stat-box:hover {
+html:not([data-visual-theme="classic"]) .stat-box:hover {
   background: color-mix(in srgb, var(--accent) 8%, var(--glass-surface));
   transform: translateY(-2px);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .stat-number {
+html:not([data-visual-theme="classic"]) .stat-number {
   font-family: var(--font-display);
   font-feature-settings: 'tnum' on, 'lnum' on;
   letter-spacing: -0.02em;
@@ -451,7 +1013,7 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .stat-n
 }
 
 /* Leaderboard Rows & Medallions */
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row {
+html:not([data-visual-theme="classic"]) .leaderboard-row {
   background: var(--bg-card);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card);
@@ -459,15 +1021,15 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leader
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row:hover {
+html:not([data-visual-theme="classic"]) .leaderboard-row:hover {
   transform: translateY(-3px) scale(1.01);
   border-color: color-mix(in srgb, var(--accent) 45%, var(--card-border));
   box-shadow: var(--card-hover-shadow);
 }
 
 /* Rank 1: Gold Medal with Ambient Glow */
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row:nth-child(1) .leaderboard-rank,
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row-top .leaderboard-rank {
+html:not([data-visual-theme="classic"]) .leaderboard-row:nth-child(1) .leaderboard-rank,
+html:not([data-visual-theme="classic"]) .leaderboard-row-top .leaderboard-rank {
   background: linear-gradient(135deg, #fff275 0%, #ffd700 50%, #d4af37 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -477,7 +1039,7 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leader
 }
 
 /* Rank 2: Silver Medal with Cool Glow */
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row:nth-child(2) .leaderboard-rank {
+html:not([data-visual-theme="classic"]) .leaderboard-row:nth-child(2) .leaderboard-rank {
   background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -487,7 +1049,7 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leader
 }
 
 /* Rank 3: Bronze Medal with Warm Glow */
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-row:nth-child(3) .leaderboard-rank {
+html:not([data-visual-theme="classic"]) .leaderboard-row:nth-child(3) .leaderboard-rank {
   background: linear-gradient(135deg, #fed7aa 0%, #f97316 50%, #b45309 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -497,21 +1059,21 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leader
 }
 
 /* Sleek Leaderboard Progress Track */
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-bar-track {
+html:not([data-visual-theme="classic"]) .leaderboard-bar-track {
   background: rgba(255, 255, 255, 0.08);
   height: 6px;
   border-radius: 999px;
   overflow: hidden;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .leaderboard-bar-fill {
+html:not([data-visual-theme="classic"]) .leaderboard-bar-fill {
   background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 70%, #ffffff), var(--accent));
   box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
   border-radius: 999px;
 }
 
 /* Month Filter Chips */
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .month-scroll .chip {
+html:not([data-visual-theme="classic"]) .month-scroll .chip {
   background: var(--glass-surface);
   border: 1px solid var(--glass-border);
   color: var(--text-muted);
@@ -520,12 +1082,12 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .month-
   transition: all 0.2s ease;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .month-scroll .chip:hover {
+html:not([data-visual-theme="classic"]) .month-scroll .chip:hover {
   color: var(--text-primary);
   border-color: color-mix(in srgb, var(--accent) 40%, var(--glass-border));
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .month-scroll .chip.selected {
+html:not([data-visual-theme="classic"]) .month-scroll .chip.selected {
   background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 90%, #fff), var(--accent));
   color: #000;
   font-weight: 700;
@@ -534,7 +1096,7 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .month-
 }
 
 /* Visualisation Cards */
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .viz-card {
+html:not([data-visual-theme="classic"]) .viz-card {
   background: var(--bg-card);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-card);
@@ -542,7 +1104,7 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .viz-ca
   transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .viz-card:hover {
+html:not([data-visual-theme="classic"]) .viz-card:hover {
   border-color: color-mix(in srgb, var(--accent) 40%, var(--card-border));
 }
 
@@ -559,6 +1121,12 @@ html[data-visual-theme="winter"] .type-pill[data-tab="games"].active {
   color: #032115 !important;
   font-weight: 700 !important;
 }
+html[data-visual-theme="winter"] .type-pill[data-tab="books"].active {
+  background: linear-gradient(135deg, #5eead4, #0f766e) !important;
+  box-shadow: 0 4px 18px rgba(15, 118, 110, 0.42) !important;
+  color: #041d1b !important;
+  font-weight: 700 !important;
+}
 
 html[data-visual-theme="wizarding"] .type-pill.active {
   background: linear-gradient(135deg, #fde68a, #d97706) !important;
@@ -570,6 +1138,12 @@ html[data-visual-theme="wizarding"] .type-pill[data-tab="games"].active {
   background: linear-gradient(135deg, #e9d5ff, #9333ea) !important;
   box-shadow: 0 4px 18px rgba(147, 51, 234, 0.45) !important;
   color: #160424 !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="wizarding"] .type-pill[data-tab="books"].active {
+  background: linear-gradient(135deg, #fed7aa, #b45309) !important;
+  box-shadow: 0 4px 18px rgba(180, 83, 9, 0.45) !important;
+  color: #1c0b02 !important;
   font-weight: 700 !important;
 }
 
@@ -587,6 +1161,70 @@ html:not([data-visual-theme]) .type-pill[data-tab="games"].active {
   color: #17082e !important;
   font-weight: 700 !important;
 }
+html[data-visual-theme="library"] .type-pill[data-tab="books"].active,
+html:not([data-visual-theme]) .type-pill[data-tab="books"].active {
+  background: linear-gradient(135deg, #a7f3d0, #059669) !important;
+  box-shadow: 0 4px 18px rgba(5, 150, 105, 0.35) !important;
+  color: #032116 !important;
+  font-weight: 700 !important;
+}
+
+html[data-visual-theme="kyoto"] .type-pill.active {
+  background: linear-gradient(135deg, #c2dfd0, #558b6e) !important;
+  box-shadow: 0 4px 18px rgba(85, 139, 110, 0.38) !important;
+  color: #071912 !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="kyoto"] .type-pill[data-tab="games"].active {
+  background: linear-gradient(135deg, #bfd8e4, #4d7b91) !important;
+  box-shadow: 0 4px 18px rgba(77, 123, 145, 0.38) !important;
+  color: #09171e !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="kyoto"] .type-pill[data-tab="books"].active {
+  background: linear-gradient(135deg, #ebd6b8, #a67c49) !important;
+  box-shadow: 0 4px 18px rgba(166, 124, 73, 0.35) !important;
+  color: #1f1407 !important;
+  font-weight: 700 !important;
+}
+
+html[data-visual-theme="sakura"] .type-pill.active {
+  background: linear-gradient(135deg, #fad1dd, #cb6d8c) !important;
+  box-shadow: 0 4px 18px rgba(203, 109, 140, 0.38) !important;
+  color: #260914 !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="sakura"] .type-pill[data-tab="games"].active {
+  background: linear-gradient(135deg, #e1d0f2, #8b69b5) !important;
+  box-shadow: 0 4px 18px rgba(139, 105, 181, 0.38) !important;
+  color: #170824 !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="sakura"] .type-pill[data-tab="books"].active {
+  background: linear-gradient(135deg, #f5dac3, #c47d54) !important;
+  box-shadow: 0 4px 18px rgba(196, 125, 84, 0.36) !important;
+  color: #241106 !important;
+  font-weight: 700 !important;
+}
+
+html[data-visual-theme="herbarium"] .type-pill.active {
+  background: linear-gradient(135deg, #d7e3cb, #698758) !important;
+  box-shadow: 0 4px 18px rgba(105, 135, 88, 0.34) !important;
+  color: #111c0c !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="herbarium"] .type-pill[data-tab="games"].active {
+  background: linear-gradient(135deg, #dfd2e8, #846894) !important;
+  box-shadow: 0 4px 18px rgba(132, 104, 148, 0.34) !important;
+  color: #190d21 !important;
+  font-weight: 700 !important;
+}
+html[data-visual-theme="herbarium"] .type-pill[data-tab="books"].active {
+  background: linear-gradient(135deg, #edd2c4, #b36b4c) !important;
+  box-shadow: 0 4px 18px rgba(179, 107, 76, 0.34) !important;
+  color: #241008 !important;
+  font-weight: 700 !important;
+}
 
 /* Theme-Aware Leaderboard Fill Bar */
 html[data-visual-theme="winter"] .leaderboard-bar-fill {
@@ -596,6 +1234,18 @@ html[data-visual-theme="winter"] .leaderboard-bar-fill {
 html[data-visual-theme="wizarding"] .leaderboard-bar-fill {
   background: linear-gradient(90deg, #fde68a, #c084fc) !important;
   box-shadow: 0 0 12px rgba(192, 132, 252, 0.45) !important;
+}
+html[data-visual-theme="kyoto"] .leaderboard-bar-fill {
+  background: linear-gradient(90deg, #b8d6c4, #5d8ea3) !important;
+  box-shadow: 0 0 10px rgba(126, 166, 184, 0.38) !important;
+}
+html[data-visual-theme="sakura"] .leaderboard-bar-fill {
+  background: linear-gradient(90deg, #f5c6d6, #9d7dc4) !important;
+  box-shadow: 0 0 10px rgba(185, 154, 217, 0.4) !important;
+}
+html[data-visual-theme="herbarium"] .leaderboard-bar-fill {
+  background: linear-gradient(90deg, #b8ccaa, #8a6c9c) !important;
+  box-shadow: 0 0 10px rgba(140, 168, 122, 0.35) !important;
 }
 html[data-visual-theme="library"] .leaderboard-bar-fill,
 html:not([data-visual-theme]) .leaderboard-bar-fill {
@@ -616,21 +1266,39 @@ html[data-visual-theme="wizarding"] #btn-generate {
   font-weight: 800 !important;
   box-shadow: 0 6px 20px rgba(217, 119, 6, 0.4) !important;
 }
+html[data-visual-theme="kyoto"] #btn-generate {
+  background: linear-gradient(135deg, #b8d6c4, #558b6e) !important;
+  color: #071912 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 6px 20px rgba(85, 139, 110, 0.32) !important;
+}
+html[data-visual-theme="sakura"] #btn-generate {
+  background: linear-gradient(135deg, #f7cad8, #c46888) !important;
+  color: #260914 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 6px 20px rgba(196, 104, 136, 0.35) !important;
+}
+html[data-visual-theme="herbarium"] #btn-generate {
+  background: linear-gradient(135deg, #cbd9bd, #668557) !important;
+  color: #111c0c !important;
+  font-weight: 700 !important;
+  box-shadow: 0 6px 20px rgba(102, 133, 87, 0.32) !important;
+}
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .modal-overlay {
+html:not([data-visual-theme="classic"]) .modal-overlay {
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   background: rgba(0, 0, 0, 0.72);
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .modal-box {
+html:not([data-visual-theme="classic"]) .modal-box {
   background: var(--bg-card);
   border: 1px solid var(--glass-border);
   border-radius: 28px 28px 0 0;
   box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.55);
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .input-field {
+html:not([data-visual-theme="classic"]) .input-field {
   background: var(--glass-surface);
   border: 1.5px solid var(--glass-border);
   border-radius: var(--radius-btn);
@@ -638,43 +1306,67 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .input-
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .input-field:focus {
+html:not([data-visual-theme="classic"]) .input-field:focus {
   border-color: var(--accent);
   background: rgba(255, 255, 255, 0.07);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .toggle-pair {
+html[data-theme="light"]:not([data-visual-theme="classic"]) .input-field:focus {
+  background: var(--bg-card);
+}
+
+html[data-theme="light"]:not([data-visual-theme="classic"]) .stat-strip {
+  background: linear-gradient(135deg, var(--glass-surface) 0%, var(--bg-card) 100%);
+  box-shadow: var(--card-shadow);
+}
+
+html[data-theme="light"]:not([data-visual-theme="classic"]) .modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 -12px 42px rgba(20, 20, 20, 0.16);
+}
+
+html[data-theme="light"] .theme-preview-dots {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme="light"] #theme-particles-canvas {
+  opacity: 0.9;
+}
+
+html:not([data-visual-theme="classic"]) .toggle-pair {
   background: var(--glass-surface);
   border: 1px solid var(--glass-border);
   border-radius: calc(var(--radius-btn) + 2px);
   padding: 4px;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .toggle-btn {
+html:not([data-visual-theme="classic"]) .toggle-btn {
   border-radius: var(--radius-btn);
   font-weight: 600;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .fab {
+html:not([data-visual-theme="classic"]) .fab {
   border-radius: 999px;
   box-shadow: 0 8px 28px color-mix(in srgb, var(--accent) 38%, transparent), 0 2px 8px rgba(0, 0, 0, 0.3);
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .fab:hover {
+html:not([data-visual-theme="classic"]) .fab:hover {
   transform: translateY(-3px) scale(1.03);
   box-shadow: 0 12px 36px color-mix(in srgb, var(--accent) 55%, transparent), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .recent-item {
+html:not([data-visual-theme="classic"]) .recent-item {
   border-radius: calc(var(--radius-card) - 4px);
   border: 1px solid var(--card-border);
   box-shadow: var(--card-shadow);
 }
 
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .set-group,
-html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .set-profile {
+html:not([data-visual-theme="classic"]) .set-group,
+html:not([data-visual-theme="classic"]) .set-profile {
   background: var(--glass-surface);
   border: 1px solid var(--glass-border);
   border-radius: calc(var(--radius-card) + 6px);
@@ -695,7 +1387,7 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .set-pr
 
 @media (min-width: 500px) {
   .theme-picker {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
   }
 }
 
@@ -869,6 +1561,20 @@ html:not([data-visual-theme="classic"]):not([data-visual-theme="glass"]) .set-pr
   filter: grayscale(0.85);
   background: rgba(255, 255, 255, 0.02);
   border-style: dashed;
+}
+
+html[data-theme="light"] .trophy-card.is-locked {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+html[data-theme="light"] .trophy-summary-prog,
+html[data-theme="light"] .trophy-progress-bar,
+html[data-theme="light"] .trophy-card.is-locked .trophy-icon-wrap {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+html[data-theme="light"] .trophy-icon-wrap {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .trophy-card.is-locked:hover {

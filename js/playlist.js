@@ -174,14 +174,20 @@ AppAuth.requireAuth(function (user) {
 
   function plRefresh() {
     var l = getFilteredEntries();
+    var rBtn = document.getElementById('btn-random-entry');
+    if (rBtn) {
+      rBtn.style.display = l.length >= 2 ? '' : 'none';
+      rBtn._pool = l;
+    }
     renderEntries(l);
     if (plQuery || plSort === 'theatre') document.getElementById('entry-count').textContent = l.length + ' of ' + allEntries.length;
     else updateEntryCount();
   }
 
-  document.getElementById('pl-search').addEventListener('input', function () {
-    plQuery = this.value.trim().toLowerCase(); plRefresh();
-  });
+  document.getElementById('pl-search').addEventListener('input', AppUtils.debounce(function () {
+    plQuery = (document.getElementById('pl-search').value || '').trim().toLowerCase();
+    plRefresh();
+  }, 140));
   document.getElementById('pl-sort').addEventListener('change', function () {
     plSort = this.value; plRefresh();
   });
@@ -323,7 +329,6 @@ AppAuth.requireAuth(function (user) {
       holdTimer = setTimeout(function () {
         longPressed = true;
         openEntryOptions(entry);
-        if (navigator.vibrate) navigator.vibrate(15);
       }, 450);
     });
     card.addEventListener('pointermove', function (e) {
@@ -378,6 +383,18 @@ AppAuth.requireAuth(function (user) {
         wizarding: {
           icon: '📜',
           text: 'The archive is silent. No ' + (currentFilter === 'movie' ? 'enchanted reels' : 'chronicles') + ' recorded yet.'
+        },
+        kyoto: {
+          icon: '🍵',
+          text: 'Still water. No ' + (currentFilter === 'movie' ? 'films' : currentFilter === 'series' ? 'series' : 'entries') + ' added here yet.'
+        },
+        sakura: {
+          icon: '🌸',
+          text: 'Moonlit branches await. No ' + (currentFilter === 'movie' ? 'films' : currentFilter === 'series' ? 'series' : 'entries') + ' here yet.'
+        },
+        herbarium: {
+          icon: '🌿',
+          text: 'Blank herbarium page. Add a title to press into this specimen.'
         },
         library: {
           icon: '📚',
@@ -1325,129 +1342,13 @@ AppAuth.requireAuth(function (user) {
   });
 
   function generateShareCard(entry) {
-    var canvas = document.createElement('canvas');
-    canvas.width = 1080;
-    canvas.height = 1080;
-    var ctx = canvas.getContext('2d');
-    var isGame = entry.type === 'game';
-    var accent = isGame ? '#7c3aed' : '#c9a84c';
-
-    function drawEverything(img) {
-      // BACKGROUND
-      ctx.fillStyle = '#0d0d0d';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      if (img) {
-        var scale = Math.max(canvas.width / img.width, canvas.height / img.height);
-        var dw = img.width * scale, dh = img.height * scale;
-        ctx.drawImage(img, (canvas.width - dw) / 2, (canvas.height - dh) / 2, dw, dh);
-      }
-
-      // DARK GRADIENT so text stays readable
-      var grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      grad.addColorStop(0, 'rgba(10,10,10,0.25)');
-      grad.addColorStop(0.55, 'rgba(10,10,10,0.55)');
-      grad.addColorStop(1, 'rgba(8,8,8,0.96)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Accent strip top
-      ctx.fillStyle = accent;
-      ctx.fillRect(0, 0, canvas.width, 8);
-
-      ctx.textAlign = 'left';
-
-      // Title (wraps to 2 lines max)
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 62px Inter, sans-serif';
-      if (entry.review) {
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.7)';
-        ctx.shadowBlur = 10;
-        ctx.font = 'italic 500 30px Inter, sans-serif';
-        ctx.fillStyle = '#e8e8e8';
-        wrapText('\u201C' + entry.review + '\u201D', 70, 590, 940, 42, 3);
-        ctx.restore();
-      }
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 62px Inter, sans-serif';
-      wrapText(entry.title, 70, 760, 940, 68, 2);
-
-      // Type badge
-      ctx.font = '600 30px Inter, sans-serif';
-      ctx.fillStyle = accent;
-      var typeLabel = isGame ? ' Game' : entry.type === 'series' ? '📺 ' + (entry.seasonName || 'Series') : '🎬 Movie';
-      ctx.fillText(typeLabel, 70, 830);
-
-      // Rating — big
-      ctx.font = 'bold 84px Inter, sans-serif';
-      ctx.fillStyle = accent;
-      var ratingText = '';
-      if (isGame && entry.gameRating) ratingText = entry.gameRating + '/10';
-      else if (!isGame && entry.rating) ratingText = AppUtils.ratingToEmoji(entry.rating);
-      if (ratingText) ctx.fillText(ratingText, 70, 935);
-
-      // Meta line
-      ctx.font = '500 32px Inter, sans-serif';
-      ctx.fillStyle = '#dddddd';
-      var meta = '';
-      if (isGame && entry.completionStatus) {
-        var stLabels = { completed: 'Completed', playing: 'Playing', dropped: 'Dropped', wishlist: 'Wishlist' };
-        meta = stLabels[entry.completionStatus] || '';
-        if (entry.playtime) meta += ' · ' + entry.playtime + 'h played';
-      } else if (entry.monthWatched) {
-        meta = AppUtils.monthName(entry.monthWatched) + ' ' + (entry.yearWatched || '');
-      }
-      if (meta) ctx.fillText(meta, 70, 985);
-
-      // Footer branding
-      ctx.font = '500 26px Inter, sans-serif';
-      ctx.fillStyle = '#999999';
-      ctx.fillText('Logged on Playlog', 70, 1040);
-
-      canvas.style.width = '100%';
-      canvas.style.borderRadius = '8px';
+    AppWrapped.generateEntryCard(entry, function (canvas) {
       shareCanvas = canvas;
       var wrap = document.getElementById('share-canvas-wrap');
       wrap.innerHTML = '';
       wrap.appendChild(canvas);
       document.getElementById('share-modal').classList.add('open');
-    }
-
-    function wrapText(text, x, yBottom, maxWidth, lineHeight, maxLines) {
-      var words = text.split(' ');
-      var lines = [];
-      var current = '';
-      for (var i = 0; i < words.length; i++) {
-        var test = current ? current + ' ' + words[i] : words[i];
-        if (ctx.measureText(test).width > maxWidth && current) {
-          lines.push(current);
-          current = words[i];
-        } else {
-          current = test;
-        }
-      }
-      if (current) lines.push(current);
-      if (lines.length > maxLines) {
-        lines = lines.slice(0, maxLines);
-        lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S*$/, '') + '…';
-      }
-      var startY = yBottom - (lines.length - 1) * lineHeight;
-      lines.forEach(function (line, i) {
-        ctx.fillText(line, x, startY + i * lineHeight);
-      });
-    }
-
-    var posterUrl = AppUtils.getPosterUrl(entry.poster);
-    if (posterUrl) {
-      var img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = function () { drawEverything(img); };
-      img.onerror = function () { drawEverything(null); };
-      img.src = AppUtils.getCanvasSafeUrl(posterUrl);
-    } else {
-      drawEverything(null);
-    }
+    });
   }
 
   document.getElementById(
@@ -1696,5 +1597,61 @@ AppAuth.requireAuth(function (user) {
       });
 
   });
+
+  var randomBtn = document.getElementById('btn-random-entry');
+  if (randomBtn) {
+    randomBtn.addEventListener('click', function () {
+      var pool = (this._pool && this._pool.length) ? this._pool : getFilteredEntries();
+      if (!pool.length) return AppUtils.showToast('No titles to pick from.');
+      var lastId = null;
+      function pickOne() {
+        if (pool.length === 1) return pool[0];
+        var next = pool.filter(function (x) { return x.id !== lastId; });
+        return (next.length ? next : pool)[Math.floor(Math.random() * (next.length ? next.length : pool.length))];
+      }
+      var cur = pickOne();
+      lastId = cur.id;
+      var ov = document.createElement('div');
+      ov.className = 'modal-overlay open';
+      function paint(item) {
+        var metaParts = [];
+        if (item.type === 'game') {
+          metaParts.push('🎮 Game');
+          if (item.gameRating) metaParts.push('★ ' + item.gameRating + '/10');
+          if (item.playtime) metaParts.push(item.playtime + 'h');
+        } else {
+          metaParts.push(item.type === 'series' ? '📺 Series' : '🎬 Movie');
+          if (item.rating) metaParts.push(AppUtils.ratingToEmoji(item.rating));
+          if (item.yearWatched) metaParts.push(String(item.yearWatched));
+        }
+        var poster = AppUtils.getPosterUrl(item.poster);
+        ov.innerHTML =
+          '<div class="modal-box" style="max-width:420px">' +
+          '<p class="modal-title">🎲 Pick for me</p>' +
+          '<div style="display:flex;gap:14px;align-items:center;margin:10px 0 18px">' +
+          (poster ? '<img src="' + AppUtils.esc(poster) + '" alt="" style="width:72px;height:108px;object-fit:cover;border-radius:10px;flex-shrink:0">' : '<div style="width:72px;height:108px;border-radius:10px;background:rgba(255,255,255,0.06);flex-shrink:0"></div>') +
+          '<div style="min-width:0"><p style="font-size:17px;font-weight:700;margin:0 0 6px">' + AppUtils.esc(item.title) + '</p>' +
+          '<p class="text-sm text-muted" style="margin:0">' + AppUtils.esc(metaParts.join(' · ')) + '</p></div></div>' +
+          '<div class="modal-actions" style="flex-wrap:wrap;gap:8px">' +
+          '<button type="button" class="btn btn-primary" id="plr-open">Open Details</button>' +
+          (pool.length > 1 ? '<button type="button" class="btn btn-ghost" id="plr-spin">🎲 Spin Again</button>' : '') +
+          '<button type="button" class="btn btn-ghost" id="plr-close">Close</button></div></div>';
+        ov.querySelector('#plr-open').onclick = function () {
+          sessionStorage.setItem('pl-back', window.location.href);
+          window.location.href = '/entry.html?id=' + encodeURIComponent(item.id);
+        };
+        var sp = ov.querySelector('#plr-spin');
+        if (sp) sp.onclick = function () {
+          cur = pickOne();
+          lastId = cur.id;
+          paint(cur);
+        };
+        ov.querySelector('#plr-close').onclick = function () { ov.remove(); };
+      }
+      ov.addEventListener('click', function (ev) { if (ev.target === ov) ov.remove(); });
+      paint(cur);
+      document.body.appendChild(ov);
+    });
+  }
 
 });

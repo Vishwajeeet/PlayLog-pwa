@@ -1,14 +1,14 @@
-var CACHE = 'playlog-v35';
+var CACHE = 'playlog-v40';
 
 var SHELL = [
   '/index.html', '/home.html', '/books.html', '/playlist.html', '/add.html', '/stats.html', '/entry.html', '/account.html', '/timer.html', '/trophies.html',
-  '/css/main.css', '/css/home.css', '/css/themes.css', '/css/animations.css', '/css/whatsnew.css', '/css/theme.css', '/css/books.css', '/css/timer.css',
-  '/js/config.js', '/js/firebase-init.js', '/js/auth.js', '/js/utils.js', '/js/firestore.js', '/js/theme-engine.js', '/js/trophies.js',
-  '/js/tmdb.js', '/js/igdb.js', '/js/flow.js', '/js/backup.js', '/js/whatsnew.js', '/js/openlibrary.js', '/js/books.js', '/js/home.js', '/js/account.js', '/js/playlist.js', '/js/add.js', '/js/stats.js', '/js/entry.js', '/js/timer.js'
+  '/css/main.css', '/css/home.css', '/css/themes.css', '/css/animations.css', '/css/whatsnew.css', '/css/theme.css', '/css/books.css', '/css/entry.css', '/css/timer.css',
+  '/js/config.js', '/js/firebase-init.js', '/js/auth.js', '/js/utils.js', '/js/firestore.js', '/js/theme-engine.js', '/js/trophies.js', '/js/wrapped.js',
+  '/js/tmdb.js', '/js/igdb.js', '/js/flow.js', '/js/backup.js', '/js/whatsnew.js', '/js/openlibrary.js', '/js/media-import.js', '/js/books.js', '/js/home.js', '/js/account.js', '/js/playlist.js', '/js/add.js', '/js/stats.js', '/js/entry.js', '/js/timer.js'
 ];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () {}); })); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) { return Promise.all(SHELL.map(function (u) { return c.add(u).catch(function () { }); })); }));
   self.skipWaiting();
 });
 

@@ -30,10 +30,26 @@ function renderHomeTimerChip() {
   chip.hidden = false;
 }
 
+var HOME_TIMER_INTERVAL = null;
+
+function syncHomeTimerTick() {
+  var now = Date.now();
+  var hasActive = ACTIVE_TAB === 'games' && HOME_TIMER_UID && HOME_TIMER_SUMMARY.some(function (timer) {
+    return timer && timer.startedAt && now - timer.startedAt < 4 * 60 * 60 * 1000;
+  });
+  if (hasActive && !HOME_TIMER_INTERVAL) {
+    HOME_TIMER_INTERVAL = setInterval(renderHomeTimerChip, 1000);
+  } else if (!hasActive && HOME_TIMER_INTERVAL) {
+    clearInterval(HOME_TIMER_INTERVAL);
+    HOME_TIMER_INTERVAL = null;
+  }
+}
+
 function setHomeTimerSummary(uid, summary) {
   if (!HOME_TIMER_UID || HOME_TIMER_UID !== uid) return;
   HOME_TIMER_SUMMARY = Array.isArray(summary) ? summary : [];
   renderHomeTimerChip();
+  syncHomeTimerTick();
 }
 
 window.addEventListener('playlog:prefs', function (event) {
@@ -73,8 +89,11 @@ AppAuth.requireAuth(function(user) {
     HOME_TIMER_SUMMARY = window.PlaylogPrefs.timersActive;
   }
   renderHomeTimerChip();
-  setInterval(renderHomeTimerChip, 1000);
-  window.addEventListener('pageshow', renderHomeTimerChip);
+  syncHomeTimerTick();
+  window.addEventListener('pageshow', function () {
+    renderHomeTimerChip();
+    syncHomeTimerTick();
+  });
 
   var grid =
     document.getElementById('playlists-grid');
@@ -110,27 +129,44 @@ AppAuth.requireAuth(function(user) {
         });
         playlists.forEach(function (p) { if (p.coverImage) COVERS[p.id] = p.coverImage; });
         AppDB.getCovers(uid).then(function (m) {
-          var n = 0; Object.keys(m).forEach(function (k) { COVERS[k] = m[k]; n++; });
-          if (n) applyYearFilter();
+          var changed = false;
+          Object.keys(m).forEach(function (k) {
+            if (COVERS[k] !== m[k]) {
+              COVERS[k] = m[k];
+              changed = true;
+              var cardEl = document.querySelector('#playlists-grid .playlist-card[data-pid="' + k + '"]');
+              if (cardEl && m[k]) {
+                cardEl.dataset.hasCover = '1';
+                cardEl.style.backgroundImage = 'url(' + m[k] + ')';
+              }
+            }
+          });
+          if (changed && !document.querySelector('#playlists-grid .playlist-card[data-pid]')) {
+            applyYearFilter();
+          }
         }).catch(function () {});
 
         // Check for Milestone Trophies (only pop when newly unlocked)
         if (window.AppTrophies) {
-          var isInit = localStorage.getItem('pl_trophies_init');
-          if (!isInit) {
-            // First time running trophy engine: baseline already earned trophies to prevent spam
-            var initialEval = AppTrophies.evaluateBadges(entries, []);
-            var initialIds = initialEval.badges.filter(function (b) { return b.unlocked; }).map(function (b) { return b.id; });
-            AppTrophies.setAcknowledged(initialIds);
-            localStorage.setItem('pl_trophies_init', '1');
-          } else {
-            var celebration = AppTrophies.checkNewAchievements(entries, []);
-            if (celebration.hasNew) {
-              AppTrophies.showHomeCelebrationModal(celebration.newBadges, function () {
-                celebration.acknowledgeAll();
-              });
+          var booksPromise = (localStorage.getItem('pl-books') === '1' && AppDB.getBooks)
+            ? AppDB.getBooks(uid).catch(function () { return []; })
+            : Promise.resolve([]);
+          booksPromise.then(function (booksList) {
+            var isInit = localStorage.getItem('pl_trophies_init');
+            if (!isInit) {
+              var initialEval = AppTrophies.evaluateBadges(entries, booksList);
+              var initialIds = initialEval.badges.filter(function (b) { return b.unlocked; }).map(function (b) { return b.id; });
+              AppTrophies.setAcknowledged(initialIds);
+              localStorage.setItem('pl_trophies_init', '1');
+            } else {
+              var celebration = AppTrophies.checkNewAchievements(entries, booksList);
+              if (celebration.hasNew) {
+                AppTrophies.showHomeCelebrationModal(celebration.newBadges, function () {
+                  celebration.acknowledgeAll();
+                });
+              }
             }
-          }
+          });
         }
 
         document.querySelector('.type-pill[data-tab="' + ACTIVE_TAB + '"]').classList.add('active');
@@ -452,9 +488,12 @@ function applyYearFilter() {
         var themeCopy = {
           winter: { icon: '🎮', text: 'No game playlists yet. Tap + to start your winter backlog.' },
           wizarding: { icon: '⚔️', text: 'No game archives yet. Tap + to begin your quest.' },
+          kyoto: { icon: '🎋', text: 'Quiet courtyard. Tap + to start a game collection.' },
+          sakura: { icon: '🌸', text: 'No blossom-season games logged yet. Tap + to begin.' },
+          herbarium: { icon: '🌿', text: 'An open field folio. Tap + to press your first game collection.' },
           library: { icon: '🎲', text: 'No game collections yet. Tap + to create one.' },
           glass: { icon: '📂', text: 'No playlists yet. Tap + to create one.' },
-        classic: { icon: '📂', text: 'No playlists yet. Tap + to create one.' }
+          classic: { icon: '📂', text: 'No playlists yet. Tap + to create one.' }
         };
         var tc = themeCopy[theme] || themeCopy.library;
         if (eIcon) eIcon.textContent = tc.icon;
@@ -593,10 +632,10 @@ function applyYearFilter() {
   document.getElementById('home-search-toggle').addEventListener('click', function () {
     setHomeSearchOpen(!document.getElementById('home-global-search').classList.contains('is-open'));
   });
-  document.getElementById('home-search').addEventListener('input', function () {
-    homeSearchQuery = this.value.trim().toLowerCase();
+  document.getElementById('home-search').addEventListener('input', AppUtils.debounce(function () {
+    homeSearchQuery = (document.getElementById('home-search').value || '').trim().toLowerCase();
     renderGlobalSearch();
-  });
+  }, 140));
   document.getElementById('home-search').addEventListener('keydown', function (e) {
     if (e.key === 'Escape') setHomeSearchOpen(false);
   });
@@ -641,6 +680,7 @@ function applyYearFilter() {
     if (btn.dataset.tab === 'books') { window.location.href = '/books.html'; return; }
     ACTIVE_TAB = btn.dataset.tab === 'games' ? 'games' : 'media';
     renderHomeTimerChip();
+    syncHomeTimerTick();
     localStorage.setItem('pl-last-tab', ACTIVE_TAB);
     var url = new URL(window.location.href);
     url.searchParams.set('tab', ACTIVE_TAB);
@@ -758,7 +798,6 @@ function applyYearFilter() {
         c.classList.add('pl-drag');
         c.style.pointerEvents = 'none';
         c.style.transform = 'scale(1.04)';
-        if (navigator.vibrate) navigator.vibrate(15);
         place();
       }, 380);
     });

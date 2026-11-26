@@ -24,8 +24,8 @@ AppTheme.apply();
 
 window.AppUtils = {
 
-  booksPill: function () {
-    var box = document.getElementById('type-pills'); if (!box) return;
+  booksPill: function (targetId) {
+    var box = document.getElementById(targetId || 'type-pills'); if (!box) return;
     var on = localStorage.getItem('pl-books') === '1', p = box.querySelector('[data-tab="books"]');
     if (on && !p) { p = document.createElement('button'); p.className = 'type-pill'; p.type = 'button'; p.dataset.tab = 'books'; p.textContent = 'Books'; box.appendChild(p); }
     if (p) p.style.display = on ? '' : 'none';

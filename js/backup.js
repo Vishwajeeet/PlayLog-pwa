@@ -112,9 +112,11 @@ window.AppBackup = {
     var seen = +localStorage.getItem('pl-backup-seen') || 0;
     if (!seen) { seen = now; localStorage.setItem('pl-backup-seen', String(now)); }
     if (now < (+localStorage.getItem('pl-backup-snooze') || 0) || now - Math.max(last, seen) < 30 * D) return;
-    var pref = db.collection('users').doc(uid).collection('settings').doc('prefs');
-    pref.get().then(function (d) {
-      var lb = Math.max(last, d.exists ? +d.data().lastBackup || 0 : 0);
+    var getPrefs = (window.AppDB && AppDB.getPrefs)
+      ? AppDB.getPrefs(uid)
+      : db.collection('users').doc(uid).collection('settings').doc('prefs').get().then(function (d) { return d.exists ? d.data() : {}; });
+    getPrefs.then(function (pdata) {
+      var lb = Math.max(last, pdata && +pdata.lastBackup || 0);
       if (lb) localStorage.setItem('pl-last-backup', String(lb));
       if (now - Math.max(lb, seen) < 30 * D || document.querySelector('.wn-overlay')) return;
       var bar = document.createElement('div');
@@ -124,7 +126,8 @@ window.AppBackup = {
       bar.querySelector('#bk-no').onclick = function () { localStorage.setItem('pl-backup-snooze', String(Date.now() + 7 * D)); bar.remove(); };
       bar.querySelector('#bk-now').onclick = function () {
         AppBackup.download(uid).then(function () {
-          pref.set({ lastBackup: Date.now() }, { merge: true });
+          if (window.AppDB && AppDB.savePrefs) AppDB.savePrefs(uid, { lastBackup: Date.now() });
+          else db.collection('users').doc(uid).collection('settings').doc('prefs').set({ lastBackup: Date.now() }, { merge: true });
           bar.remove(); AppUtils.showToast('Backup downloaded ✓');
         }).catch(function () { AppUtils.showToast('Backup failed.'); });
       };
